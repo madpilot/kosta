@@ -157,7 +157,7 @@ describe('OpenAPI Specification', () => {
     });
   });
 
-  describe('OpenAPI Spec Response Schema, () => {
+  describe('OpenAPI Spec Response Schema', () => {
     it('should include plant schema in responses', () => {
       const plantsPostResponse = openApiSpec.paths['/api/plants'].post.responses['201'];
       expect(plantsPostResponse).toBeDefined();

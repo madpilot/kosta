@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import type { DatabaseWrapper } from './index';
 import type { Plant } from '../models/plant';
+import type { CalendarEvent } from '../models/calendar';
 
 let db: Database.Database | null = null;
 
@@ -43,9 +44,26 @@ export const createPlantTable = (database: Database.Database): void => {
   `);
 };
 
-export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper => {
+export const createCalendarTable = (database: Database.Database): void => {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS calendar_events (
+      id TEXT PRIMARY KEY,
+      plant_id TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'other',
+      date TEXT NOT NULL,
+      notes TEXT,
+      completed INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE
+    )
+  `);
+};
+
+export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAllCalendarEvents(): CalendarEvent[]; getCalendarEventById(id: string): CalendarEvent | null; createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent; } => {
   const database = initSqlite(dbFile);
   createPlantTable(database);
+  createCalendarTable(database);
   return {
     getAllPlants(): Plant[] {
       const stmt = database.prepare('SELECT * FROM plants ORDER BY createdAt DESC');
@@ -114,6 +132,57 @@ export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper => {
         db.close();
         db = null;
       }
+    },
+    getAllCalendarEvents(): CalendarEvent[] {
+      const stmt = database.prepare(
+        'SELECT * FROM calendar_events ORDER BY date ASC, type ASC'
+      );
+
+      const rows = stmt.all() as any[];
+
+      return rows.map((row) => ({
+        ...row,
+        completed: Boolean(row.completed),
+        type: row.type || 'other',
+      }));
+    },
+    getCalendarEventById(id: string): CalendarEvent | null {
+      const stmt = database.prepare('SELECT * FROM calendar_events WHERE id = ?');
+
+      const row = stmt.get(id) as any;
+
+      if (!row) {
+        return null;
+      }
+
+      return {
+        ...row,
+        completed: Boolean(row.completed),
+        type: row.type || 'other',
+      };
+    },
+    createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const db = event['getDatabase']();
+      const stmt = db.prepare(
+        `INSERT INTO calendar_events
+         (plant_id, type, date, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      );
+
+      const result = stmt.run(
+        event.plantId,
+        event.type,
+        event.date,
+        event.notes,
+        now,
+        now
+      );
+
+      const { getCalendarEventById } = this;
+
+      return getCalendarEventById(result.lastInsertRowid as string) || { ...event, id, completed: false, createdAt: now, updatedAt: now };
     },
   };
 };
