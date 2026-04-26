@@ -4,8 +4,8 @@ import { createCalendarService } from './services/calendar';
 import { createUserService } from './services/user';
 import { createAuthService } from './services/auth';
 import { getDatabase } from './db/sqlite';
-import { openApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from './openapi';
-import { UserSchema, LoginInputSchema, ChangePasswordInputSchema } from './models/user';
+import { generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from './openapi';
+import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
 
 const app = express();
 app.use(express.json());
@@ -33,8 +33,9 @@ const isAuthenticated = (req: express.Request, res: express.Response, next: expr
   next();
 };
 
-app.get('/api/openapi.json', (_req, res) => {
-  res.json(openApiSpec);
+app.get('/api/openapi.json', async (_req, res) => {
+  const spec = await generateOpenApiSpec();
+  res.json(spec);
 });
 
 app.get('/api/plants', async (_req, res) => {

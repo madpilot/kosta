@@ -12,12 +12,18 @@
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["gardening", "ai", "calendar"],
+  "keywords": [
+    "gardening",
+    "ai",
+    "calendar"
+  ],
   "license": "MIT",
   "dependencies": {
-    "@orpc/server": "^1.14.0",
     "@orpc/contract": "^1.14.0",
+    "@orpc/openapi": "^1.14.0",
+    "@orpc/server": "^1.14.0",
     "@orpc/standard-server-node": "^1.14.0",
+    "@orpc/zod": "^1.14.0",
     "better-sqlite3": "^11.7.0",
     "express": "^4.21.2",
     "jose": "^5.9.6",
