@@ -1,6 +1,15 @@
+import { z } from 'zod';
 import type { CalendarEvent, CreateCalendarEventInput, UpdateCalendarEventInput } from '../models/calendar';
 import { CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from '../models/calendar';
 import type { CalendarDatabase } from '../models/calendar-db';
+
+const CreateCalendarEventSchema = z.object({
+  type: z.enum(['water', 'fertilize', 'harvest', 'other']),
+  date: z.string().datetime(),
+  notes: z.string().max(5000).optional(),
+});
+
+const UpdateCalendarEventSchema = CreateCalendarEventSchema.partial();
 
 export interface CalendarService {
   getAllEvents(): CalendarEvent[];
@@ -145,14 +154,6 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
 
   return service;
 }
-
-const CreateCalendarEventSchema = z.object({
-  type: z.enum(['water', 'fertilize', 'harvest', 'other']),
-  date: z.string().datetime(),
-  notes: z.string().max(5000).optional(),
-});
-
-const UpdateCalendarEventSchema = CreateCalendarEventSchema.partial();
 
 declare global {
   namespace calendar {
