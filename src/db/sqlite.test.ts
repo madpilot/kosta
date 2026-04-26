@@ -1,4 +1,5 @@
 import { expect, afterEach } from 'vitest';
+import { unlinkSync } from 'fs';
 import Database from 'better-sqlite3';
 import { createSqliteDatabase } from './sqlite';
 import type { Plant } from '../models/plant';
@@ -14,7 +15,7 @@ describe('Database Layer', () => {
     }
     if (dbFile) {
       try {
-        import('fs').then((fs) => fs.unlinkSync(dbFile));
+        unlinkSync(dbFile);
       } catch {}
     }
   });
