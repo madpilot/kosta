@@ -1,8 +1,13 @@
+import { randomBytes } from 'crypto';
+import { createHash } from 'crypto';
+import { verify } from 'jsonwebtoken';
 import Database from 'better-sqlite3';
 import path from 'path';
 import type { DatabaseWrapper } from './index';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
+import type { User } from '../models/user';
+import { utcToZonedTime, format } from 'date-fns-tz';
 
 let db: Database.Database | null = null;
 
@@ -60,10 +65,28 @@ export const createCalendarTable = (database: Database.Database): void => {
   `);
 };
 
-export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAllCalendarEvents(): CalendarEvent[]; getCalendarEventById(id: string): CalendarEvent | null; createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent; } => {
+export const createUsersTable = (database: Database.Database): void => {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      reset_token TEXT,
+      reset_token_expiry TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      avatar_url TEXT
+    )
+  `);
+};
+
+export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAllCalendarEvents(): CalendarEvent[]; getCalendarEventById(id: string): CalendarEvent | null; createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent; getPasswordHash(password: string): string; verifyPassword(password: string, hash: string): boolean; createUser(input: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User; getUserByUsername(username: string): User | null; getUserByEmail(email: string): User | null; authenticateUser(username: string, password: string): User | null; verifyResetToken(token: string): User | null; generateResetToken(): string; sendPasswordResetEmail(user: User, emailService: EmailService): void; } => {
   const database = initSqlite(dbFile);
   createPlantTable(database);
   createCalendarTable(database);
+  createUsersTable(database);
   return {
     getAllPlants(): Plant[] {
       const stmt = database.prepare('SELECT * FROM plants ORDER BY createdAt DESC');
@@ -183,6 +206,116 @@ export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAl
       const { getCalendarEventById } = this;
 
       return getCalendarEventById(result.lastInsertRowid as string) || { ...event, id, completed: false, createdAt: now, updatedAt: now };
+    },
+    getPasswordHash(password: string): string {
+      return createHash('sha256').update(password).digest('hex');
+    },
+    verifyPassword(password: string, hash: string): boolean {
+      const computedHash = this.getPasswordHash(password);
+      try {
+        return computedHash === hash;
+      } catch (error) {
+        return false;
+      }
+    },
+    createUser(input: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User {
+      const id = crypto.randomUUID();
+      const passwordHash = this.getPasswordHash(input.password);
+      const now = new Date().toISOString();
+      const avatarUrl = this.generateGravatarUrl(input.email);
+
+      const stmt = database.prepare(`
+        INSERT INTO users (
+          id, name, username, email, password_hash, reset_token,
+          reset_token_expiry, created_at, updated_at, avatar_url
+        ) VALUES (
+          @id, @name, @username, @email, @passwordHash, @resetToken,
+          @resetTokenExpiry, @createdAt, @updatedAt, @avatarUrl
+        )
+      `);
+      stmt.run({
+        id,
+        name: input.name || '',
+        username: input.username,
+        email: input.email,
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+        createdAt: now,
+        updatedAt: now,
+        avatarUrl,
+      });
+      return {
+        id,
+        name: input.name || '',
+        username: input.username,
+        email: input.email,
+        passwordHash,
+        resetToken: null,
+        resetTokenExpiry: null,
+        createdAt: now,
+        updatedAt: now,
+        avatarUrl,
+      };
+    },
+    getUserByUsername(username: string): User | null {
+      const stmt = database.prepare('SELECT * FROM users WHERE username = ?');
+      const row = stmt.get(username) as any;
+      return this.mapRowToUser(row);
+    },
+    getUserByEmail(email: string): User | null {
+      const stmt = database.prepare('SELECT * FROM users WHERE email = ?');
+      const row = stmt.get(email) as any;
+      return this.mapRowToUser(row);
+    },
+    authenticateUser(username: string, password: string): User | null {
+      const user = this.getUserByUsername(username) || this.getUserByEmail(username);
+      if (!user || !this.verifyPassword(password, user.passwordHash)) {
+        return null;
+      }
+      return user;
+    },
+    verifyResetToken(token: string): User | null {
+      const stmt = database.prepare(
+        'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > ?'
+      );
+      const row = stmt.get(token, new Date().toISOString()) as any;
+      return this.mapRowToUser(row);
+    },
+    generateResetToken(): string {
+      return randomBytes(32).toString('hex') + '_' + Date.now().toString();
+    },
+    sendPasswordResetEmail(user: User, emailService: EmailService): void {
+      const token = this.generateResetToken();
+      const expiry = new Date(Date.now() + 3600000).toISOString();
+
+      const stmt = database.prepare(`
+        UPDATE users
+        SET reset_token = ?, reset_token_expiry = ?
+        WHERE id = ?
+      `);
+      stmt.run(token, expiry, user.id);
+
+      this.generateResetUrl(user, token, expiry);
+      emailService.sendPasswordReset(user.email, user.name, token);
+    },
+    generateResetUrl(user: User, token: string, expiry: Date): string {
+      return `http://localhost:3000/reset-password/${token}`;
+    },
+    mapRowToUser(row: any): User | null {
+      if (!row) return null;
+      return {
+        id: row.id,
+        name: row.name,
+        username: row.username,
+        email: row.email,
+        passwordHash: row.password_hash,
+        resetToken: row.reset_token,
+        resetTokenExpiry: row.reset_token_expiry,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        avatarUrl: row.avatar_url,
+      };
     },
   };
 };

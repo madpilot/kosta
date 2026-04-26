@@ -571,28 +571,177 @@ export const openApiSpec = {
         },
       },
     },
-    '/api/calendar/:id/complete': {
-      patch: {
-        summary: 'Complete a calendar event',
-        description: 'Mark a calendar event as completed',
-        operationId: 'completeCalendarEvent',
-        parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: {
-              type: 'string',
-              format: 'uuid',
+      '/api/calendar/:id/complete': {
+        patch: {
+          summary: 'Complete a calendar event',
+          description: 'Mark a calendar event as completed',
+          operationId: 'completeCalendarEvent',
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              schema: {
+                type: 'string',
+                format: 'uuid',
+              },
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Calendar event marked as completed',
+            },
+            404: {
+              description: 'Calendar event not found',
             },
           },
-        ],
-        responses: {
-          200: {
-            description: 'Calendar event marked as completed',
+        },
+      },
+      '/api/auth/login': {
+        post: {
+          summary: 'User login',
+          description: 'Authenticate a user with username and password',
+          operationId: 'userLogin',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: LoginInputSchema,
+              },
+            },
           },
-          404: {
-            description: 'Calendar event not found',
+          responses: {
+            200: {
+              description: 'Login successful',
+              content: {
+                'application/json': {
+                  schema: z.object({
+                    user: UserSchema.omit({ passwordHash: true, resetToken: true, resetTokenExpiry: true }),
+                    token: z.string(),
+                  }),
+                },
+              },
+            },
+            401: {
+              description: 'Invalid credentials',
+            },
+            400: {
+              description: 'Invalid input',
+            },
+          },
+        },
+      },
+      '/api/auth/password-reset': {
+        post: {
+          summary: 'Initiate password reset',
+          description: 'Send a password reset email to the user',
+          operationId: 'initiatePasswordReset',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: z.object({
+                  email: z.string().email(),
+                }),
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Password reset email sent',
+              content: {
+                'application/json': {
+                  schema: z.object({
+                    success: z.boolean(),
+                    message: z.string(),
+                  }),
+                },
+              },
+            },
+            404: {
+              description: 'User not found',
+            },
+            400: {
+              description: 'Bad request',
+            },
+          },
+        },
+      },
+      '/api/auth/reset-password': {
+        post: {
+          summary: 'Reset password with token',
+          description: 'Reset password using a reset token sent via email',
+          operationId: 'resetPassword',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: z.object({
+                  token: z.string(),
+                  newPassword: z.string().min(8),
+                }),
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Password reset successful',
+            },
+            401: {
+              description: 'Invalid or expired token',
+            },
+            400: {
+              description: 'Bad request',
+            },
+          },
+        },
+      },
+      '/api/auth/change-password': {
+        post: {
+          summary: 'Change password',
+          description: 'Change current user password',
+          operationId: 'changePassword',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: ChangePasswordInputSchema,
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Password changed successfully',
+            },
+            401: {
+              description: 'Invalid old password',
+            },
+            400: {
+              description: 'Invalid input',
+            },
+          },
+        },
+      },
+      '/api/user/profile': {
+        get: {
+          summary: 'Get user profile',
+          description: 'Get current authenticated user profile',
+          operationId: 'getUserProfile',
+          responses: {
+            200: {
+              description: 'User profile',
+              content: {
+                'application/json': {
+                  schema: UserSchema.omit({ passwordHash: true, resetToken: true, resetTokenExpiry: true }),
+                },
+              },
+            },
+            401: {
+              description: 'Not authenticated',
+            },
+            404: {
+              description: 'User not found',
+            },
           },
         },
       },

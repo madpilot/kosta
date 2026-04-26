@@ -189,7 +189,7 @@ describe('OpenAPI Specification', () => {
     });
   });
 
-  describe('OpenAPI Spec IDs, () => {
+  describe('OpenAPI Spec IDs', () => {
     it('should have unique operationId', () => {
       const getOperationId = openApiSpec.paths['/api/plants'].get.operationId;
       const postOperationId = openApiSpec.paths['/api/plants'].post.operationId;
