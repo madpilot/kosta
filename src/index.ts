@@ -4,18 +4,25 @@ import { createPlantService } from './services/plants';
 import { createCalendarService } from './services/calendar';
 import { createUserService } from './services/user';
 import { createAuthService } from './services/auth';
-import { getDatabase } from './db/sqlite';
+import { createChatService } from './services/chat';
+import { getDatabase, createSqliteDatabase } from './db/sqlite';
 import { generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from './openapi';
 import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
+import { SendMessageInputSchema } from './models/chat';
 
 const app = express();
 app.use(express.json());
 
-const db = getDatabase();
-const plantService = createPlantService(db);
-const calendarService = createCalendarService(db);
-const userService = createUserService(db);
-const authService = createAuthService(db);
+const legacyDb = getDatabase();
+const plantService = createPlantService(legacyDb);
+const calendarService = createCalendarService(legacyDb);
+const userService = createUserService(legacyDb);
+const authService = createAuthService(legacyDb);
+
+// createSqliteDatabase() shares the same SQLite singleton as getDatabase() but
+// exposes the chat methods that the ChatDatabase interface requires.
+const db = createSqliteDatabase();
+const chatService = createChatService(db);
 
 const isAuthenticated = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -323,6 +330,85 @@ app.get('/api/user/profile', isAuthenticated, async (req, res) => {
       email: user.email,
       avatarUrl: user.avatarUrl,
     });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- Chat ---
+
+app.post('/api/chat/sessions', async (_req, res) => {
+  try {
+    const session = chatService.createSession();
+    res.status(201).json(session);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/chat/sessions', async (_req, res) => {
+  try {
+    const sessions = chatService.listSessions();
+    res.json(sessions);
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/chat/sessions/:id', async (req, res) => {
+  try {
+    const session = chatService.getSession(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    const messages = db.getChatMessages(req.params.id);
+    res.json({ ...session, messages });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/chat/sessions/:id', async (req, res) => {
+  try {
+    const deleted = chatService.deleteSession(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/chat/sessions/:id/messages', async (req, res) => {
+  try {
+    const input = SendMessageInputSchema.parse(req.body);
+    const result = await chatService.sendMessage(req.params.id, input.content);
+    res.json(result);
+  } catch (err) {
+    if ((err as Error).message === 'Session not found') {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/chat/sessions/:id/end', async (req, res) => {
+  try {
+    const result = await chatService.endSession(req.params.id);
+    res.json(result);
+  } catch (err) {
+    if ((err as Error).message === 'Session not found') {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/chat/memories', async (_req, res) => {
+  try {
+    const memories = chatService.listMemories();
+    res.json(memories);
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }
