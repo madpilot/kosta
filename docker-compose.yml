@@ -1,0 +1,40 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  costa:
+    build: .
+    image: garden-agent:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - APP_BASE_URL=http://localhost:3000
+      - DATABASE_URL=/data/garden.db
+      - AI_BACKEND=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2
+      # - WEATHER_API_KEY=
+      # - USER_LOCATION=Perth, AU
+      # - USER_HEMISPHERE=southern
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json
+    volumes:
+      - costa-data:/data
+
+volumes:
+  ollama-models:
+  costa-data:
