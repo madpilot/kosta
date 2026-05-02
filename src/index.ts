@@ -6,9 +6,12 @@ import { createUserService } from './services/user';
 import { createAuthService } from './services/auth';
 import { createChatService } from './services/chat';
 import { getDatabase, createSqliteDatabase } from './db/sqlite';
-import { generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from './openapi';
+import {
+  generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema,
+} from './openapi';
 import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
 import { SendMessageInputSchema } from './models/chat';
+import { logger } from './utils/logger';
 
 const app = express();
 app.use(express.json());
@@ -41,16 +44,17 @@ const isAuthenticated = (req: express.Request, res: express.Response, next: expr
   next();
 };
 
-app.get('/api/openapi.json', async (_req, res) => {
+app.get('/api/openapi.json', async (req, res) => {
   const spec = await generateOpenApiSpec();
   res.json(spec);
 });
 
-app.get('/api/plants', async (_req, res) => {
+app.get('/api/plants', async (req, res) => {
   try {
     const plants = plantService.listPlants();
     res.json(plants);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -63,7 +67,8 @@ app.get('/api/plants/:id', async (req, res) => {
       return;
     }
     res.json(plant);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -73,7 +78,8 @@ app.post('/api/plants', async (req, res) => {
     const input = CreatePlantInputSchema.parse(req.body);
     const plant = plantService.createPlant(input);
     res.status(201).json(plant);
-  } catch {
+  } catch (error) {
+    logger.warn('Invalid input', { method: req.method, path: req.path, error });
     res.status(400).json({ error: 'Invalid input' });
   }
 });
@@ -87,7 +93,8 @@ app.put('/api/plants/:id', async (req, res) => {
       return;
     }
     res.json(plant);
-  } catch {
+  } catch (error) {
+    logger.warn('Invalid input', { method: req.method, path: req.path, error });
     res.status(400).json({ error: 'Invalid input' });
   }
 });
@@ -100,63 +107,70 @@ app.delete('/api/plants/:id', async (req, res) => {
       return;
     }
     res.json({ success: true });
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/calendar', async (_req, res) => {
+app.get('/api/calendar', async (req, res) => {
   try {
     const events = calendarService.getAllEvents();
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/calendar/today', async (_req, res) => {
+app.get('/api/calendar/today', async (req, res) => {
   try {
     const events = calendarService.getEventsForToday();
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/calendar/week', async (_req, res) => {
+app.get('/api/calendar/week', async (req, res) => {
   try {
     const events = calendarService.getEventsForWeek();
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/calendar/month', async (_req, res) => {
+app.get('/api/calendar/month', async (req, res) => {
   try {
     const events = calendarService.getEventsForMonth();
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.get('/api/calendar/plants/:plantId', async (req, res) => {
   try {
-    const plantId = req.params.plantId;
+    const { plantId } = req.params;
     const events = calendarService.getEventsByPlant(plantId);
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.get('/api/calendar/date/:date', async (req, res) => {
   try {
-    const date = req.params.date;
+    const { date } = req.params;
     const events = calendarService.getEventsByDate(date);
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -166,7 +180,8 @@ app.get('/api/calendar/upcoming', async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 7;
     const events = calendarService.getUpcomingEvents(limit);
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -176,17 +191,19 @@ app.get('/api/calendar/type/:type', async (req, res) => {
     const type = req.params.type as 'water' | 'fertilize' | 'harvest' | 'other';
     const events = calendarService.getEventsByType(type);
     res.json(events);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 app.get('/api/calendar/daily-schedule/:date', async (req, res) => {
   try {
-    const date = req.params.date;
+    const { date } = req.params;
     const schedule = calendarService.getDailySchedule(date);
     res.json(schedule);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -196,7 +213,8 @@ app.post('/api/calendar', async (req, res) => {
     const input = CreateCalendarEventInputSchema.parse(req.body);
     const event = calendarService.createEvent(input);
     res.status(201).json(event);
-  } catch {
+  } catch (error) {
+    logger.warn('Invalid input', { method: req.method, path: req.path, error });
     res.status(400).json({ error: 'Invalid input' });
   }
 });
@@ -210,7 +228,8 @@ app.put('/api/calendar/:id', async (req, res) => {
       return;
     }
     res.json(event);
-  } catch {
+  } catch (error) {
+    logger.warn('Invalid input', { method: req.method, path: req.path, error });
     res.status(400).json({ error: 'Invalid input' });
   }
 });
@@ -223,7 +242,8 @@ app.delete('/api/calendar/:id', async (req, res) => {
       return;
     }
     res.json({ success: true });
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -236,7 +256,8 @@ app.patch('/api/calendar/:id/complete', async (req, res) => {
       return;
     }
     res.json({ success: true });
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -269,7 +290,7 @@ app.post('/api/auth/password-reset', async (req, res) => {
   try {
     const input = z.object({
       email: z.string().email(),
-    }).parse(req.body,);
+    }).parse(req.body);
 
     const user = userService.initiatePasswordReset(input.email);
     if (!user) {
@@ -278,7 +299,8 @@ app.post('/api/auth/password-reset', async (req, res) => {
     }
 
     res.json({ success: true, message: 'Password reset has been sent to your email' });
-  } catch {
+  } catch (error) {
+    logger.error('Password reset failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Failed to initiate password reset' });
   }
 });
@@ -296,7 +318,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 
     res.json({ success: true, message: 'Password has been reset successfully' });
-  } catch {
+  } catch (error) {
+    logger.warn('Invalid input', { method: req.method, path: req.path, error });
     res.status(400).json({ error: 'Invalid input' });
   }
 });
@@ -311,7 +334,8 @@ app.post('/api/auth/change-password', isAuthenticated, async (req, res) => {
     }
 
     res.json({ success: true, message: 'Password changed successfully' });
-  } catch {
+  } catch (error) {
+    logger.warn('Invalid input', { method: req.method, path: req.path, error });
     res.status(400).json({ error: 'Invalid input' });
   }
 });
@@ -330,27 +354,30 @@ app.get('/api/user/profile', isAuthenticated, async (req, res) => {
       email: user.email,
       avatarUrl: user.avatarUrl,
     });
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // --- Chat ---
 
-app.post('/api/chat/sessions', async (_req, res) => {
+app.post('/api/chat/sessions', async (req, res) => {
   try {
     const session = chatService.createSession();
     res.status(201).json(session);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.get('/api/chat/sessions', async (_req, res) => {
+app.get('/api/chat/sessions', async (req, res) => {
   try {
     const sessions = chatService.listSessions();
     res.json(sessions);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -363,7 +390,8 @@ app.get('/api/chat/sessions/:id', async (req, res) => {
     }
     const messages = db.getChatMessages(req.params.id);
     res.json({ ...session, messages });
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -375,7 +403,8 @@ app.delete('/api/chat/sessions/:id', async (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
     res.json({ success: true });
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -405,11 +434,28 @@ app.post('/api/chat/sessions/:id/end', async (req, res) => {
   }
 });
 
-app.get('/api/chat/memories', async (_req, res) => {
+app.get('/api/chat/memories', async (req, res) => {
   try {
     const memories = chatService.listMemories();
     res.json(memories);
-  } catch {
+  } catch (error) {
+    logger.error('Request failed', { method: req.method, path: req.path, error });
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// 4th arg is required for Express to recognise this as an error-handling middleware.
+app.use((
+  err: unknown,
+  req: express.Request,
+  res: express.Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  next: express.NextFunction,
+) => {
+  logger.error('Unhandled request error', {
+    method: req.method, path: req.path, error: err,
+  });
+  if (!res.headersSent) {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -418,7 +464,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
-  console.log(`Server running on http://${HOST}:${PORT}`);
+  logger.info('Server started', { host: HOST, port: PORT });
 });
 
 export default app;

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { config } from '../config';
 import { getCurrentSeason } from '../utils/season';
 import { getWeatherForecast } from './weather';
+import { logger } from '../utils/logger';
 import type { DatabaseWrapper, ChatDatabase } from '../db/index';
 
 export const buildTools = (): Tool[] => [
@@ -347,7 +348,8 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
           ? (parsed.memories.filter((m): m is string => typeof m === 'string'))
           : [],
       };
-    } catch {
+    } catch (error) {
+      logger.warn('Could not parse session summary as JSON, falling back to plain text', { error });
       return { summary: response.message.content, memories: [] };
     }
   };

@@ -1,6 +1,9 @@
 import type { DatabaseWrapper } from '../db/index';
-import type { User, CreateUserInput, LoginInput, ChangePasswordInput } from '../models/user';
+import type {
+  User, CreateUserInput, LoginInput, ChangePasswordInput,
+} from '../models/user';
 import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } from '../models/user';
+import { logger } from '../utils/logger';
 
 export const createUserService = (db: DatabaseWrapper) => ({
   createUser(input: CreateUserInput): User {
@@ -29,7 +32,7 @@ export const createUserService = (db: DatabaseWrapper) => ({
 
     const passwordHash = db.getPasswordHash(validInput.newPassword);
     const now = new Date().toISOString();
-    const stmt = db['database'].prepare(`
+    const stmt = db.database.prepare(`
       UPDATE users SET password_hash = ?, updated_at = ?
       WHERE id = ?
     `);
@@ -56,7 +59,7 @@ export const createUserService = (db: DatabaseWrapper) => ({
     const passwordHash = db.getPasswordHash(validPassword);
     const now = new Date().toISOString();
 
-    const stmt = db['database'].prepare(`
+    const stmt = db.database.prepare(`
       UPDATE users SET password_hash = ?, reset_token = ?, reset_token_expiry = ?, updated_at = ?
       WHERE id = ?
     `);
@@ -69,13 +72,14 @@ export const createEmailService = () => new SimpleEmailService();
 
 class SimpleEmailService {
   async sendPasswordReset(email: string, name: string, token: string): Promise<void> {
-    console.log(`Password Reset Email Sent to ${email}`);
-    console.log(`Reset URL: http://localhost:3000/reset-password/${token}`);
+    logger.info('Password reset email sent', {
+      email,
+      resetUrl: `http://localhost:3000/reset-password/${token}`,
+    });
   }
 
   async sendWelcomeEmail(email: string, name: string): Promise<void> {
-    console.log(`Welcome Email Sent to ${email}`);
-    console.log(`Dear ${name}, welcome to Garden Agent!`);
+    logger.info('Welcome email sent', { email, name });
   }
 }
 

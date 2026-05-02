@@ -34,4 +34,13 @@ Use today's date (provided below) as the anchor for any relative time reference.
     location: process.env.USER_LOCATION || '',
     hemisphere: (process.env.USER_HEMISPHERE || 'southern') as 'northern' | 'southern',
   },
+
+  logging: {
+    // npm levels: error, warn, info, http, verbose, debug, silly
+    level: process.env.LOG_LEVEL || 'info',
+    // 'pretty' for human-readable colourised output, 'json' for line-delimited JSON
+    format: (process.env.LOG_FORMAT || 'pretty') as 'pretty' | 'json',
+    // Silence all output (e.g. when running tests). Auto-true under NODE_ENV=test.
+    silent: process.env.LOG_SILENT === 'true' || process.env.NODE_ENV === 'test',
+  },
 };

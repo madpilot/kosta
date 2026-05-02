@@ -4,6 +4,7 @@ import path from 'path';
 import type {
   DatabaseWrapper, ChatDatabase, EmailService, PlantCareDates,
 } from './index';
+import { logger } from '../utils/logger';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
@@ -271,6 +272,7 @@ export const createSqliteDatabase = (dbFile?: string) => {
       try {
         return computedHash === hash;
       } catch (error) {
+        logger.warn('Password verification threw', { error });
         return false;
       }
     },
