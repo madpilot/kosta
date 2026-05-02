@@ -1,11 +1,12 @@
 import { Ollama } from 'ollama';
 import type { Message, Tool } from 'ollama';
+import { z } from 'zod';
 import { config } from '../config';
 import { getCurrentSeason } from '../utils/season';
 import { getWeatherForecast } from './weather';
 import type { DatabaseWrapper, ChatDatabase } from '../db/index';
 
-const buildTools = (): Tool[] => [
+export const buildTools = (): Tool[] => [
   {
     type: 'function',
     function: {
@@ -21,15 +22,74 @@ const buildTools = (): Tool[] => [
   {
     type: 'function',
     function: {
+      name: 'find_or_create_plant',
+      description: "Look up a plant by name; if it doesn't exist, create it. Call this whenever the user mentions a plant by name (e.g. 'I planted basil', 'my tomatoes'). Returns the plant id needed for events and care updates. Infer a sensible Latin species (e.g. 'basil' → 'Ocimum basilicum') if the user didn't provide one.",
+      parameters: {
+        type: 'object',
+        required: ['name'],
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Common name the user used for the plant, e.g. "basil"',
+          },
+          species: {
+            type: 'string',
+            description: 'Latin species name. If unknown, infer a plausible one for the common name.',
+          },
+          plantedDate: {
+            type: 'string',
+            description: 'ISO 8601 date-time the plant was first sown/planted, if mentioned.',
+          },
+          location: {
+            type: 'string',
+            description: "Where in the user's garden the plant lives (optional).",
+          },
+          sunlightRequirement: {
+            type: 'string',
+            enum: ['full-sun', 'partial-shade', 'shade'],
+            description: 'Sunlight requirement (optional).',
+          },
+          notes: {
+            type: 'string',
+            description: 'Optional free-text notes.',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_plant_care',
+      description: 'Record that the user has performed a care action on a plant (e.g. watered, fertilised, planted, harvested). Call this immediately when the user reports a past activity — recording a fact the user just stated does NOT require confirmation. All date fields are ISO 8601.',
+      parameters: {
+        type: 'object',
+        required: ['plantId'],
+        properties: {
+          plantId: {
+            type: 'string',
+            description: 'The UUID of the plant (from find_or_create_plant or get_plants).',
+          },
+          lastWatered: { type: 'string', description: 'ISO 8601 datetime the plant was last watered.' },
+          lastFertilized: { type: 'string', description: 'ISO 8601 datetime the plant was last fertilised.' },
+          plantedDate: { type: 'string', description: 'ISO 8601 datetime the plant was planted.' },
+          harvestDate: { type: 'string', description: 'ISO 8601 datetime of harvest.' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'create_calendar_event',
-      description: 'Create a garden calendar event for a specific plant. Always confirm with the user before calling this — only call it when the user has agreed to schedule the task.',
+      description: 'Create a single garden calendar event for a specific plant. Always confirm with the user before calling this — only call it when the user has agreed to schedule the task. For a batch of related events use create_calendar_events_batch instead.',
       parameters: {
         type: 'object',
         required: ['plantId', 'type', 'date'],
         properties: {
           plantId: {
             type: 'string',
-            description: 'The UUID of the plant this event is for (from get_plants)',
+            description: 'The UUID of the plant this event is for (from get_plants or find_or_create_plant)',
           },
           type: {
             type: 'string',
@@ -48,11 +108,78 @@ const buildTools = (): Tool[] => [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'create_calendar_events_batch',
+      description: "Create multiple future calendar events in one call. Use this AFTER the user has confirmed a proposed schedule (e.g. they replied 'yes' to a numbered list of upcoming tasks).",
+      parameters: {
+        type: 'object',
+        required: ['events'],
+        properties: {
+          events: {
+            type: 'array',
+            description: 'List of events to create (one row per call).',
+            items: {
+              type: 'object',
+              required: ['plantId', 'type', 'date'],
+              properties: {
+                plantId: { type: 'string' },
+                type: { type: 'string', enum: ['water', 'fertilize', 'harvest', 'other'] },
+                date: { type: 'string', description: 'ISO 8601 date-time' },
+                notes: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 ];
 
 type ToolArgs = Record<string, unknown>;
 
-const executeToolCall = (
+const EventTypeSchema = z.enum(['water', 'fertilize', 'harvest', 'other']);
+const IsoDateTimeSchema = z.string().datetime({ message: 'must be an ISO 8601 datetime, e.g. 2026-05-03T08:00:00.000Z' });
+
+const FindOrCreatePlantArgs = z.object({
+  name: z.string().min(1),
+  species: z.string().min(1).optional(),
+  plantedDate: IsoDateTimeSchema.optional(),
+  location: z.string().optional(),
+  sunlightRequirement: z.enum(['full-sun', 'partial-shade', 'shade']).optional(),
+  notes: z.string().optional(),
+});
+
+const UpdatePlantCareArgs = z.object({
+  plantId: z.string().uuid({ message: 'plantId must be a UUID returned by find_or_create_plant or get_plants' }),
+  lastWatered: IsoDateTimeSchema.optional(),
+  lastFertilized: IsoDateTimeSchema.optional(),
+  plantedDate: IsoDateTimeSchema.optional(),
+  harvestDate: IsoDateTimeSchema.optional(),
+}).refine(
+  (data) => Boolean(
+    data.lastWatered || data.lastFertilized || data.plantedDate || data.harvestDate,
+  ),
+  { message: 'at least one care date (lastWatered/lastFertilized/plantedDate/harvestDate) is required' },
+);
+
+const CalendarEventArgsSchema = z.object({
+  plantId: z.string().uuid({ message: 'plantId must be a UUID returned by find_or_create_plant or get_plants' }),
+  type: EventTypeSchema,
+  date: IsoDateTimeSchema,
+  notes: z.string().optional(),
+});
+
+const CreateCalendarEventsBatchArgs = z.object({
+  events: z.array(CalendarEventArgsSchema).min(1, { message: 'events must be a non-empty array' }),
+});
+
+const formatZodError = (error: z.ZodError): string => error.errors
+  .map((e) => `${e.path.join('.') || '(root)'}: ${e.message}`)
+  .join('; ');
+
+export const executeToolCall = (
   name: string,
   args: ToolArgs,
   db: DatabaseWrapper,
@@ -61,14 +188,62 @@ const executeToolCall = (
     return db.getAllPlants();
   }
 
+  if (name === 'find_or_create_plant') {
+    const parsed = FindOrCreatePlantArgs.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
+    const {
+      name: plantName, species, plantedDate, location, sunlightRequirement, notes,
+    } = parsed.data;
+    const existing = db.getPlantByName(plantName);
+    if (existing) return existing;
+    return db.createPlant({
+      name: plantName,
+      species: species || plantName,
+      plantedDate,
+      location,
+      sunlightRequirement,
+      notes,
+    });
+  }
+
+  if (name === 'update_plant_care') {
+    const parsed = UpdatePlantCareArgs.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
+    const {
+      plantId, lastWatered, lastFertilized, plantedDate, harvestDate,
+    } = parsed.data;
+    const updated = db.updatePlantCareDates(plantId, {
+      lastWatered, lastFertilized, plantedDate, harvestDate,
+    });
+    return updated ?? { error: `No plant with id ${plantId}` };
+  }
+
   if (name === 'create_calendar_event') {
-    const { plantId, type, date, notes } = args as {
-      plantId: string;
-      type: 'water' | 'fertilize' | 'harvest' | 'other';
-      date: string;
-      notes?: string;
-    };
-    return db.createCalendarEvent({ plantId, type, date, notes: notes || undefined });
+    const parsed = CalendarEventArgsSchema.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
+    const {
+      plantId, type, date, notes,
+    } = parsed.data;
+    return db.createCalendarEvent({
+      plantId, type, date, notes: notes || undefined,
+    });
+  }
+
+  if (name === 'create_calendar_events_batch') {
+    const parsed = CreateCalendarEventsBatchArgs.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
+    return parsed.data.events.map((event) => {
+      try {
+        return db.createCalendarEvent({
+          plantId: event.plantId,
+          type: event.type,
+          date: event.date,
+          notes: event.notes || undefined,
+        });
+      } catch (err) {
+        return { error: (err as Error).message, event };
+      }
+    });
   }
 
   return { error: `Unknown tool: ${name}` };
@@ -77,7 +252,9 @@ const executeToolCall = (
 export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
   const { preamble } = config.ai;
   const { location, hemisphere } = config.user;
-  const today = new Date().toLocaleDateString('en-AU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const today = new Date().toLocaleDateString('en-AU', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
 
   const parts: string[] = [preamble, `\nToday is ${today}.`];
 

@@ -5,11 +5,15 @@ import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
 import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
 
+export type PlantCareDates = Partial<Pick<Plant, 'lastWatered' | 'lastFertilized' | 'plantedDate' | 'harvestDate'>>;
+
 export interface DatabaseWrapper {
   getAllPlants(): Plant[];
   getPlantById(id: string): Plant | null;
+  getPlantByName(name: string): Plant | null;
   createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant;
   updatePlant(id: string, plant: Partial<Plant>): Plant | null;
+  updatePlantCareDates(id: string, dates: PlantCareDates): Plant | null;
   deletePlant(id: string): boolean;
   getAllCalendarEvents(): CalendarEvent[];
   getCalendarEventById(id: string): CalendarEvent | null;
