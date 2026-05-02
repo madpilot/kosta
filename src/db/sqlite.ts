@@ -1,13 +1,12 @@
 import { randomBytes } from 'crypto';
 import { createHash } from 'crypto';
-import { verify } from 'jsonwebtoken';
 import Database from 'better-sqlite3';
 import path from 'path';
-import type { DatabaseWrapper } from './index';
+import type { DatabaseWrapper, ChatDatabase, EmailService } from './index';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
-import { utcToZonedTime, format } from 'date-fns-tz';
+import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
 
 let db: Database.Database | null = null;
 
@@ -82,11 +81,41 @@ export const createUsersTable = (database: Database.Database): void => {
   `);
 };
 
-export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAllCalendarEvents(): CalendarEvent[]; getCalendarEventById(id: string): CalendarEvent | null; createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent; getPasswordHash(password: string): string; verifyPassword(password: string, hash: string): boolean; createUser(input: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User; getUserByUsername(username: string): User | null; getUserByEmail(email: string): User | null; authenticateUser(username: string, password: string): User | null; verifyResetToken(token: string): User | null; generateResetToken(): string; sendPasswordResetEmail(user: User, emailService: EmailService): void; } => {
+export const createChatTables = (database: Database.Database): void => {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+      id TEXT PRIMARY KEY,
+      summary TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+      content TEXT NOT NULL,
+      model TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_memories (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+};
+
+// Return type is inferred — the object literal satisfies DatabaseWrapper & ChatDatabase
+export const createSqliteDatabase = (dbFile?: string) => {
   const database = initSqlite(dbFile);
   createPlantTable(database);
   createCalendarTable(database);
   createUsersTable(database);
+  createChatTables(database);
   return {
     getAllPlants(): Plant[] {
       const stmt = database.prepare('SELECT * FROM plants ORDER BY createdAt DESC');
@@ -187,25 +216,15 @@ export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAl
     createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      const db = event['getDatabase']();
-      const stmt = db.prepare(
+      const stmt = database.prepare(
         `INSERT INTO calendar_events
-         (plant_id, type, date, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`
+         (id, plant_id, type, date, notes, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       );
 
-      const result = stmt.run(
-        event.plantId,
-        event.type,
-        event.date,
-        event.notes,
-        now,
-        now
-      );
+      stmt.run(id, event.plantId, event.type, event.date, event.notes ?? null, now, now);
 
-      const { getCalendarEventById } = this;
-
-      return getCalendarEventById(result.lastInsertRowid as string) || { ...event, id, completed: false, createdAt: now, updatedAt: now };
+      return this.getCalendarEventById(id) ?? { ...event, id, completed: false, createdAt: now, updatedAt: now };
     },
     getPasswordHash(password: string): string {
       return createHash('sha256').update(password).digest('hex');
@@ -316,6 +335,77 @@ export const createSqliteDatabase = (dbFile?: string): DatabaseWrapper & { getAl
         updatedAt: row.updated_at,
         avatarUrl: row.avatar_url,
       };
+    },
+
+    // --- Chat ---
+
+    createChatSession(): ChatSession {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      database.prepare(
+        'INSERT INTO chat_sessions (id, summary, created_at, updated_at) VALUES (?, NULL, ?, ?)'
+      ).run(id, now, now);
+      return { id, summary: null, createdAt: now, updatedAt: now };
+    },
+
+    getChatSession(id: string): ChatSession | null {
+      const row = database.prepare('SELECT * FROM chat_sessions WHERE id = ?').get(id) as any;
+      if (!row) return null;
+      return { id: row.id, summary: row.summary ?? null, createdAt: row.created_at, updatedAt: row.updated_at };
+    },
+
+    updateChatSession(id: string, updates: Partial<Pick<ChatSession, 'summary'>>): ChatSession | null {
+      const now = new Date().toISOString();
+      database.prepare('UPDATE chat_sessions SET summary = ?, updated_at = ? WHERE id = ?')
+        .run(updates.summary ?? null, now, id);
+      return this.getChatSession(id);
+    },
+
+    deleteChatSession(id: string): boolean {
+      const result = database.prepare('DELETE FROM chat_sessions WHERE id = ?').run(id);
+      return result.changes > 0;
+    },
+
+    listChatSessions(): ChatSession[] {
+      const rows = database.prepare('SELECT * FROM chat_sessions ORDER BY created_at DESC').all() as any[];
+      return rows.map((r) => ({ id: r.id, summary: r.summary ?? null, createdAt: r.created_at, updatedAt: r.updated_at }));
+    },
+
+    createChatMessage(sessionId: string, role: ChatMessage['role'], content: string, model?: string): ChatMessage {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      database.prepare(
+        'INSERT INTO chat_messages (id, session_id, role, content, model, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(id, sessionId, role, content, model ?? null, now);
+      return { id, sessionId, role, content, model: model ?? null, createdAt: now };
+    },
+
+    getChatMessages(sessionId: string): ChatMessage[] {
+      const rows = database.prepare(
+        'SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC'
+      ).all(sessionId) as any[];
+      return rows.map((r) => ({
+        id: r.id,
+        sessionId: r.session_id,
+        role: r.role as ChatMessage['role'],
+        content: r.content,
+        model: r.model ?? null,
+        createdAt: r.created_at,
+      }));
+    },
+
+    createChatMemory(content: string): ChatMemory {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      database.prepare(
+        'INSERT INTO chat_memories (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)'
+      ).run(id, content, now, now);
+      return { id, content, createdAt: now, updatedAt: now };
+    },
+
+    listChatMemories(): ChatMemory[] {
+      const rows = database.prepare('SELECT * FROM chat_memories ORDER BY created_at DESC').all() as any[];
+      return rows.map((r) => ({ id: r.id, content: r.content, createdAt: r.created_at, updatedAt: r.updated_at }));
     },
   };
 };

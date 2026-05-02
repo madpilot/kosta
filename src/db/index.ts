@@ -3,6 +3,7 @@ import type { createSqliteDatabase } from './sqlite';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
+import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
 
 export interface DatabaseWrapper {
   getAllPlants(): Plant[];
@@ -32,6 +33,18 @@ export interface UserDatabase extends DatabaseWrapper {
 
 export interface EmailService {
   sendPasswordReset(email: string, name: string, token: string): Promise<void>;
+}
+
+export interface ChatDatabase {
+  createChatSession(): ChatSession;
+  getChatSession(id: string): ChatSession | null;
+  updateChatSession(id: string, updates: Partial<Pick<ChatSession, 'summary'>>): ChatSession | null;
+  deleteChatSession(id: string): boolean;
+  listChatSessions(): ChatSession[];
+  createChatMessage(sessionId: string, role: ChatMessage['role'], content: string, model?: string): ChatMessage;
+  getChatMessages(sessionId: string): ChatMessage[];
+  createChatMemory(content: string): ChatMemory;
+  listChatMemories(): ChatMemory[];
 }
 
 export type getDatabase = ReturnType<typeof createSqliteDatabase>;
