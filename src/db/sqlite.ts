@@ -1,10 +1,9 @@
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes } from 'crypto';
 import Database from 'better-sqlite3';
 import path from 'path';
 import type {
   DatabaseWrapper, ChatDatabase, EmailService, PlantCareDates,
 } from './index';
-import { config } from '../config';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
@@ -264,12 +263,9 @@ export const createSqliteDatabase = (dbFile?: string) => {
         ...event, id, completed: false, createdAt: now, updatedAt: now,
       };
     },
-    getPasswordHash(password: string): string {
-      return createHash('sha256').update(password).digest('hex');
-    },
-    createUser(input: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User {
+    createUser(input: Omit<User, 'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User {
       const id = crypto.randomUUID();
-      const passwordHash = this.getPasswordHash(input.password);
+      const { passwordHash } = input;
       const now = new Date().toISOString();
       const avatarUrl = this.generateGravatarUrl(input.email);
 
@@ -338,11 +334,7 @@ export const createSqliteDatabase = (dbFile?: string) => {
       `);
       stmt.run(token, expiry, user.id);
 
-      this.generateResetUrl(user, token, expiry);
       emailService.sendPasswordReset(user.email, user.name, token);
-    },
-    generateResetUrl(user: User, token: string, expiry: Date): string {
-      return `${config.app.baseUrl}/reset-password/${token}`;
     },
     mapRowToUser(row: any): User | null {
       if (!row) return null;

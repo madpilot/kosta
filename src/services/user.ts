@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import type { UserDatabase } from '../db/index';
 import type {
   User, CreateUserInput, LoginInput, ChangePasswordInput,
@@ -6,16 +7,27 @@ import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } fr
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-export const verifyPassword = (
-  password: string,
-  hash: string,
-  hashFn: (input: string) => string,
-): boolean => hashFn(password) === hash;
+export const hashPassword = (password: string): string => (
+  createHash('sha256').update(password).digest('hex')
+);
+
+export const verifyPassword = (password: string, hash: string): boolean => (
+  hashPassword(password) === hash
+);
+
+export const generateResetUrl = (token: string): string => (
+  `${config.app.baseUrl}/reset-password/${token}`
+);
 
 export const createUserService = (db: UserDatabase) => ({
   createUser(input: CreateUserInput): User {
     const validInput = CreateUserInputSchema.parse(input);
-    return db.createUser(validInput);
+    return db.createUser({
+      username: validInput.username,
+      email: validInput.email,
+      name: validInput.name || '',
+      passwordHash: hashPassword(validInput.password),
+    });
   },
 
   authenticateUser(input: LoginInput): User | null {
@@ -23,7 +35,7 @@ export const createUserService = (db: UserDatabase) => ({
     const user = db.getUserByUsername(validInput.username)
       || db.getUserByEmail(validInput.username);
     if (!user) return null;
-    if (!verifyPassword(validInput.password, user.passwordHash, db.getPasswordHash)) {
+    if (!verifyPassword(validInput.password, user.passwordHash)) {
       return null;
     }
     return user;
@@ -39,11 +51,11 @@ export const createUserService = (db: UserDatabase) => ({
     const user = this.getUserById(userId);
     if (!user) return false;
 
-    if (!verifyPassword(validInput.oldPassword, user.passwordHash, db.getPasswordHash)) {
+    if (!verifyPassword(validInput.oldPassword, user.passwordHash)) {
       return false;
     }
 
-    const passwordHash = db.getPasswordHash(validInput.newPassword);
+    const passwordHash = hashPassword(validInput.newPassword);
     const now = new Date().toISOString();
     const stmt = db.database.prepare(`
       UPDATE users SET password_hash = ?, updated_at = ?
@@ -65,11 +77,10 @@ export const createUserService = (db: UserDatabase) => ({
   },
 
   resetPassword(token: string, newPassword: string): User | null {
-    const validPassword = newPassword;
     const user = this.verifyResetToken(token);
     if (!user) return null;
 
-    const passwordHash = db.getPasswordHash(validPassword);
+    const passwordHash = hashPassword(newPassword);
     const now = new Date().toISOString();
 
     const stmt = db.database.prepare(`
@@ -87,7 +98,7 @@ class SimpleEmailService {
   async sendPasswordReset(email: string, name: string, token: string): Promise<void> {
     logger.info('Password reset email sent', {
       email,
-      resetUrl: `${config.app.baseUrl}/reset-password/${token}`,
+      resetUrl: generateResetUrl(token),
     });
   }
 
