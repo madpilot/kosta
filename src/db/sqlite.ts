@@ -1,8 +1,9 @@
-import { randomBytes } from 'crypto';
-import { createHash } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import Database from 'better-sqlite3';
 import path from 'path';
-import type { DatabaseWrapper, ChatDatabase, EmailService } from './index';
+import type {
+  DatabaseWrapper, ChatDatabase, EmailService, PlantCareDates,
+} from './index';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
@@ -25,6 +26,17 @@ export const initSqlite = (dbFile?: string): Database.Database => {
   db.pragma('journal_mode = WAL');
   return db;
 };
+
+const mapCalendarRow = (row: any): CalendarEvent => ({
+  id: row.id,
+  plantId: row.plant_id,
+  type: (row.type || 'other') as CalendarEvent['type'],
+  date: row.date,
+  notes: row.notes ?? undefined,
+  completed: Boolean(row.completed),
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
 
 export const createPlantTable = (database: Database.Database): void => {
   database.exec(`
@@ -125,6 +137,10 @@ export const createSqliteDatabase = (dbFile?: string) => {
       const stmt = database.prepare('SELECT * FROM plants WHERE id = ?');
       return (stmt.get(id) as Plant) ?? null;
     },
+    getPlantByName(name: string): Plant | null {
+      const stmt = database.prepare('SELECT * FROM plants WHERE LOWER(name) = LOWER(?) LIMIT 1');
+      return (stmt.get(name) as Plant) ?? null;
+    },
     createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
@@ -147,8 +163,27 @@ export const createSqliteDatabase = (dbFile?: string) => {
           @createdAt, @updatedAt
         )
       `);
-      stmt.run(newPlant);
+      stmt.run({
+        id: newPlant.id,
+        name: newPlant.name,
+        species: newPlant.species,
+        location: newPlant.location ?? null,
+        plantedDate: newPlant.plantedDate ?? null,
+        lastWatered: newPlant.lastWatered ?? null,
+        wateringFrequency: newPlant.wateringFrequency ?? null,
+        lastFertilized: newPlant.lastFertilized ?? null,
+        fertilizingFrequency: newPlant.fertilizingFrequency ?? null,
+        notes: newPlant.notes ?? null,
+        sunlightRequirement: newPlant.sunlightRequirement ?? null,
+        soilType: newPlant.soilType ?? null,
+        harvestDate: newPlant.harvestDate ?? null,
+        createdAt: newPlant.createdAt,
+        updatedAt: newPlant.updatedAt,
+      });
       return newPlant;
+    },
+    updatePlantCareDates(id: string, dates: PlantCareDates): Plant | null {
+      return this.updatePlant(id, dates);
     },
     updatePlant(id: string, plant: Partial<Plant>): Plant | null {
       const existing = this.getPlantById(id);
@@ -171,7 +206,22 @@ export const createSqliteDatabase = (dbFile?: string) => {
           harvestDate = @harvestDate, updatedAt = @updatedAt
         WHERE id = @id
       `);
-      stmt.run(updated);
+      stmt.run({
+        id: updated.id,
+        name: updated.name,
+        species: updated.species,
+        location: updated.location ?? null,
+        plantedDate: updated.plantedDate ?? null,
+        lastWatered: updated.lastWatered ?? null,
+        wateringFrequency: updated.wateringFrequency ?? null,
+        lastFertilized: updated.lastFertilized ?? null,
+        fertilizingFrequency: updated.fertilizingFrequency ?? null,
+        notes: updated.notes ?? null,
+        sunlightRequirement: updated.sunlightRequirement ?? null,
+        soilType: updated.soilType ?? null,
+        harvestDate: updated.harvestDate ?? null,
+        updatedAt: updated.updatedAt,
+      });
       return updated;
     },
     deletePlant(id: string): boolean {
@@ -187,31 +237,16 @@ export const createSqliteDatabase = (dbFile?: string) => {
     },
     getAllCalendarEvents(): CalendarEvent[] {
       const stmt = database.prepare(
-        'SELECT * FROM calendar_events ORDER BY date ASC, type ASC'
+        'SELECT * FROM calendar_events ORDER BY date ASC, type ASC',
       );
-
       const rows = stmt.all() as any[];
-
-      return rows.map((row) => ({
-        ...row,
-        completed: Boolean(row.completed),
-        type: row.type || 'other',
-      }));
+      return rows.map(mapCalendarRow);
     },
     getCalendarEventById(id: string): CalendarEvent | null {
       const stmt = database.prepare('SELECT * FROM calendar_events WHERE id = ?');
-
       const row = stmt.get(id) as any;
-
-      if (!row) {
-        return null;
-      }
-
-      return {
-        ...row,
-        completed: Boolean(row.completed),
-        type: row.type || 'other',
-      };
+      if (!row) return null;
+      return mapCalendarRow(row);
     },
     createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent {
       const id = crypto.randomUUID();
@@ -219,12 +254,14 @@ export const createSqliteDatabase = (dbFile?: string) => {
       const stmt = database.prepare(
         `INSERT INTO calendar_events
          (id, plant_id, type, date, notes, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       );
 
       stmt.run(id, event.plantId, event.type, event.date, event.notes ?? null, now, now);
 
-      return this.getCalendarEventById(id) ?? { ...event, id, completed: false, createdAt: now, updatedAt: now };
+      return this.getCalendarEventById(id) ?? {
+        ...event, id, completed: false, createdAt: now, updatedAt: now,
+      };
     },
     getPasswordHash(password: string): string {
       return createHash('sha256').update(password).digest('hex');
@@ -296,13 +333,13 @@ export const createSqliteDatabase = (dbFile?: string) => {
     },
     verifyResetToken(token: string): User | null {
       const stmt = database.prepare(
-        'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > ?'
+        'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > ?',
       );
       const row = stmt.get(token, new Date().toISOString()) as any;
       return this.mapRowToUser(row);
     },
     generateResetToken(): string {
-      return randomBytes(32).toString('hex') + '_' + Date.now().toString();
+      return `${randomBytes(32).toString('hex')}_${Date.now().toString()}`;
     },
     sendPasswordResetEmail(user: User, emailService: EmailService): void {
       const token = this.generateResetToken();
@@ -343,15 +380,19 @@ export const createSqliteDatabase = (dbFile?: string) => {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       database.prepare(
-        'INSERT INTO chat_sessions (id, summary, created_at, updated_at) VALUES (?, NULL, ?, ?)'
+        'INSERT INTO chat_sessions (id, summary, created_at, updated_at) VALUES (?, NULL, ?, ?)',
       ).run(id, now, now);
-      return { id, summary: null, createdAt: now, updatedAt: now };
+      return {
+        id, summary: null, createdAt: now, updatedAt: now,
+      };
     },
 
     getChatSession(id: string): ChatSession | null {
       const row = database.prepare('SELECT * FROM chat_sessions WHERE id = ?').get(id) as any;
       if (!row) return null;
-      return { id: row.id, summary: row.summary ?? null, createdAt: row.created_at, updatedAt: row.updated_at };
+      return {
+        id: row.id, summary: row.summary ?? null, createdAt: row.created_at, updatedAt: row.updated_at,
+      };
     },
 
     updateChatSession(id: string, updates: Partial<Pick<ChatSession, 'summary'>>): ChatSession | null {
@@ -368,21 +409,25 @@ export const createSqliteDatabase = (dbFile?: string) => {
 
     listChatSessions(): ChatSession[] {
       const rows = database.prepare('SELECT * FROM chat_sessions ORDER BY created_at DESC').all() as any[];
-      return rows.map((r) => ({ id: r.id, summary: r.summary ?? null, createdAt: r.created_at, updatedAt: r.updated_at }));
+      return rows.map((r) => ({
+        id: r.id, summary: r.summary ?? null, createdAt: r.created_at, updatedAt: r.updated_at,
+      }));
     },
 
     createChatMessage(sessionId: string, role: ChatMessage['role'], content: string, model?: string): ChatMessage {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       database.prepare(
-        'INSERT INTO chat_messages (id, session_id, role, content, model, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO chat_messages (id, session_id, role, content, model, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       ).run(id, sessionId, role, content, model ?? null, now);
-      return { id, sessionId, role, content, model: model ?? null, createdAt: now };
+      return {
+        id, sessionId, role, content, model: model ?? null, createdAt: now,
+      };
     },
 
     getChatMessages(sessionId: string): ChatMessage[] {
       const rows = database.prepare(
-        'SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC'
+        'SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC',
       ).all(sessionId) as any[];
       return rows.map((r) => ({
         id: r.id,
@@ -398,14 +443,18 @@ export const createSqliteDatabase = (dbFile?: string) => {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       database.prepare(
-        'INSERT INTO chat_memories (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)'
+        'INSERT INTO chat_memories (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)',
       ).run(id, content, now, now);
-      return { id, content, createdAt: now, updatedAt: now };
+      return {
+        id, content, createdAt: now, updatedAt: now,
+      };
     },
 
     listChatMemories(): ChatMemory[] {
       const rows = database.prepare('SELECT * FROM chat_memories ORDER BY created_at DESC').all() as any[];
-      return rows.map((r) => ({ id: r.id, content: r.content, createdAt: r.created_at, updatedAt: r.updated_at }));
+      return rows.map((r) => ({
+        id: r.id, content: r.content, createdAt: r.created_at, updatedAt: r.updated_at,
+      }));
     },
   };
 };
