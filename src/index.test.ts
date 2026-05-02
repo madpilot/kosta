@@ -1,21 +1,21 @@
 import request from 'supertest';
 import express, { Application } from 'express';
-import openApiSpec from '../openapi';
-import { initSqlite, getDatabase } from '../db/sqlite';
+import { generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema } from './openapi';
+import { createPlantService } from './services/plants';
+import { initSqlite, getDatabase } from './db/sqlite';
 
 describe('API Endpoints', () => {
   let app: Application;
 
   beforeEach(() => {
     const db = getDatabase();
-    const { createPlantService } = require('../services/plants');
     const plantService = createPlantService(db);
 
     app = express();
     app.use(express.json());
 
-    app.get('/api/openapi.json', (_req, res) => {
-      res.json(openApiSpec);
+    app.get('/api/openapi.json', async (_req, res) => {
+      res.json(await generateOpenApiSpec());
     });
 
     app.get('/api/plants', async (_req, res) => {
@@ -42,7 +42,7 @@ describe('API Endpoints', () => {
 
     app.post('/api/plants', async (req, res) => {
       try {
-        const input = (await import('../openapi')).CreatePlantInputSchema.parse(req.body);
+        const input = CreatePlantInputSchema.parse(req.body);
         const plant = plantService.createPlant(input);
         res.status(201).json(plant);
       } catch {
@@ -52,7 +52,7 @@ describe('API Endpoints', () => {
 
     app.put('/api/plants/:id', async (req, res) => {
       try {
-        const input = (await import('../openapi')).UpdatePlantInputSchema.parse(req.body);
+        const input = UpdatePlantInputSchema.parse(req.body);
         const plant = plantService.updatePlant(req.params.id, input);
         if (!plant) {
           res.status(404).json({ error: 'Plant not found' });

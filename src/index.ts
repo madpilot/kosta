@@ -1,8 +1,12 @@
 import express from 'express';
+import { z } from 'zod';
 import { createPlantService } from './services/plants';
 import { createCalendarService } from './services/calendar';
+import { createUserService } from './services/user';
+import { createAuthService } from './services/auth';
 import { getDatabase } from './db/sqlite';
-import { openApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from './openapi';
+import { generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from './openapi';
+import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
 
 const app = express();
 app.use(express.json());
@@ -10,9 +14,29 @@ app.use(express.json());
 const db = getDatabase();
 const plantService = createPlantService(db);
 const calendarService = createCalendarService(db);
+const userService = createUserService(db);
+const authService = createAuthService(db);
 
-app.get('/api/openapi.json', (_req, res) => {
-  res.json(openApiSpec);
+const isAuthenticated = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const token = authHeader.substring(7);
+  const decoded = authService.verifyToken(token);
+
+  if (!decoded) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  req.userId = decoded.userId;
+  next();
+};
+
+app.get('/api/openapi.json', async (_req, res) => {
+  const spec = await generateOpenApiSpec();
+  res.json(spec);
 });
 
 app.get('/api/plants', async (_req, res) => {
@@ -205,6 +229,100 @@ app.patch('/api/calendar/:id/complete', async (req, res) => {
       return;
     }
     res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const input = LoginInputSchema.parse(req.body);
+    const user = userService.authenticateUser(input);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = authService.generateToken(user.id);
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+      },
+      token,
+    });
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid input', details: error.message });
+  }
+});
+
+app.post('/api/auth/password-reset', async (req, res) => {
+  try {
+    const input = z.object({
+      email: z.string().email(),
+    }).parse(req.body,);
+
+    const user = userService.initiatePasswordReset(input.email);
+    if (!user) {
+      res.status(404).json({ error: 'User not found for this email' });
+      return;
+    }
+
+    res.json({ success: true, message: 'Password reset has been sent to your email' });
+  } catch {
+    res.status(500).json({ error: 'Failed to initiate password reset' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const input = z.object({
+      token: z.string().min(1),
+      newPassword: z.string().min(8),
+    }).parse(req.body);
+
+    const user = userService.resetPassword(input.token, input.newPassword);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid or expired reset token' });
+    }
+
+    res.json({ success: true, message: 'Password has been reset successfully' });
+  } catch {
+    res.status(400).json({ error: 'Invalid input' });
+  }
+});
+
+app.post('/api/auth/change-password', isAuthenticated, async (req, res) => {
+  try {
+    const input = ChangePasswordInputSchema.parse(req.body);
+    const success = userService.changePassword(req.userId, input);
+
+    if (!success) {
+      return res.status(401).json({ error: 'Invalid old password' });
+    }
+
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch {
+    res.status(400).json({ error: 'Invalid input' });
+  }
+});
+
+app.get('/api/user/profile', isAuthenticated, async (req, res) => {
+  try {
+    const user = userService.getUserById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+    });
   } catch {
     res.status(500).json({ error: 'Internal server error' });
   }

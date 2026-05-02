@@ -1,7 +1,9 @@
 import { expect, afterEach } from 'vitest';
+import { unlinkSync } from 'fs';
 import Database from 'better-sqlite3';
 import { createSqliteDatabase } from './sqlite';
 import type { Plant } from '../models/plant';
+import type { User } from '../models/user';
 
 describe('Database Layer', () => {
   let dbFile: string;
@@ -13,7 +15,7 @@ describe('Database Layer', () => {
     }
     if (dbFile) {
       try {
-        import('fs').then((fs) => fs.unlinkSync(dbFile));
+        unlinkSync(dbFile);
       } catch {}
     }
   });
@@ -384,6 +386,264 @@ describe('Database Layer', () => {
         const tempDb = __dirname + '/temp_test2.db';
         database = createSqliteDatabase(tempDb);
         expect(database).toBeDefined();
+      });
+    });
+  });
+  describe('Users', () => {
+    describe('createUser', () => {
+      it('should create a user with all fields', () => {
+        const userData = {
+          username: 'testuser',
+          email: 'test@example.com',
+          name: 'Test User',
+        };
+
+        const user = database.createUser(userData);
+
+        expect(user).toBeDefined();
+        expect(user.id).toBeDefined();
+        expect(user.username).toBe(userData.username);
+        expect(user.email).toBe(userData.email);
+        expect(user.name).toBe(userData.name);
+        expect(user.passwordHash).toBeDefined();
+        expect(user.avatarUrl).toBeDefined();
+
+        const found = database.getUserByUsername(userData.username);
+        expect(found).toEqual(user);
+      });
+
+      it('should set avatarUrl using Gravatar', () => {
+        const userData = {
+          username: 'gravatartest',
+          email: 'gravatar@example.com',
+          name: 'Gravatar User',
+        };
+
+        const user = database.createUser(userData);
+
+        expect(user.avatarUrl).toContain('gravatar.com');
+        expect(user.avatarUrl).toContain('gravatar@example.com');
+      });
+
+      it('should handle missing name', () => {
+        const userData = {
+          username: 'minimaluser',
+          email: 'minimal@example.com',
+        };
+
+        const user = database.createUser(userData);
+
+        expect(user).toBeDefined();
+        expect(user.id).toBeDefined();
+        expect(user.name).toBe('');
+      });
+    });
+
+    describe('getUsers', () => {
+      it('should return empty array initially', () => {
+        const users = database.getAllUsers();
+        expect(users).toEqual([]);
+      });
+
+      it('should return all users after creation', () => {
+        const user1: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'user1',
+          email: 'user1@example.com',
+          name: 'User One',
+        };
+
+        const user2: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'user2',
+          email: 'user2@example.com',
+          name: 'User Two',
+        };
+
+        database.createUser(user1);
+        database.createUser(user2);
+
+        const users = database.getAllUsers();
+        expect(users).toHaveLength(2);
+        expect(users[0].username).toBe('user1');
+        expect(users[1].username).toBe('user2');
+      });
+    });
+
+    describe('getUserByUsername', () => {
+      it('should return null for non-existent user', () => {
+        const user = database.getUserByUsername('nonexistent');
+        expect(user).toBeNull();
+      });
+
+      it('should return the user when it exists', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'founduser',
+          email: 'found@example.com',
+          name: 'Found User',
+        };
+
+        const created = database.createUser(userData);
+
+        const user = database.getUserByUsername(userData.username);
+        expect(user).not.toBeNull();
+        expect(user?.id).toBe(created.id);
+        expect(user?.username).toBe(userData.username);
+      });
+
+      it('should return user regardless of case sensitivity', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'TestUser',
+          email: 'test@example.com',
+          name: 'Test Test',
+        };
+
+        database.createUser(userData);
+
+        const user = database.getUserByUsername('testuser');
+        expect(user).not.toBeNull();
+      });
+    });
+
+    describe('getUserByEmail', () => {
+      it('should return null for non-existent user', () => {
+        const user = database.getUserByEmail('nonexistent@example.com');
+        expect(user).toBeNull();
+      });
+
+      it('should return the user when it exists', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'emailuser',
+          email: 'emailtest@example.com',
+          name: 'Email User',
+        };
+
+        const created = database.createUser(userData);
+
+        const user = database.getUserByEmail(userData.email);
+        expect(user).not.toBeNull();
+        expect(user?.id).toBe(created.id);
+        expect(user?.email).toBe(userData.email);
+      });
+    });
+
+    describe('verifyPassword', () => {
+      it('should verify correct password', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'passworduser',
+          email: 'password@example.com',
+          name: 'Password User',
+        };
+
+        const created = database.createUser(userData);
+        const correctPassword = 'correctpassword';
+
+        const isCorrect = database.verifyPassword(correctPassword, created.passwordHash);
+        expect(isCorrect).toBe(true);
+      });
+
+      it('should reject incorrect password', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'wrongpassuser',
+          email: 'wrongpass@example.com',
+          name: 'Wrong Password User',
+        };
+
+        const created = database.createUser(userData);
+
+        const isCorrect = database.verifyPassword('wrongpassword', created.passwordHash);
+        expect(isCorrect).toBe(false);
+      });
+    });
+
+    describe('authenticateUser', () => {
+      it('should return user with correct credentials', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'authuser',
+          email: 'auth@example.com',
+          name: 'Auth User',
+        };
+
+        const created = database.createUser(userData);
+        const password = 'testpassword123';
+
+        const authenticated = database.authenticateUser(userData.username, password);
+        expect(authenticated).not.toBeNull();
+        expect(authenticated?.id).toBe(created.id);
+        expect(database.verifyPassword(password, authenticated!.passwordHash)).toBe(true);
+      });
+
+      it('should return null with wrong username', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'authuser',
+          email: 'auth@example.com',
+          name: 'Auth User',
+        };
+
+        database.createUser(userData);
+
+        const authenticated = database.authenticateUser('wrongusername', 'testpassword');
+        expect(authenticated).toBeNull();
+      });
+
+      it('should return null with wrong password', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'authuser',
+          email: 'auth@example.com',
+          name: 'Auth User',
+        };
+
+        database.createUser(userData);
+
+        const authenticated = database.authenticateUser(userData.username, 'wrongpassword');
+        expect(authenticated).toBeNull();
+      });
+    });
+
+    describe('reset token', () => {
+      it('should generate reset token', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'resetuser',
+          email: 'reset@example.com',
+          name: 'Reset User',
+        };
+
+        const created = database.createUser(userData);
+
+        const token = database.generateResetToken();
+        const user = database.getUserByEmail(userData.email);
+
+        expect(user?.resetToken).toBe(token);
+        expect(user?.resetTokenExpiry).toBeDefined();
+      });
+
+      it('should verify reset token', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'resetuser',
+          email: 'reset@example.com',
+          name: 'Reset User',
+        };
+
+        const created = database.createUser(userData);
+        const token = database.generateResetToken();
+
+        const verified = database.verifyResetToken(token);
+        expect(verified).not.toBeNull();
+        expect(verified?.id).toBe(created.id);
+      });
+
+      it('should return null for expired reset token', () => {
+        const userData: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'> = {
+          username: 'resetuser',
+          email: 'reset@example.com',
+          name: 'Reset User',
+        };
+
+        database.createUser(userData);
+
+        const token = database.generateResetToken();
+        const oldToken: any = `${token}_1234567890`;
+
+        const verified = database.verifyResetToken(oldToken);
+        expect(verified).toBeNull();
       });
     });
   });

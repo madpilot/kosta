@@ -1,4 +1,5 @@
 import type { CalendarEvent } from '../models/calendar';
+import type Database from 'better-sqlite3';
 import { createCalendarEventTable } from './sqlite';
 
 export interface CalendarDatabase {
@@ -12,7 +13,7 @@ export interface CalendarDatabase {
   close(): void;
 }
 
-export const initCalendar = (db: ReturnType<import('better-sqlite3').Database>) => {
+export const initCalendar = (db: Database) => {
   createCalendarEventTable(db);
 
   return {
