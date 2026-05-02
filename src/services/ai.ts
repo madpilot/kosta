@@ -1,5 +1,6 @@
 import { Ollama } from 'ollama';
 import type { Message, Tool } from 'ollama';
+import { z } from 'zod';
 import { config } from '../config';
 import { getCurrentSeason } from '../utils/season';
 import { getWeatherForecast } from './weather';
@@ -138,12 +139,45 @@ export const buildTools = (): Tool[] => [
 
 type ToolArgs = Record<string, unknown>;
 
-type CalendarEventArgs = {
-  plantId: string;
-  type: 'water' | 'fertilize' | 'harvest' | 'other';
-  date: string;
-  notes?: string;
-};
+const EventTypeSchema = z.enum(['water', 'fertilize', 'harvest', 'other']);
+const IsoDateTimeSchema = z.string().datetime({ message: 'must be an ISO 8601 datetime, e.g. 2026-05-03T08:00:00.000Z' });
+
+const FindOrCreatePlantArgs = z.object({
+  name: z.string().min(1),
+  species: z.string().min(1).optional(),
+  plantedDate: IsoDateTimeSchema.optional(),
+  location: z.string().optional(),
+  sunlightRequirement: z.enum(['full-sun', 'partial-shade', 'shade']).optional(),
+  notes: z.string().optional(),
+});
+
+const UpdatePlantCareArgs = z.object({
+  plantId: z.string().uuid({ message: 'plantId must be a UUID returned by find_or_create_plant or get_plants' }),
+  lastWatered: IsoDateTimeSchema.optional(),
+  lastFertilized: IsoDateTimeSchema.optional(),
+  plantedDate: IsoDateTimeSchema.optional(),
+  harvestDate: IsoDateTimeSchema.optional(),
+}).refine(
+  (data) => Boolean(
+    data.lastWatered || data.lastFertilized || data.plantedDate || data.harvestDate,
+  ),
+  { message: 'at least one care date (lastWatered/lastFertilized/plantedDate/harvestDate) is required' },
+);
+
+const CalendarEventArgsSchema = z.object({
+  plantId: z.string().uuid({ message: 'plantId must be a UUID returned by find_or_create_plant or get_plants' }),
+  type: EventTypeSchema,
+  date: IsoDateTimeSchema,
+  notes: z.string().optional(),
+});
+
+const CreateCalendarEventsBatchArgs = z.object({
+  events: z.array(CalendarEventArgsSchema).min(1, { message: 'events must be a non-empty array' }),
+});
+
+const formatZodError = (error: z.ZodError): string => error.errors
+  .map((e) => `${e.path.join('.') || '(root)'}: ${e.message}`)
+  .join('; ');
 
 export const executeToolCall = (
   name: string,
@@ -155,17 +189,11 @@ export const executeToolCall = (
   }
 
   if (name === 'find_or_create_plant') {
+    const parsed = FindOrCreatePlantArgs.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
     const {
       name: plantName, species, plantedDate, location, sunlightRequirement, notes,
-    } = args as {
-      name: string;
-      species?: string;
-      plantedDate?: string;
-      location?: string;
-      sunlightRequirement?: 'full-sun' | 'partial-shade' | 'shade';
-      notes?: string;
-    };
-    if (!plantName) return { error: 'name is required' };
+    } = parsed.data;
     const existing = db.getPlantByName(plantName);
     if (existing) return existing;
     return db.createPlant({
@@ -179,16 +207,11 @@ export const executeToolCall = (
   }
 
   if (name === 'update_plant_care') {
+    const parsed = UpdatePlantCareArgs.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
     const {
       plantId, lastWatered, lastFertilized, plantedDate, harvestDate,
-    } = args as {
-      plantId: string;
-      lastWatered?: string;
-      lastFertilized?: string;
-      plantedDate?: string;
-      harvestDate?: string;
-    };
-    if (!plantId) return { error: 'plantId is required' };
+    } = parsed.data;
     const updated = db.updatePlantCareDates(plantId, {
       lastWatered, lastFertilized, plantedDate, harvestDate,
     });
@@ -196,20 +219,20 @@ export const executeToolCall = (
   }
 
   if (name === 'create_calendar_event') {
+    const parsed = CalendarEventArgsSchema.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
     const {
       plantId, type, date, notes,
-    } = args as CalendarEventArgs;
+    } = parsed.data;
     return db.createCalendarEvent({
       plantId, type, date, notes: notes || undefined,
     });
   }
 
   if (name === 'create_calendar_events_batch') {
-    const { events } = args as { events?: CalendarEventArgs[] };
-    if (!Array.isArray(events) || events.length === 0) {
-      return { error: 'events must be a non-empty array' };
-    }
-    return events.map((event) => {
+    const parsed = CreateCalendarEventsBatchArgs.safeParse(args);
+    if (!parsed.success) return { error: formatZodError(parsed.error) };
+    return parsed.data.events.map((event) => {
       try {
         return db.createCalendarEvent({
           plantId: event.plantId,

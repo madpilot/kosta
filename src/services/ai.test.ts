@@ -5,8 +5,11 @@ import type { CalendarEvent } from '../models/calendar';
 
 const isoNow = () => new Date().toISOString();
 
+const PLANT_UUID = '11111111-1111-4111-8111-111111111111';
+const OTHER_PLANT_UUID = '22222222-2222-4222-8222-222222222222';
+
 const makePlant = (overrides: Partial<Plant> = {}): Plant => ({
-  id: 'plant-1',
+  id: PLANT_UUID,
   name: 'Basil',
   species: 'Ocimum basilicum',
   createdAt: isoNow(),
@@ -15,8 +18,8 @@ const makePlant = (overrides: Partial<Plant> = {}): Plant => ({
 });
 
 const makeEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent => ({
-  id: 'event-1',
-  plantId: 'plant-1',
+  id: '33333333-3333-4333-8333-333333333333',
+  plantId: PLANT_UUID,
   type: 'water',
   date: isoNow(),
   completed: false,
@@ -95,7 +98,7 @@ describe('executeToolCall', () => {
       const db = stubDb({
         getPlantByName: () => null,
         createPlant: (p) => {
-          const plant = makePlant({ ...p, id: 'plant-new' });
+          const plant = makePlant({ ...p, id: OTHER_PLANT_UUID });
           created.push(plant);
           return plant;
         },
@@ -109,7 +112,7 @@ describe('executeToolCall', () => {
     it('falls back to using the common name as species if none provided', () => {
       const db = stubDb({
         getPlantByName: () => null,
-        createPlant: (p) => makePlant({ ...p, id: 'plant-new' }),
+        createPlant: (p) => makePlant({ ...p, id: OTHER_PLANT_UUID }),
       });
       const result = executeToolCall('find_or_create_plant', { name: 'Mystery Herb' }, db) as Plant;
       expect(result.species).toBe('Mystery Herb');
@@ -120,21 +123,34 @@ describe('executeToolCall', () => {
       const result = executeToolCall('find_or_create_plant', {}, db) as { error: string };
       expect(result.error).toMatch(/name/i);
     });
+
+    it('errors when plantedDate is not an ISO datetime', () => {
+      const db = stubDb();
+      const result = executeToolCall('find_or_create_plant', { name: 'Basil', plantedDate: '2026-05-02' }, db) as { error: string };
+      expect(result.error).toMatch(/plantedDate/);
+      expect(result.error).toMatch(/ISO 8601/);
+    });
+
+    it('errors when sunlightRequirement is outside the enum', () => {
+      const db = stubDb();
+      const result = executeToolCall('find_or_create_plant', { name: 'Basil', sunlightRequirement: 'maximum' }, db) as { error: string };
+      expect(result.error).toMatch(/sunlightRequirement/);
+    });
   });
 
   describe('update_plant_care', () => {
     it('delegates to db.updatePlantCareDates', () => {
       const calls: Array<{ id: string; dates: unknown }> = [];
-      const updated = makePlant({ id: 'p1', lastWatered: '2026-05-01T00:00:00.000Z' });
+      const updated = makePlant({ id: PLANT_UUID, lastWatered: '2026-05-01T00:00:00.000Z' });
       const db = stubDb({
         updatePlantCareDates: (id, dates) => {
           calls.push({ id, dates });
           return updated;
         },
       });
-      const result = executeToolCall('update_plant_care', { plantId: 'p1', lastWatered: '2026-05-01T00:00:00.000Z' }, db);
+      const result = executeToolCall('update_plant_care', { plantId: PLANT_UUID, lastWatered: '2026-05-01T00:00:00.000Z' }, db);
       expect(result).toBe(updated);
-      expect(calls[0].id).toBe('p1');
+      expect(calls[0].id).toBe(PLANT_UUID);
       expect(calls[0].dates).toEqual({
         lastWatered: '2026-05-01T00:00:00.000Z', lastFertilized: undefined, plantedDate: undefined, harvestDate: undefined,
       });
@@ -146,10 +162,49 @@ describe('executeToolCall', () => {
       expect(result.error).toMatch(/plantId/);
     });
 
+    it('errors when plantId is not a UUID', () => {
+      const db = stubDb();
+      const result = executeToolCall('update_plant_care', { plantId: 'p1', lastWatered: isoNow() }, db) as { error: string };
+      expect(result.error).toMatch(/plantId/);
+      expect(result.error).toMatch(/UUID/);
+    });
+
+    it('errors when no care date is supplied', () => {
+      const db = stubDb();
+      const result = executeToolCall('update_plant_care', { plantId: PLANT_UUID }, db) as { error: string };
+      expect(result.error).toMatch(/at least one care date/);
+    });
+
+    it('errors when a care date is not ISO 8601', () => {
+      const db = stubDb();
+      const result = executeToolCall('update_plant_care', { plantId: PLANT_UUID, lastWatered: 'yesterday' }, db) as { error: string };
+      expect(result.error).toMatch(/lastWatered/);
+      expect(result.error).toMatch(/ISO 8601/);
+    });
+
     it('reports an error when the plant does not exist', () => {
       const db = stubDb({ updatePlantCareDates: () => null });
-      const result = executeToolCall('update_plant_care', { plantId: 'unknown', lastWatered: isoNow() }, db) as { error: string };
-      expect(result.error).toMatch(/unknown/);
+      const result = executeToolCall('update_plant_care', { plantId: PLANT_UUID, lastWatered: isoNow() }, db) as { error: string };
+      expect(result.error).toMatch(/No plant with id/);
+    });
+  });
+
+  describe('create_calendar_event', () => {
+    it('errors when type is outside the enum', () => {
+      const db = stubDb();
+      const result = executeToolCall('create_calendar_event', {
+        plantId: PLANT_UUID, type: 'mulch', date: '2026-05-03T08:00:00.000Z',
+      }, db) as { error: string };
+      expect(result.error).toMatch(/type/);
+    });
+
+    it('errors when date is not an ISO datetime', () => {
+      const db = stubDb();
+      const result = executeToolCall('create_calendar_event', {
+        plantId: PLANT_UUID, type: 'water', date: 'next Tuesday',
+      }, db) as { error: string };
+      expect(result.error).toMatch(/date/);
+      expect(result.error).toMatch(/ISO 8601/);
     });
   });
 
@@ -158,15 +213,15 @@ describe('executeToolCall', () => {
       const created: CalendarEvent[] = [];
       const db = stubDb({
         createCalendarEvent: (e) => {
-          const evt = makeEvent({ ...e, id: `evt-${created.length}` });
+          const evt = makeEvent({ ...e, id: makeEvent().id });
           created.push(evt);
           return evt;
         },
       });
       const events = [
-        { plantId: 'p1', type: 'water', date: '2026-05-03T08:00:00.000Z' },
+        { plantId: PLANT_UUID, type: 'water', date: '2026-05-03T08:00:00.000Z' },
         {
-          plantId: 'p1', type: 'other', date: '2026-05-12T08:00:00.000Z', notes: 'Check germination',
+          plantId: PLANT_UUID, type: 'other', date: '2026-05-12T08:00:00.000Z', notes: 'Check germination',
         },
       ];
       const result = executeToolCall('create_calendar_events_batch', { events }, db) as CalendarEvent[];
@@ -181,19 +236,37 @@ describe('executeToolCall', () => {
       expect(result.error).toMatch(/non-empty/);
     });
 
+    it('errors when any event fails validation, before any DB write', () => {
+      const created: CalendarEvent[] = [];
+      const db = stubDb({
+        createCalendarEvent: (e) => {
+          const evt = makeEvent({ ...e });
+          created.push(evt);
+          return evt;
+        },
+      });
+      const events = [
+        { plantId: PLANT_UUID, type: 'water', date: '2026-05-03T08:00:00.000Z' },
+        { plantId: PLANT_UUID, type: 'mulch', date: '2026-05-04T08:00:00.000Z' },
+      ];
+      const result = executeToolCall('create_calendar_events_batch', { events }, db) as { error: string };
+      expect(result.error).toMatch(/type/);
+      expect(created).toHaveLength(0);
+    });
+
     it('returns per-event error objects when individual creates throw', () => {
       let calls = 0;
       const db = stubDb({
         createCalendarEvent: (e) => {
           calls += 1;
           if (calls === 2) throw new Error('boom');
-          return makeEvent({ ...e, id: `evt-${calls}` });
+          return makeEvent({ ...e });
         },
       });
       const events = [
-        { plantId: 'p1', type: 'water', date: '2026-05-03T08:00:00.000Z' },
-        { plantId: 'p1', type: 'water', date: '2026-05-04T08:00:00.000Z' },
-        { plantId: 'p1', type: 'water', date: '2026-05-05T08:00:00.000Z' },
+        { plantId: PLANT_UUID, type: 'water', date: '2026-05-03T08:00:00.000Z' },
+        { plantId: PLANT_UUID, type: 'water', date: '2026-05-04T08:00:00.000Z' },
+        { plantId: PLANT_UUID, type: 'water', date: '2026-05-05T08:00:00.000Z' },
       ];
       const result = executeToolCall('create_calendar_events_batch', { events }, db) as Array<CalendarEvent | { error: string }>;
       expect(result).toHaveLength(3);
