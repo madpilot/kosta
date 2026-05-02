@@ -44,7 +44,7 @@ const isAuthenticated = (req: express.Request, res: express.Response, next: expr
   next();
 };
 
-app.get('/api/openapi.json', async (req, res) => {
+app.get('/api/openapi.json', async (_req, res) => {
   const spec = await generateOpenApiSpec();
   res.json(spec);
 });

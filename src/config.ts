@@ -1,6 +1,11 @@
 export const config = {
   aiBackend: (process.env.AI_BACKEND || 'ollama') as 'ollama' | 'openai',
 
+  app: {
+    // Public-facing base URL of this app. Used for emails, redirect links, etc.
+    baseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+  },
+
   ollama: {
     baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
     model: process.env.OLLAMA_MODEL || 'llama3.2',

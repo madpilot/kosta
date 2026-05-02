@@ -4,7 +4,7 @@ import path from 'path';
 import type {
   DatabaseWrapper, ChatDatabase, EmailService, PlantCareDates,
 } from './index';
-import { logger } from '../utils/logger';
+import { config } from '../config';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
@@ -267,15 +267,6 @@ export const createSqliteDatabase = (dbFile?: string) => {
     getPasswordHash(password: string): string {
       return createHash('sha256').update(password).digest('hex');
     },
-    verifyPassword(password: string, hash: string): boolean {
-      const computedHash = this.getPasswordHash(password);
-      try {
-        return computedHash === hash;
-      } catch (error) {
-        logger.warn('Password verification threw', { error });
-        return false;
-      }
-    },
     createUser(input: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User {
       const id = crypto.randomUUID();
       const passwordHash = this.getPasswordHash(input.password);
@@ -326,13 +317,6 @@ export const createSqliteDatabase = (dbFile?: string) => {
       const row = stmt.get(email) as any;
       return this.mapRowToUser(row);
     },
-    authenticateUser(username: string, password: string): User | null {
-      const user = this.getUserByUsername(username) || this.getUserByEmail(username);
-      if (!user || !this.verifyPassword(password, user.passwordHash)) {
-        return null;
-      }
-      return user;
-    },
     verifyResetToken(token: string): User | null {
       const stmt = database.prepare(
         'SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > ?',
@@ -358,7 +342,7 @@ export const createSqliteDatabase = (dbFile?: string) => {
       emailService.sendPasswordReset(user.email, user.name, token);
     },
     generateResetUrl(user: User, token: string, expiry: Date): string {
-      return `http://localhost:3000/reset-password/${token}`;
+      return `${config.app.baseUrl}/reset-password/${token}`;
     },
     mapRowToUser(row: any): User | null {
       if (!row) return null;

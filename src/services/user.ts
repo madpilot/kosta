@@ -1,11 +1,18 @@
-import type { DatabaseWrapper } from '../db/index';
+import type { UserDatabase } from '../db/index';
 import type {
   User, CreateUserInput, LoginInput, ChangePasswordInput,
 } from '../models/user';
 import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } from '../models/user';
+import { config } from '../config';
 import { logger } from '../utils/logger';
 
-export const createUserService = (db: DatabaseWrapper) => ({
+export const verifyPassword = (
+  password: string,
+  hash: string,
+  hashFn: (input: string) => string,
+): boolean => hashFn(password) === hash;
+
+export const createUserService = (db: UserDatabase) => ({
   createUser(input: CreateUserInput): User {
     const validInput = CreateUserInputSchema.parse(input);
     return db.createUser(validInput);
@@ -13,7 +20,13 @@ export const createUserService = (db: DatabaseWrapper) => ({
 
   authenticateUser(input: LoginInput): User | null {
     const validInput = LoginInputSchema.parse(input);
-    return db.authenticateUser(validInput.username, validInput.password);
+    const user = db.getUserByUsername(validInput.username)
+      || db.getUserByEmail(validInput.username);
+    if (!user) return null;
+    if (!verifyPassword(validInput.password, user.passwordHash, db.getPasswordHash)) {
+      return null;
+    }
+    return user;
   },
 
   getUserById(id: string): User | null {
@@ -26,7 +39,7 @@ export const createUserService = (db: DatabaseWrapper) => ({
     const user = this.getUserById(userId);
     if (!user) return false;
 
-    if (!db.verifyPassword(validInput.oldPassword, user.passwordHash)) {
+    if (!verifyPassword(validInput.oldPassword, user.passwordHash, db.getPasswordHash)) {
       return false;
     }
 
@@ -74,7 +87,7 @@ class SimpleEmailService {
   async sendPasswordReset(email: string, name: string, token: string): Promise<void> {
     logger.info('Password reset email sent', {
       email,
-      resetUrl: `http://localhost:3000/reset-password/${token}`,
+      resetUrl: `${config.app.baseUrl}/reset-password/${token}`,
     });
   }
 
