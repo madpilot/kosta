@@ -1,6 +1,11 @@
 export const config = {
   aiBackend: (process.env.AI_BACKEND || 'ollama') as 'ollama' | 'openai',
 
+  app: {
+    // Public-facing base URL of this app. Used for emails, redirect links, etc.
+    baseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+  },
+
   ollama: {
     baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
     model: process.env.OLLAMA_MODEL || 'llama3.2',
@@ -33,5 +38,14 @@ Use today's date (provided below) as the anchor for any relative time reference.
     // e.g. "Perth, AU" or "London, GB"
     location: process.env.USER_LOCATION || '',
     hemisphere: (process.env.USER_HEMISPHERE || 'southern') as 'northern' | 'southern',
+  },
+
+  logging: {
+    // npm levels: error, warn, info, http, verbose, debug, silly
+    level: process.env.LOG_LEVEL || 'info',
+    // 'pretty' for human-readable colourised output, 'json' for line-delimited JSON
+    format: (process.env.LOG_FORMAT || 'pretty') as 'pretty' | 'json',
+    // Silence all output (e.g. when running tests). Auto-true under NODE_ENV=test.
+    silent: process.env.LOG_SILENT === 'true' || process.env.NODE_ENV === 'test',
   },
 };

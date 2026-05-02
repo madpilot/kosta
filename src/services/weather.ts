@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+
 type DayForecast = {
   date: string;
   description: string;
@@ -54,7 +56,8 @@ export const getWeatherForecast = async (location: string, apiKey: string): Prom
     return forecasts
       .map((d) => `${d.date}: ${d.description}, ${d.minTemp}–${d.maxTemp}°C${d.rainMm > 0 ? `, ${d.rainMm}mm rain` : ''}`)
       .join('\n');
-  } catch {
+  } catch (error) {
+    logger.warn('Weather forecast lookup failed', { location, error });
     return null;
   }
 };

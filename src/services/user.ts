@@ -1,16 +1,44 @@
-import type { DatabaseWrapper } from '../db/index';
-import type { User, CreateUserInput, LoginInput, ChangePasswordInput } from '../models/user';
+import { createHash } from 'crypto';
+import type { UserDatabase } from '../db/index';
+import type {
+  User, CreateUserInput, LoginInput, ChangePasswordInput,
+} from '../models/user';
 import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } from '../models/user';
+import { config } from '../config';
+import { logger } from '../utils/logger';
 
-export const createUserService = (db: DatabaseWrapper) => ({
+export const hashPassword = (password: string): string => (
+  createHash('sha256').update(password).digest('hex')
+);
+
+export const verifyPassword = (password: string, hash: string): boolean => (
+  hashPassword(password) === hash
+);
+
+export const generateResetUrl = (token: string): string => (
+  `${config.app.baseUrl}/reset-password/${token}`
+);
+
+export const createUserService = (db: UserDatabase) => ({
   createUser(input: CreateUserInput): User {
     const validInput = CreateUserInputSchema.parse(input);
-    return db.createUser(validInput);
+    return db.createUser({
+      username: validInput.username,
+      email: validInput.email,
+      name: validInput.name || '',
+      passwordHash: hashPassword(validInput.password),
+    });
   },
 
   authenticateUser(input: LoginInput): User | null {
     const validInput = LoginInputSchema.parse(input);
-    return db.authenticateUser(validInput.username, validInput.password);
+    const user = db.getUserByUsername(validInput.username)
+      || db.getUserByEmail(validInput.username);
+    if (!user) return null;
+    if (!verifyPassword(validInput.password, user.passwordHash)) {
+      return null;
+    }
+    return user;
   },
 
   getUserById(id: string): User | null {
@@ -23,13 +51,13 @@ export const createUserService = (db: DatabaseWrapper) => ({
     const user = this.getUserById(userId);
     if (!user) return false;
 
-    if (!db.verifyPassword(validInput.oldPassword, user.passwordHash)) {
+    if (!verifyPassword(validInput.oldPassword, user.passwordHash)) {
       return false;
     }
 
-    const passwordHash = db.getPasswordHash(validInput.newPassword);
+    const passwordHash = hashPassword(validInput.newPassword);
     const now = new Date().toISOString();
-    const stmt = db['database'].prepare(`
+    const stmt = db.database.prepare(`
       UPDATE users SET password_hash = ?, updated_at = ?
       WHERE id = ?
     `);
@@ -49,14 +77,13 @@ export const createUserService = (db: DatabaseWrapper) => ({
   },
 
   resetPassword(token: string, newPassword: string): User | null {
-    const validPassword = newPassword;
     const user = this.verifyResetToken(token);
     if (!user) return null;
 
-    const passwordHash = db.getPasswordHash(validPassword);
+    const passwordHash = hashPassword(newPassword);
     const now = new Date().toISOString();
 
-    const stmt = db['database'].prepare(`
+    const stmt = db.database.prepare(`
       UPDATE users SET password_hash = ?, reset_token = ?, reset_token_expiry = ?, updated_at = ?
       WHERE id = ?
     `);
@@ -69,13 +96,14 @@ export const createEmailService = () => new SimpleEmailService();
 
 class SimpleEmailService {
   async sendPasswordReset(email: string, name: string, token: string): Promise<void> {
-    console.log(`Password Reset Email Sent to ${email}`);
-    console.log(`Reset URL: http://localhost:3000/reset-password/${token}`);
+    logger.info('Password reset email sent', {
+      email,
+      resetUrl: generateResetUrl(token),
+    });
   }
 
   async sendWelcomeEmail(email: string, name: string): Promise<void> {
-    console.log(`Welcome Email Sent to ${email}`);
-    console.log(`Dear ${name}, welcome to Garden Agent!`);
+    logger.info('Welcome email sent', { email, name });
   }
 }
 

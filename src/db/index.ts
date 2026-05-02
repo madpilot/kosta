@@ -22,16 +22,12 @@ export interface DatabaseWrapper {
 }
 
 export interface UserDatabase extends DatabaseWrapper {
-  getPasswordHash(password: string): string;
-  verifyPassword(password: string, hash: string): boolean;
-  createUser(input: Omit<User, 'id' | 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User;
+  createUser(input: Omit<User, 'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User;
   getUserByUsername(username: string): User | null;
   getUserByEmail(email: string): User | null;
-  authenticateUser(username: string, password: string): User | null;
   verifyResetToken(token: string): User | null;
   generateResetToken(): string;
   sendPasswordResetEmail(user: User, emailService: EmailService): void;
-  generateResetUrl(user: User, token: string, expiry: Date): string;
   mapRowToUser(row: any): User | null;
 }
 
