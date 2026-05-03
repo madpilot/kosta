@@ -298,15 +298,20 @@ app.post('/api/auth/login', async (req, res) => {
       token,
     });
   } catch (error) {
-    res.status(400).json({ error: 'Invalid input', details: error instanceof Error ? error.message : 'Unknown error' });
+    res.status(400).json({
+      error: 'Invalid input',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 
 app.post('/api/auth/password-reset', async (req, res) => {
   try {
-    const input = z.object({
-      email: z.string().email(),
-    }).parse(req.body);
+    const input = z
+      .object({
+        email: z.string().email(),
+      })
+      .parse(req.body);
 
     const user = userService.initiatePasswordReset(input.email);
     if (!user) {
@@ -323,10 +328,12 @@ app.post('/api/auth/password-reset', async (req, res) => {
 
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const input = z.object({
-      token: z.string().min(1),
-      newPassword: z.string().min(8),
-    }).parse(req.body);
+    const input = z
+      .object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8),
+      })
+      .parse(req.body);
 
     const user = userService.resetPassword(input.token, input.newPassword);
     if (!user) {
@@ -468,20 +475,24 @@ app.get('/api/chat/memories', async (req, res) => {
 });
 
 // 4th arg is required for Express to recognise this as an error-handling middleware.
-app.use((
-  err: unknown,
-  req: express.Request,
-  res: express.Response,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  next: express.NextFunction,
-) => {
-  logger.error('Unhandled request error', {
-    method: req.method, path: req.path, error: err,
-  });
-  if (!res.headersSent) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+app.use(
+  (
+    err: unknown,
+    req: express.Request,
+    res: express.Response,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    next: express.NextFunction,
+  ) => {
+    logger.error('Unhandled request error', {
+      method: req.method,
+      path: req.path,
+      error: err,
+    });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  },
+);
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '0.0.0.0';

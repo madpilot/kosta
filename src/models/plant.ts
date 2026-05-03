@@ -24,12 +24,14 @@ export const CreatePlantInputSchema = PlantSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial({
-  plantedDate: true,
-  lastWatered: true,
-  lastFertilized: true,
-  harvestDate: true,
-}).strict();
+})
+  .partial({
+    plantedDate: true,
+    lastWatered: true,
+    lastFertilized: true,
+    harvestDate: true,
+  })
+  .strict();
 
 export type CreatePlantInput = z.infer<typeof CreatePlantInputSchema>;
 

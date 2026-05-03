@@ -7,15 +7,30 @@ describe('sqlite — activity-log methods', () => {
   let database: ReturnType<typeof createSqliteDatabase>;
 
   beforeEach(() => {
-    dbFile = path.join(__dirname, `activity_${Date.now()}_${Math.random().toString(36).slice(2)}.db`);
+    dbFile = path.join(
+      __dirname,
+      `activity_${Date.now()}_${Math.random().toString(36).slice(2)}.db`,
+    );
     database = createSqliteDatabase(dbFile);
   });
 
   afterEach(() => {
     database.close();
-    try { unlinkSync(dbFile); } catch { /* ignore */ }
-    try { unlinkSync(`${dbFile}-wal`); } catch { /* ignore */ }
-    try { unlinkSync(`${dbFile}-shm`); } catch { /* ignore */ }
+    try {
+      unlinkSync(dbFile);
+    } catch {
+      /* ignore */
+    }
+    try {
+      unlinkSync(`${dbFile}-wal`);
+    } catch {
+      /* ignore */
+    }
+    try {
+      unlinkSync(`${dbFile}-shm`);
+    } catch {
+      /* ignore */
+    }
   });
 
   describe('getPlantByName', () => {
@@ -45,7 +60,9 @@ describe('sqlite — activity-log methods', () => {
 
   describe('updatePlantCareDates', () => {
     it('returns null for an unknown plant id', () => {
-      expect(database.updatePlantCareDates('does-not-exist', { lastWatered: new Date().toISOString() })).toBeNull();
+      expect(
+        database.updatePlantCareDates('does-not-exist', { lastWatered: new Date().toISOString() }),
+      ).toBeNull();
     });
 
     it('updates only the supplied fields and bumps updatedAt', async () => {
@@ -57,7 +74,9 @@ describe('sqlite — activity-log methods', () => {
         notes: 'cherry variety',
       });
 
-      await new Promise((resolve) => { setTimeout(resolve, 5); });
+      await new Promise((resolve) => {
+        setTimeout(resolve, 5);
+      });
 
       const watered = new Date('2026-05-01T08:00:00.000Z').toISOString();
       const updated = database.updatePlantCareDates(original.id, { lastWatered: watered });

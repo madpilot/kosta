@@ -259,9 +259,7 @@ export const createSqliteDatabase = (dbFile?: string) => {
       }
     },
     getAllCalendarEvents(): CalendarEvent[] {
-      const stmt = database.prepare(
-        'SELECT * FROM calendar_events ORDER BY date ASC, type ASC',
-      );
+      const stmt = database.prepare('SELECT * FROM calendar_events ORDER BY date ASC, type ASC');
       const rows = stmt.all() as any[];
       return rows.map(mapCalendarRow);
     },
@@ -271,7 +269,9 @@ export const createSqliteDatabase = (dbFile?: string) => {
       if (!row) return null;
       return mapCalendarRow(row);
     },
-    createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent {
+    createCalendarEvent(
+      event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>,
+    ): CalendarEvent {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       const stmt = database.prepare(
@@ -282,9 +282,15 @@ export const createSqliteDatabase = (dbFile?: string) => {
 
       stmt.run(id, event.plantId, event.type, event.date, event.notes ?? null, now, now);
 
-      return this.getCalendarEventById(id) ?? {
-        ...event, id, completed: false, createdAt: now, updatedAt: now,
-      };
+      return (
+        this.getCalendarEventById(id) ?? {
+          ...event,
+          id,
+          completed: false,
+          createdAt: now,
+          updatedAt: now,
+        }
+      );
     },
     updateCalendarEvent(
       id: string,
@@ -294,26 +300,33 @@ export const createSqliteDatabase = (dbFile?: string) => {
       if (!existing) return null;
       const now = new Date().toISOString();
       const updated = { ...existing, ...event };
-      database.prepare(
-        `UPDATE calendar_events
+      database
+        .prepare(
+          `UPDATE calendar_events
          SET plant_id = ?, type = ?, date = ?, notes = ?, completed = ?, updated_at = ?
          WHERE id = ?`,
-      ).run(
-        updated.plantId,
-        updated.type,
-        updated.date,
-        updated.notes ?? null,
-        updated.completed ? 1 : 0,
-        now,
-        id,
-      );
+        )
+        .run(
+          updated.plantId,
+          updated.type,
+          updated.date,
+          updated.notes ?? null,
+          updated.completed ? 1 : 0,
+          now,
+          id,
+        );
       return { ...updated, updatedAt: now };
     },
     deleteCalendarEvent(id: string): boolean {
       const result = database.prepare('DELETE FROM calendar_events WHERE id = ?').run(id);
       return result.changes > 0;
     },
-    createUser(input: Omit<User, 'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User {
+    createUser(
+      input: Omit<
+        User,
+        'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'
+      >,
+    ): User {
       const id = crypto.randomUUID();
       const { passwordHash } = input;
       const now = new Date().toISOString();
@@ -410,12 +423,13 @@ export const createSqliteDatabase = (dbFile?: string) => {
       const now = new Date().toISOString();
       const passwordHash = updates.passwordHash ?? row.password_hash;
       const resetToken = 'resetToken' in updates ? (updates.resetToken ?? null) : row.reset_token;
-      const resetTokenExpiry = 'resetTokenExpiry' in updates
-        ? (updates.resetTokenExpiry ?? null)
-        : row.reset_token_expiry;
-      database.prepare(
-        'UPDATE users SET password_hash = ?, reset_token = ?, reset_token_expiry = ?, updated_at = ? WHERE id = ?',
-      ).run(passwordHash, resetToken, resetTokenExpiry, now, id);
+      const resetTokenExpiry =
+        'resetTokenExpiry' in updates ? (updates.resetTokenExpiry ?? null) : row.reset_token_expiry;
+      database
+        .prepare(
+          'UPDATE users SET password_hash = ?, reset_token = ?, reset_token_expiry = ?, updated_at = ? WHERE id = ?',
+        )
+        .run(passwordHash, resetToken, resetTokenExpiry, now, id);
       return this.mapRowToUser(database.prepare('SELECT * FROM users WHERE id = ?').get(id) as any);
     },
 
@@ -424,11 +438,16 @@ export const createSqliteDatabase = (dbFile?: string) => {
     createChatSession(): ChatSession {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      database.prepare(
-        'INSERT INTO chat_sessions (id, summary, created_at, updated_at) VALUES (?, NULL, ?, ?)',
-      ).run(id, now, now);
+      database
+        .prepare(
+          'INSERT INTO chat_sessions (id, summary, created_at, updated_at) VALUES (?, NULL, ?, ?)',
+        )
+        .run(id, now, now);
       return {
-        id, summary: null, createdAt: now, updatedAt: now,
+        id,
+        summary: null,
+        createdAt: now,
+        updatedAt: now,
       };
     },
 
@@ -443,9 +462,13 @@ export const createSqliteDatabase = (dbFile?: string) => {
       };
     },
 
-    updateChatSession(id: string, updates: Partial<Pick<ChatSession, 'summary'>>): ChatSession | null {
+    updateChatSession(
+      id: string,
+      updates: Partial<Pick<ChatSession, 'summary'>>,
+    ): ChatSession | null {
       const now = new Date().toISOString();
-      database.prepare('UPDATE chat_sessions SET summary = ?, updated_at = ? WHERE id = ?')
+      database
+        .prepare('UPDATE chat_sessions SET summary = ?, updated_at = ? WHERE id = ?')
         .run(updates.summary ?? null, now, id);
       return this.getChatSession(id);
     },
@@ -456,27 +479,44 @@ export const createSqliteDatabase = (dbFile?: string) => {
     },
 
     listChatSessions(): ChatSession[] {
-      const rows = database.prepare('SELECT * FROM chat_sessions ORDER BY created_at DESC').all() as any[];
+      const rows = database
+        .prepare('SELECT * FROM chat_sessions ORDER BY created_at DESC')
+        .all() as any[];
       return rows.map((r) => ({
-        id: r.id, summary: r.summary ?? null, createdAt: r.created_at, updatedAt: r.updated_at,
+        id: r.id,
+        summary: r.summary ?? null,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
       }));
     },
 
-    createChatMessage(sessionId: string, role: ChatMessage['role'], content: string, model?: string): ChatMessage {
+    createChatMessage(
+      sessionId: string,
+      role: ChatMessage['role'],
+      content: string,
+      model?: string,
+    ): ChatMessage {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      database.prepare(
-        'INSERT INTO chat_messages (id, session_id, role, content, model, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-      ).run(id, sessionId, role, content, model ?? null, now);
+      database
+        .prepare(
+          'INSERT INTO chat_messages (id, session_id, role, content, model, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        )
+        .run(id, sessionId, role, content, model ?? null, now);
       return {
-        id, sessionId, role, content, model: model ?? null, createdAt: now,
+        id,
+        sessionId,
+        role,
+        content,
+        model: model ?? null,
+        createdAt: now,
       };
     },
 
     getChatMessages(sessionId: string): ChatMessage[] {
-      const rows = database.prepare(
-        'SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC',
-      ).all(sessionId) as any[];
+      const rows = database
+        .prepare('SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC')
+        .all(sessionId) as any[];
       return rows.map((r) => ({
         id: r.id,
         sessionId: r.session_id,
@@ -490,18 +530,28 @@ export const createSqliteDatabase = (dbFile?: string) => {
     createChatMemory(content: string): ChatMemory {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
-      database.prepare(
-        'INSERT INTO chat_memories (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)',
-      ).run(id, content, now, now);
+      database
+        .prepare(
+          'INSERT INTO chat_memories (id, content, created_at, updated_at) VALUES (?, ?, ?, ?)',
+        )
+        .run(id, content, now, now);
       return {
-        id, content, createdAt: now, updatedAt: now,
+        id,
+        content,
+        createdAt: now,
+        updatedAt: now,
       };
     },
 
     listChatMemories(): ChatMemory[] {
-      const rows = database.prepare('SELECT * FROM chat_memories ORDER BY created_at DESC').all() as any[];
+      const rows = database
+        .prepare('SELECT * FROM chat_memories ORDER BY created_at DESC')
+        .all() as any[];
       return rows.map((r) => ({
-        id: r.id, content: r.content, createdAt: r.created_at, updatedAt: r.updated_at,
+        id: r.id,
+        content: r.content,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
       }));
     },
   };

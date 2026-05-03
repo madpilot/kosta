@@ -12,7 +12,11 @@ describe('Database Layer', () => {
 
   afterEach(() => {
     if (database) database.close();
-    try { unlinkSync(dbFile); } catch { /* ignore */ }
+    try {
+      unlinkSync(dbFile);
+    } catch {
+      /* ignore */
+    }
   });
 
   describe('SQLite Initialization', () => {
@@ -97,7 +101,9 @@ describe('Database Layer', () => {
     describe('updatePlant', () => {
       it('should update an existing plant', async () => {
         const created = database.createPlant({ name: 'Original', species: 'Species' });
-        await new Promise((r) => { setTimeout(r, 2); });
+        await new Promise((r) => {
+          setTimeout(r, 2);
+        });
         const updated = database.updatePlant(created.id, { name: 'Updated' });
         expect(updated?.name).toBe('Updated');
         expect(updated?.updatedAt).not.toBe(created.updatedAt);

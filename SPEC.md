@@ -10,6 +10,7 @@
 ## Technical Architecture
 
 ### Stack
+
 - **Language**: TypeScript
 - **API Framework**: oRPC (with OpenAPI schema generation)
 - **Database**: SQLite (default), PostgreSQL (production)
@@ -18,6 +19,7 @@
 - **Type Checking**: TypeScript (tsc)
 
 ### Key Dependencies
+
 - `better-sqlite3` for SQLite datastore
 - `pg` for PostgreSQL
 - `zod` for schema validation
@@ -28,9 +30,11 @@
 ## Feature Specification
 
 ### 1. Plant Database
+
 Users can manage their personal plant collection.
 
 #### Data Model: Plant
+
 - `id`: UUID
 - `name`: String (common name)
 - `species`: String
@@ -48,6 +52,7 @@ Users can manage their personal plant collection.
 - `updatedAt`: Timestamp
 
 #### API Endpoints
+
 - `GET /plants` - List all plants
 - `GET /plants/:id` - Get plant details
 - `POST /plants` - Add new plant
@@ -55,9 +60,11 @@ Users can manage their personal plant collection.
 - `DELETE /plants/:id` - Remove plant
 
 ### 2. Calendar System
+
 Automated planting and maintenance scheduling.
 
 #### Data Model: CalendarEvent
+
 - `id`: UUID
 - `plantId`: UUID (FK)
 - `type`: Enum (watering, fertilizing, harvesting, pruning, planting)
@@ -69,6 +76,7 @@ Automated planting and maintenance scheduling.
 - `createdAt`: Timestamp
 
 #### API Endpoints
+
 - `GET /calendar` - List events (with date range filters)
 - `POST /calendar` - Create manual event
 - `PUT /calendar/:id` - Update event
@@ -77,19 +85,23 @@ Automated planting and maintenance scheduling.
 - `GET /calendar/ical` - Export as iCal feed
 
 #### AI Calendar Generation
+
 - Uses plant database info + location + weather + season
 - Integrates with weather API for precipitation data
 - Considers local frost dates for planting
 
 ### 3. iCal Feed
+
 - Exposes calendar events as iCal format
 - Supports URL parameter for date range
 - Includes proper VEVENT format
 
 ### 4. AI Agent
+
 Multi-model AI chat for gardening advice.
 
 #### Data Model: ChatMessage
+
 - `id`: UUID
 - `role`: Enum (user, assistant)
 - `content`: Text
@@ -97,6 +109,7 @@ Multi-model AI chat for gardening advice.
 - `timestamp`: Timestamp
 
 #### Data Model: ChatSession
+
 - `id`: UUID
 - `userId`: String
 - `messages`: ChatMessage[]
@@ -104,6 +117,7 @@ Multi-model AI chat for gardening advice.
 - `updatedAt`: Timestamp
 
 #### API Endpoints
+
 - `POST /chat` - Send message to AI
 - `GET /chat/sessions` - List chat sessions
 - `GET /chat/sessions/:id` - Get session history
@@ -111,6 +125,7 @@ Multi-model AI chat for gardening advice.
 - `GET /models` - List available AI models
 
 #### Supported Models
+
 - OpenAI GPT models (configurable)
 - Local Ollama models
 - Anthropic Claude (optional)
@@ -118,9 +133,11 @@ Multi-model AI chat for gardening advice.
 ## Database Schema
 
 ### SQLite (default)
+
 Location: `data/garden.db`
 
 ### PostgreSQL (production)
+
 Connection via `DATABASE_URL` env var
 
 ## Project Structure

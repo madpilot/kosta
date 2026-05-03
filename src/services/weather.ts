@@ -49,7 +49,7 @@ export const getWeatherForecast = async (
     const res = await fetch(url);
     if (!res.ok) return null;
 
-    const data = await res.json() as { list: ForecastItem[] };
+    const data = (await res.json()) as { list: ForecastItem[] };
     const days = groupByDay(data.list);
 
     const forecasts = Object.entries(days)
@@ -57,7 +57,10 @@ export const getWeatherForecast = async (
       .map(([date, items]) => summariseDay(date, items));
 
     return forecasts
-      .map((d) => `${d.date}: ${d.description}, ${d.minTemp}–${d.maxTemp}°C${d.rainMm > 0 ? `, ${d.rainMm}mm rain` : ''}`)
+      .map(
+        (d) =>
+          `${d.date}: ${d.description}, ${d.minTemp}–${d.maxTemp}°C${d.rainMm > 0 ? `, ${d.rainMm}mm rain` : ''}`,
+      )
       .join('\n');
   } catch (error) {
     logger.warn('Weather forecast lookup failed', { location, error });

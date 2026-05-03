@@ -35,6 +35,7 @@ src/
 ### Database Schema
 
 **plants table**
+
 - `id`: UUID primary key
 - `name`: Plant name
 - `species`: Plant species
@@ -44,6 +45,7 @@ src/
 - `sunlightRequirement`, `soilType`, `harvestDate`: Plant characteristics
 
 **calendar_events table**
+
 - `id`: UUID primary key
 - `plant_id`: Foreign key to plants table
 - `type`: water | fertilize | harvest | other
@@ -58,16 +60,19 @@ src/
 **Purpose**: Understand and interact with the business logic
 
 **Tasks**:
+
 - Read and interpret service implementations in `src/services/`
 - Understand the database interface in `src/db/`
 - Compose API requests using OpenAPI schemas from `src/openapi.ts`
 
 **Key Files**:
+
 - `src/services/plants.ts` - Plant management business logic
 - `src/services/calendar.ts` - Calendar event management business logic
 - `src/db/sqlite.ts` - Database wrapper and operations
 
 **API Endpoints**:
+
 - `GET /api/plants` - List all plants
 - `POST /api/plants` - Create a plant
 - `GET/PUT/DELETE /api/plants/:id` - Plant CRUD operations
@@ -80,17 +85,20 @@ src/
 **Purpose**: Code quality and structure reviews
 
 **Tasks**:
+
 - Analyze TypeScript type safety
 - Review database connection patterns
 - Check API endpoint design
 - Verify error handling coverage
 
 **Focus Areas**:
+
 - `src/db/sqlite.ts:63-188` - Database wrapper implementation
 - `src/index.ts:1-220` - Express server setup and routes
 - `src/services/*.ts` - Service layer encapsulation
 
 **Linting Standards**:
+
 ```bash
 npm run lint        # ESLint for TypeScript
 npm run typecheck   # TypeScript compiler checks
@@ -102,11 +110,13 @@ npm test            # Jest unit tests
 **Purpose**: Create and maintain test coverage
 
 **Tasks**:
+
 - Write unit tests for service functions
 - Test API endpoints with integration tests
 - Verify database operations with test fixtures
 
 **Test Structure**:
+
 ```typescript
 // Test files follow: [service].test.ts pattern
 // Example from src/services/plants.test.ts
@@ -118,6 +128,7 @@ describe('PlantService', () => {
 ```
 
 **Running Tests**:
+
 ```bash
 npm test              # Run all tests
 npm run test:watch    # Watch mode
@@ -128,12 +139,14 @@ npm run test:watch    # Watch mode
 **Purpose**: Maintain and update project documentation
 
 **Tasks**:
+
 - Update AGENTS.md as architecture changes
 - Create API usage examples
 - Document new endpoints
 - Update Zod schemas with examples
 
 **Documentation Standards**:
+
 - Keep code and documentation in sync
 - Use TypeScript types as reference documentation
 - Include OpenAPI spec URL for API introspection
@@ -176,6 +189,7 @@ npm test
 ### Configuration
 
 **Environment Variables**:
+
 ```
 PORT=3000          # Server port
 HOST=0.0.0.0       # Server host
@@ -185,24 +199,28 @@ DATABASE_URL=      # Custom database path
 ## Code Quality Standards
 
 ### TypeScript Usage
+
 - Strict mode enabled
 - Use TypeScript types instead of any
 - Leverage Zod for runtime validation
 - Export type definitions from `src/models/`
 
 ### Error Handling
+
 - Services return `null` for not-found cases
 - API endpoints return 404 for missing resources
 - API endpoints return 500 for unexpected errors
 - Input validation through Zod schemas
 
 ### Database Operations
+
 - Use prepared statements to prevent SQL injection
 - Wrap database calls in try-catch blocks
 - Close database connections on shutdown
 - Transaction handling for write operations
 
 ### API Design
+
 - RESTful endpoint naming (`/api/[resource]`)
 - Proper HTTP methods (GET, POST, PUT, DELETE)
 - Status codes consistent with RFC 9110
@@ -238,6 +256,7 @@ DATABASE_URL=      # Custom database path
 ## API Usage Examples
 
 ### Create a Plant
+
 ```bash
 curl -X POST http://localhost:3000/api/plants \
   -H "Content-Type: application/json" \
@@ -250,16 +269,19 @@ curl -X POST http://localhost:3000/api/plants \
 ```
 
 ### Get Today's Schedule
+
 ```bash
 curl http://localhost:3000/api/calendar/today
 ```
 
 ### Mark Event as Complete
+
 ```bash
 curl -X PATCH http://localhost:3000/api/calendar/:id/complete
 ```
 
 ### Access API Schema
+
 ```bash
 GET http://localhost:3000/api/openapi.json
 ```
@@ -267,6 +289,7 @@ GET http://localhost:3000/api/openapi.json
 ## Common Patterns
 
 ### Database Wrapper Pattern
+
 ```typescript
 const service = createPlantService(db);
 // Returns object with methods
@@ -274,16 +297,18 @@ const service = createPlantService(db);
 ```
 
 ### Service Layer Pattern
+
 ```typescript
 export const createCalendarService = (db: CalendarDatabase): CalendarService => {
   const service: CalendarService = {
     // Method implementations
   };
   return service;
-}
+};
 ```
 
 ### Zod Validation Pattern
+
 ```typescript
 const schema = PlantSchema;
 const validInput = schema.parse(req.body);
@@ -293,12 +318,14 @@ const validInput = schema.parse(req.body);
 ## Agent Collaboration
 
 ### Service + Review Workflow
+
 1. Service agent implements new feature
 2. Review agent validates code quality
 3. Service agent iterates on feedback
 4. Review agent confirms acceptance
 
 ### Testing + Documentation Workflow
+
 1. Test agent writes tests
 2. Documentation agent updates API examples
 3. Test agent verifies documentation accuracy
@@ -311,7 +338,7 @@ const validInput = schema.parse(req.body);
 - **jose**: JWT-based authentication (for future use)
 - **zod**: Runtime type validation
 - **uuid**: Unique identifier generation
-- **@types/***: TypeScript definitions
+- **@types/\***: TypeScript definitions
 
 ## Security Considerations
 

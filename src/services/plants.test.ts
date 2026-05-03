@@ -2,11 +2,21 @@ import { createPlantService } from './plants';
 import type { Plant } from '../models/plant';
 import type { DatabaseWrapper } from '../db/index';
 
-type MockDatabase = Pick<DatabaseWrapper,
-  'getAllPlants' | 'getPlantById' | 'getPlantByName' | 'createPlant' |
-  'updatePlant' | 'updatePlantCareDates' | 'deletePlant' |
-  'getAllCalendarEvents' | 'getCalendarEventById' | 'createCalendarEvent' |
-  'updateCalendarEvent' | 'deleteCalendarEvent' | 'close'
+type MockDatabase = Pick<
+  DatabaseWrapper,
+  | 'getAllPlants'
+  | 'getPlantById'
+  | 'getPlantByName'
+  | 'createPlant'
+  | 'updatePlant'
+  | 'updatePlantCareDates'
+  | 'deletePlant'
+  | 'getAllCalendarEvents'
+  | 'getCalendarEventById'
+  | 'createCalendarEvent'
+  | 'updateCalendarEvent'
+  | 'deleteCalendarEvent'
+  | 'close'
 >;
 
 describe('Plant Service', () => {
@@ -19,8 +29,12 @@ describe('Plant Service', () => {
     store = new Map();
     counter = 0;
     db = {
-      getAllPlants(): Plant[] { return Array.from(store.values()); },
-      getPlantById(id: string): Plant | null { return store.get(id) ?? null; },
+      getAllPlants(): Plant[] {
+        return Array.from(store.values());
+      },
+      getPlantById(id: string): Plant | null {
+        return store.get(id) ?? null;
+      },
       getPlantByName(name: string): Plant | null {
         for (const p of store.values()) {
           if (p.name.toLowerCase() === name.toLowerCase()) return p;
@@ -32,7 +46,10 @@ describe('Plant Service', () => {
         const id = crypto.randomUUID();
         const ts = new Date(Date.now() + counter).toISOString();
         const created: Plant = {
-          ...plant, id, createdAt: ts, updatedAt: ts,
+          ...plant,
+          id,
+          createdAt: ts,
+          updatedAt: ts,
         };
         store.set(id, created);
         return created;
@@ -51,13 +68,27 @@ describe('Plant Service', () => {
         store.set(id, updated);
         return updated;
       },
-      updatePlantCareDates(_id: string, _dates: any): Plant | null { return null; },
-      deletePlant(id: string): boolean { return store.delete(id); },
-      getAllCalendarEvents() { return []; },
-      getCalendarEventById(_id: string) { return null; },
-      createCalendarEvent(_event: any) { return null as any; },
-      updateCalendarEvent(_id: string, _event: any) { return null; },
-      deleteCalendarEvent(_id: string): boolean { return false; },
+      updatePlantCareDates(_id: string, _dates: any): Plant | null {
+        return null;
+      },
+      deletePlant(id: string): boolean {
+        return store.delete(id);
+      },
+      getAllCalendarEvents() {
+        return [];
+      },
+      getCalendarEventById(_id: string) {
+        return null;
+      },
+      createCalendarEvent(_event: any) {
+        return null as any;
+      },
+      updateCalendarEvent(_id: string, _event: any) {
+        return null;
+      },
+      deleteCalendarEvent(_id: string): boolean {
+        return false;
+      },
       close() {},
     };
     plantService = createPlantService(db);

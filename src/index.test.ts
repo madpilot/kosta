@@ -80,7 +80,11 @@ describe('API Endpoints', () => {
 
   afterEach(() => {
     database.close();
-    try { unlinkSync(dbFile); } catch { /* ignore */ }
+    try {
+      unlinkSync(dbFile);
+    } catch {
+      /* ignore */
+    }
   });
 
   describe('GET /api/plants', () => {
@@ -105,7 +109,9 @@ describe('API Endpoints', () => {
     });
 
     it('should return the plant when it exists', async () => {
-      const created = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const created = await request(app)
+        .post('/api/plants')
+        .send({ name: 'Test Plant', species: 'Test Species' });
       const response = await request(app).get(`/api/plants/${created.body.id}`);
       expect(response.status).toBe(200);
       expect(response.body.name).toBe('Test Plant');
@@ -114,35 +120,47 @@ describe('API Endpoints', () => {
 
   describe('POST /api/plants', () => {
     it('should create a new plant', async () => {
-      const response = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const response = await request(app)
+        .post('/api/plants')
+        .send({ name: 'Test Plant', species: 'Test Species' });
       expect(response.status).toBe(201);
       expect(response.body.id).toBeDefined();
       expect(response.body.name).toBe('Test Plant');
     });
 
     it('should return 400 for invalid input', async () => {
-      const response = await request(app).post('/api/plants').send({ name: '', species: 'Species' });
+      const response = await request(app)
+        .post('/api/plants')
+        .send({ name: '', species: 'Species' });
       expect(response.status).toBe(400);
     });
   });
 
   describe('PUT /api/plants/:id', () => {
     it('should update an existing plant', async () => {
-      const created = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
-      const response = await request(app).put(`/api/plants/${created.body.id}`).send({ name: 'Updated Plant' });
+      const created = await request(app)
+        .post('/api/plants')
+        .send({ name: 'Test Plant', species: 'Test Species' });
+      const response = await request(app)
+        .put(`/api/plants/${created.body.id}`)
+        .send({ name: 'Updated Plant' });
       expect(response.status).toBe(200);
       expect(response.body.name).toBe('Updated Plant');
     });
 
     it('should return 404 for non-existent plant', async () => {
-      const response = await request(app).put('/api/plants/does-not-exist').send({ name: 'Updated' });
+      const response = await request(app)
+        .put('/api/plants/does-not-exist')
+        .send({ name: 'Updated' });
       expect(response.status).toBe(404);
     });
   });
 
   describe('DELETE /api/plants/:id', () => {
     it('should delete an existing plant', async () => {
-      const created = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const created = await request(app)
+        .post('/api/plants')
+        .send({ name: 'Test Plant', species: 'Test Species' });
       const response = await request(app).delete(`/api/plants/${created.body.id}`);
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

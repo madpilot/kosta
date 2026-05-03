@@ -26,7 +26,8 @@ export const createChatService = (db: ChatDb) => {
     const userMessage = db.createChatMessage(sessionId, 'user', userContent);
 
     // Build history (exclude system messages — those are rebuilt each time)
-    const history = db.getChatMessages(sessionId)
+    const history = db
+      .getChatMessages(sessionId)
       .filter((m) => m.role !== 'system')
       .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
@@ -48,7 +49,8 @@ export const createChatService = (db: ChatDb) => {
     const session = db.getChatSession(sessionId);
     if (!session) throw new Error('Session not found');
 
-    const messages = db.getChatMessages(sessionId)
+    const messages = db
+      .getChatMessages(sessionId)
       .filter((m) => m.role !== 'system')
       .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 

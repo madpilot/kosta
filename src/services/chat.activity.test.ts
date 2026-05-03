@@ -28,9 +28,21 @@ describe('chat agentic loop — activity log flow', () => {
 
   afterEach(() => {
     database.close();
-    try { unlinkSync(dbFile); } catch { /* ignore */ }
-    try { unlinkSync(`${dbFile}-wal`); } catch { /* ignore */ }
-    try { unlinkSync(`${dbFile}-shm`); } catch { /* ignore */ }
+    try {
+      unlinkSync(dbFile);
+    } catch {
+      /* ignore */
+    }
+    try {
+      unlinkSync(`${dbFile}-wal`);
+    } catch {
+      /* ignore */
+    }
+    try {
+      unlinkSync(`${dbFile}-shm`);
+    } catch {
+      /* ignore */
+    }
   });
 
   it('records past activity (find_or_create_plant + update_plant_care) and proposes a schedule without persisting events', async () => {
@@ -43,7 +55,12 @@ describe('chat agentic loop — activity log flow', () => {
           role: 'assistant',
           content: '',
           tool_calls: [
-            { function: { name: 'find_or_create_plant', arguments: { name: 'Basil', species: 'Ocimum basilicum', plantedDate } } },
+            {
+              function: {
+                name: 'find_or_create_plant',
+                arguments: { name: 'Basil', species: 'Ocimum basilicum', plantedDate },
+              },
+            },
           ],
         },
       })
@@ -54,7 +71,12 @@ describe('chat agentic loop — activity log flow', () => {
             role: 'assistant',
             content: '',
             tool_calls: [
-              { function: { name: 'update_plant_care', arguments: { plantId: plant!.id, plantedDate } } },
+              {
+                function: {
+                  name: 'update_plant_care',
+                  arguments: { plantId: plant!.id, plantedDate },
+                },
+              },
             ],
           },
         };
@@ -62,7 +84,8 @@ describe('chat agentic loop — activity log flow', () => {
       .mockResolvedValueOnce({
         message: {
           role: 'assistant',
-          content: 'Logged that you planted basil today. Here\'s a proposed schedule:\n1. Water on 2026-05-03\n2. Check germination on 2026-05-12\n3. Transplant around 2026-05-30\n4. First harvest around 2026-06-20\n\nShall I add these to your calendar?',
+          content:
+            "Logged that you planted basil today. Here's a proposed schedule:\n1. Water on 2026-05-03\n2. Check germination on 2026-05-12\n3. Transplant around 2026-05-30\n4. First harvest around 2026-06-20\n\nShall I add these to your calendar?",
         },
       });
 
@@ -80,7 +103,11 @@ describe('chat agentic loop — activity log flow', () => {
 
   it('persists events via create_calendar_events_batch only after the user confirms', async () => {
     const session = chatService.createSession();
-    const plant = database.createPlant({ name: 'Basil', species: 'Ocimum basilicum', plantedDate: new Date().toISOString() });
+    const plant = database.createPlant({
+      name: 'Basil',
+      species: 'Ocimum basilicum',
+      plantedDate: new Date().toISOString(),
+    });
 
     chatMock
       .mockResolvedValueOnce({
@@ -94,13 +121,22 @@ describe('chat agentic loop — activity log flow', () => {
                 arguments: {
                   events: [
                     {
-                      plantId: plant.id, type: 'water', date: '2026-05-03T08:00:00.000Z', notes: 'Water seedlings',
+                      plantId: plant.id,
+                      type: 'water',
+                      date: '2026-05-03T08:00:00.000Z',
+                      notes: 'Water seedlings',
                     },
                     {
-                      plantId: plant.id, type: 'other', date: '2026-05-12T08:00:00.000Z', notes: 'Check germination',
+                      plantId: plant.id,
+                      type: 'other',
+                      date: '2026-05-12T08:00:00.000Z',
+                      notes: 'Check germination',
                     },
                     {
-                      plantId: plant.id, type: 'other', date: '2026-05-30T08:00:00.000Z', notes: 'Transplant',
+                      plantId: plant.id,
+                      type: 'other',
+                      date: '2026-05-30T08:00:00.000Z',
+                      notes: 'Transplant',
                     },
                   ],
                 },
@@ -120,6 +156,10 @@ describe('chat agentic loop — activity log flow', () => {
 
     const events = database.getAllCalendarEvents().filter((e) => e.plantId === plant.id);
     expect(events).toHaveLength(3);
-    expect(events.map((e) => e.notes).sort()).toEqual(['Check germination', 'Transplant', 'Water seedlings']);
+    expect(events.map((e) => e.notes).sort()).toEqual([
+      'Check germination',
+      'Transplant',
+      'Water seedlings',
+    ]);
   });
 });
