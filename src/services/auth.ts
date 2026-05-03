@@ -1,46 +1,30 @@
-import { randomBytes } from 'crypto';
-import bcrypt from 'bcryptjs';
-import type { createSqliteDatabase } from '../db/index';
+import { SignJWT, jwtVerify } from 'jose';
 import { logger } from '../utils/logger';
 
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'garden-app-secret-key-change-in-production',
+);
+
 export interface AuthService {
-  generateToken(userId: string): string;
-  verifyToken(token: string): { userId: string } | null;
+  generateToken(userId: string): Promise<string>;
+  verifyToken(token: string): Promise<{ userId: string } | null>;
 }
 
-export const createAuthService = (db: DatabaseWrapper): AuthService => ({
-  generateToken(userId: string): string {
-    try {
-      const token = randomBytes(32).toString('hex');
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
-      const now = new Date().toISOString();
-
-      const stmt = db.database.prepare(`
-          INSERT INTO tokens (user_id, token, expires_at, created_at)
-          VALUES (?, ?, ?, ?)
-        `);
-      stmt.run(userId, token, expiresAt.toISOString(), now);
-      return token;
-    } catch (error) {
-      throw new Error('Failed to generate authentication token');
-    }
+export const createAuthService = (): AuthService => ({
+  async generateToken(userId: string): Promise<string> {
+    return new SignJWT({ userId })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('24h')
+      .sign(JWT_SECRET);
   },
 
-  verifyToken(token: string): { userId: string } | null {
+  async verifyToken(token: string): Promise<{ userId: string } | null> {
     try {
-      const stmt = db.database.prepare(`
-          SELECT user_id, expires_at
-          FROM tokens
-          WHERE token = ? AND expires_at > ?
-        `);
-      const row = stmt.get(token, new Date().toISOString()) as any;
-
-      if (!row || row.expires_at <= new Date().toISOString()) {
-        return null;
-      }
-
-      return { userId: row.user_id };
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      const { userId } = payload as { userId?: string };
+      if (!userId) return null;
+      return { userId };
     } catch (error) {
       logger.warn('Token verification failed', { error });
       return null;

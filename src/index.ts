@@ -5,39 +5,54 @@ import { createCalendarService } from './services/calendar';
 import { createUserService } from './services/user';
 import { createAuthService } from './services/auth';
 import { createChatService } from './services/chat';
-import { getDatabase, createSqliteDatabase } from './db/sqlite';
+import { createSqliteDatabase } from './db/sqlite';
 import {
-  generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema, CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema,
+  generateOpenApiSpec,
+  CreatePlantInputSchema,
+  UpdatePlantInputSchema,
+  CreateCalendarEventInputSchema,
+  UpdateCalendarEventInputSchema,
 } from './openapi';
 import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
 import { SendMessageInputSchema } from './models/chat';
 import { logger } from './utils/logger';
 
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      userId: string;
+    }
+  }
+}
+
 const app = express();
 app.use(express.json());
 
-const legacyDb = getDatabase();
-const plantService = createPlantService(legacyDb);
-const calendarService = createCalendarService(legacyDb);
-const userService = createUserService(legacyDb);
-const authService = createAuthService(legacyDb);
-
-// createSqliteDatabase() shares the same SQLite singleton as getDatabase() but
-// exposes the chat methods that the ChatDatabase interface requires.
 const db = createSqliteDatabase();
+const plantService = createPlantService(db);
+const calendarService = createCalendarService(db);
+const userService = createUserService(db);
+const authService = createAuthService();
 const chatService = createChatService(db);
 
-const isAuthenticated = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const isAuthenticated = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    res.status(401).json({ error: 'Not authenticated' });
+    return;
   }
 
   const token = authHeader.substring(7);
-  const decoded = authService.verifyToken(token);
+  const decoded = await authService.verifyToken(token);
 
   if (!decoded) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: 'Invalid or expired token' });
+    return;
   }
 
   req.userId = decoded.userId;
@@ -267,10 +282,11 @@ app.post('/api/auth/login', async (req, res) => {
     const input = LoginInputSchema.parse(req.body);
     const user = userService.authenticateUser(input);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
     }
 
-    const token = authService.generateToken(user.id);
+    const token = await authService.generateToken(user.id);
     res.json({
       user: {
         id: user.id,
@@ -282,7 +298,7 @@ app.post('/api/auth/login', async (req, res) => {
       token,
     });
   } catch (error) {
-    res.status(400).json({ error: 'Invalid input', details: error.message });
+    res.status(400).json({ error: 'Invalid input', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
@@ -314,7 +330,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
     const user = userService.resetPassword(input.token, input.newPassword);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid or expired reset token' });
+      res.status(401).json({ error: 'Invalid or expired reset token' });
+      return;
     }
 
     res.json({ success: true, message: 'Password has been reset successfully' });
@@ -330,7 +347,8 @@ app.post('/api/auth/change-password', isAuthenticated, async (req, res) => {
     const success = userService.changePassword(req.userId, input);
 
     if (!success) {
-      return res.status(401).json({ error: 'Invalid old password' });
+      res.status(401).json({ error: 'Invalid old password' });
+      return;
     }
 
     res.json({ success: true, message: 'Password changed successfully' });
@@ -344,7 +362,8 @@ app.get('/api/user/profile', isAuthenticated, async (req, res) => {
   try {
     const user = userService.getUserById(req.userId);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
 
     res.json({
@@ -386,7 +405,8 @@ app.get('/api/chat/sessions/:id', async (req, res) => {
   try {
     const session = chatService.getSession(req.params.id);
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      res.status(404).json({ error: 'Session not found' });
+      return;
     }
     const messages = db.getChatMessages(req.params.id);
     res.json({ ...session, messages });
@@ -400,7 +420,8 @@ app.delete('/api/chat/sessions/:id', async (req, res) => {
   try {
     const deleted = chatService.deleteSession(req.params.id);
     if (!deleted) {
-      return res.status(404).json({ error: 'Session not found' });
+      res.status(404).json({ error: 'Session not found' });
+      return;
     }
     res.json({ success: true });
   } catch (error) {
@@ -416,7 +437,8 @@ app.post('/api/chat/sessions/:id/messages', async (req, res) => {
     res.json(result);
   } catch (err) {
     if ((err as Error).message === 'Session not found') {
-      return res.status(404).json({ error: 'Session not found' });
+      res.status(404).json({ error: 'Session not found' });
+      return;
     }
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -428,7 +450,8 @@ app.post('/api/chat/sessions/:id/end', async (req, res) => {
     res.json(result);
   } catch (err) {
     if ((err as Error).message === 'Session not found') {
-      return res.status(404).json({ error: 'Session not found' });
+      res.status(404).json({ error: 'Session not found' });
+      return;
     }
     res.status(500).json({ error: 'Internal server error' });
   }

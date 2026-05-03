@@ -1,44 +1,64 @@
-import { expect } from 'vitest';
-import { CreatePlantInputSchema, UpdatePlantInputSchema } from '../models/plant';
-import { createPlantService } from '../services/plants';
+import { createPlantService } from './plants';
 import type { Plant } from '../models/plant';
+import type { DatabaseWrapper } from '../db/index';
 
-interface MockDatabase {
-  getAllPlants(): Plant[];
-  getPlantById(id: string): Plant | null;
-  createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant;
-  updatePlant(id: string, plant: Partial<Plant>): Plant | null;
-  deletePlant(id: string): boolean;
-}
+type MockDatabase = Pick<DatabaseWrapper,
+  'getAllPlants' | 'getPlantById' | 'getPlantByName' | 'createPlant' |
+  'updatePlant' | 'updatePlantCareDates' | 'deletePlant' |
+  'getAllCalendarEvents' | 'getCalendarEventById' | 'createCalendarEvent' |
+  'updateCalendarEvent' | 'deleteCalendarEvent' | 'close'
+>;
 
 describe('Plant Service', () => {
   let db: MockDatabase;
   let plantService: ReturnType<typeof createPlantService>;
+  let store: Map<string, Plant>;
+  let counter: number;
 
   beforeEach(() => {
+    store = new Map();
+    counter = 0;
     db = {
-      getAllPlants(): Plant[] {
-        return [];
-      },
-      getPlantById(id: string): Plant | null {
+      getAllPlants(): Plant[] { return Array.from(store.values()); },
+      getPlantById(id: string): Plant | null { return store.get(id) ?? null; },
+      getPlantByName(name: string): Plant | null {
+        for (const p of store.values()) {
+          if (p.name.toLowerCase() === name.toLowerCase()) return p;
+        }
         return null;
       },
       createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant {
+        counter += 1;
         const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        return {
-          ...plant,
-          id,
-          createdAt: now,
-          updatedAt: now,
+        const ts = new Date(Date.now() + counter).toISOString();
+        const created: Plant = {
+          ...plant, id, createdAt: ts, updatedAt: ts,
         };
+        store.set(id, created);
+        return created;
       },
       updatePlant(id: string, plant: Partial<Plant>): Plant | null {
-        return null;
+        const existing = (this as MockDatabase).getPlantById(id);
+        if (!existing) return null;
+        counter += 1;
+        const updated: Plant = {
+          ...existing,
+          ...plant,
+          id: existing.id,
+          createdAt: existing.createdAt,
+          updatedAt: new Date(Date.now() + counter).toISOString(),
+        };
+        store.set(id, updated);
+        return updated;
       },
-      deletePlant(id: string): boolean {
-        return false;
-      },
+      updatePlantCareDates(_id: string, _dates: any): Plant | null { return null; },
+      deletePlant(id: string): boolean { return store.delete(id); },
+      getAllCalendarEvents() { return []; },
+      getCalendarEventById(_id: string) { return null; },
+      createCalendarEvent(_event: any) { return null as any; },
+      updateCalendarEvent(_id: string, _event: any) { return null; },
+      deleteCalendarEvent(_id: string): boolean { return false; },
+      close() {},
     };
     plantService = createPlantService(db);
   });
@@ -86,7 +106,7 @@ describe('Plant Service', () => {
         plantedDate: new Date().toISOString(),
         lastWatered: new Date().toISOString(),
         wateringFrequency: 14,
-        solar: 'partial-shade',
+        sunlightRequirement: 'partial-shade',
         lastFertilized: new Date().toISOString(),
         fertilizingFrequency: 60,
         createdAt: new Date().toISOString(),
@@ -145,7 +165,7 @@ describe('Plant Service', () => {
         lastFertilized: new Date().toISOString(),
         fertilizingFrequency: 30,
         notes: 'Test notes',
-        sunlightRequirement: 'full-sun',
+        sunlightRequirement: 'full-sun' as const,
         soilType: 'Sandy',
         harvestDate: new Date().toISOString(),
       };

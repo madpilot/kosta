@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { CalendarEvent, CreateCalendarEventInput, UpdateCalendarEventInput } from '../models/calendar';
-import { CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from '../models/calendar';
 import type { CalendarDatabase } from '../models/calendar-db';
 
 const CreateCalendarEventSchema = z.object({
+  plantId: z.string().uuid(),
   type: z.enum(['water', 'fertilize', 'harvest', 'other']),
   date: z.string().datetime(),
   notes: z.string().max(5000).optional(),
@@ -20,7 +20,7 @@ export interface CalendarService {
   getUpcomingEvents(limit?: number): CalendarEvent[];
   getEventsByPlant(plantId: string): CalendarEvent[];
   getEventsByDate(date: string): CalendarEvent[];
-  getEventsByType(type: calendar.EventType): CalendarEvent[];
+  getEventsByType(type: 'water' | 'fertilize' | 'harvest' | 'other'): CalendarEvent[];
   createEvent(event: CreateCalendarEventInput): CalendarEvent;
   updateEvent(id: string, event: UpdateCalendarEventInput): CalendarEvent | null;
   deleteEvent(id: string): boolean;
@@ -34,11 +34,11 @@ export interface CalendarService {
 export function createCalendarService(db: CalendarDatabase): CalendarService {
   const service: CalendarService = {
     getAllEvents(): CalendarEvent[] {
-      return db.getAllEvents();
+      return db.getAllCalendarEvents();
     },
 
     getEventById(id: string): CalendarEvent | null {
-      return db.getEventById(id);
+      return db.getCalendarEventById(id);
     },
 
     getEventsForToday(): CalendarEvent[] {
@@ -97,7 +97,7 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
       });
     },
 
-    getEventsByType(type: calendar.EventType): CalendarEvent[] {
+    getEventsByType(type: 'water' | 'fertilize' | 'harvest' | 'other'): CalendarEvent[] {
       return this.getAllEvents().filter((event) => event.type === type);
     },
 
@@ -106,7 +106,7 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
       if (!result.success) {
         throw new Error('Invalid calendar event data');
       }
-      return db.createEvent(result.data);
+      return db.createCalendarEvent(result.data);
     },
 
     updateEvent(id: string, event: UpdateCalendarEventInput): CalendarEvent | null {
@@ -114,19 +114,17 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
       if (!result.success) {
         throw new Error('Invalid calendar event data');
       }
-      return db.updateEvent(id, result.data);
+      return db.updateCalendarEvent(id, result.data);
     },
 
     deleteEvent(id: string): boolean {
-      return db.deleteEvent(id);
+      return db.deleteCalendarEvent(id);
     },
 
     completeEvent(id: string): boolean {
       const event = this.getEventById(id);
       if (!event) return false;
-
-      const updated = this.updateEvent(id, { completed: true });
-      return updated !== null;
+      return db.updateCalendarEvent(id, { completed: true }) !== null;
     },
 
     getDailySchedule(date: string) {
@@ -153,10 +151,4 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
   };
 
   return service;
-}
-
-declare global {
-  namespace calendar {
-    type EventType = 'water' | 'fertilize' | 'harvest' | 'other';
-  }
 }

@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3';
 import type { createSqliteDatabase } from './sqlite';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
@@ -18,7 +17,16 @@ export interface DatabaseWrapper {
   getAllCalendarEvents(): CalendarEvent[];
   getCalendarEventById(id: string): CalendarEvent | null;
   createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent;
+  updateCalendarEvent(
+    id: string,
+    event: Partial<Omit<CalendarEvent, 'id' | 'createdAt' | 'updatedAt'>>,
+  ): CalendarEvent | null;
+  deleteCalendarEvent(id: string): boolean;
   close(): void;
+}
+
+export interface EmailService {
+  sendPasswordReset(email: string, name: string, token: string): Promise<void>;
 }
 
 export interface UserDatabase extends DatabaseWrapper {
@@ -29,10 +37,10 @@ export interface UserDatabase extends DatabaseWrapper {
   generateResetToken(): string;
   sendPasswordResetEmail(user: User, emailService: EmailService): void;
   mapRowToUser(row: any): User | null;
-}
-
-export interface EmailService {
-  sendPasswordReset(email: string, name: string, token: string): Promise<void>;
+  updateUser(
+    id: string,
+    updates: Partial<Pick<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry'>>,
+  ): User | null;
 }
 
 export interface ChatDatabase {

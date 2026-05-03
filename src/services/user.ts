@@ -19,6 +19,23 @@ export const generateResetUrl = (token: string): string => (
   `${config.app.baseUrl}/reset-password/${token}`
 );
 
+const sendPasswordResetEmail = (email: string, name: string, token: string): void => {
+  logger.info('Password reset email sent', { email, name, resetUrl: generateResetUrl(token) });
+};
+
+const sendWelcomeEmail = (email: string, name: string): void => {
+  logger.info('Welcome email sent', { email, name });
+};
+
+export const createEmailService = () => ({
+  sendPasswordReset: async (email: string, name: string, token: string): Promise<void> => {
+    sendPasswordResetEmail(email, name, token);
+  },
+  sendWelcomeEmail: async (email: string, name: string): Promise<void> => {
+    sendWelcomeEmail(email, name);
+  },
+});
+
 export const createUserService = (db: UserDatabase) => ({
   createUser(input: CreateUserInput): User {
     const validInput = CreateUserInputSchema.parse(input);
@@ -56,13 +73,7 @@ export const createUserService = (db: UserDatabase) => ({
     }
 
     const passwordHash = hashPassword(validInput.newPassword);
-    const now = new Date().toISOString();
-    const stmt = db.database.prepare(`
-      UPDATE users SET password_hash = ?, updated_at = ?
-      WHERE id = ?
-    `);
-    stmt.run(passwordHash, now, userId);
-    return true;
+    return db.updateUser(userId, { passwordHash }) !== null;
   },
 
   initiatePasswordReset(email: string): User | null {
@@ -81,30 +92,12 @@ export const createUserService = (db: UserDatabase) => ({
     if (!user) return null;
 
     const passwordHash = hashPassword(newPassword);
-    const now = new Date().toISOString();
-
-    const stmt = db.database.prepare(`
-      UPDATE users SET password_hash = ?, reset_token = ?, reset_token_expiry = ?, updated_at = ?
-      WHERE id = ?
-    `);
-    stmt.run(passwordHash, null, null, now, user.id);
-    return user;
+    return db.updateUser(user.id, {
+      passwordHash,
+      resetToken: undefined,
+      resetTokenExpiry: undefined,
+    });
   },
 });
-
-export const createEmailService = () => new SimpleEmailService();
-
-class SimpleEmailService {
-  async sendPasswordReset(email: string, name: string, token: string): Promise<void> {
-    logger.info('Password reset email sent', {
-      email,
-      resetUrl: generateResetUrl(token),
-    });
-  }
-
-  async sendWelcomeEmail(email: string, name: string): Promise<void> {
-    logger.info('Welcome email sent', { email, name });
-  }
-}
 
 export default createUserService;

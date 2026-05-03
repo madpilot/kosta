@@ -38,7 +38,10 @@ const summariseDay = (date: string, items: ForecastItem[]): DayForecast => {
   };
 };
 
-export const getWeatherForecast = async (location: string, apiKey: string): Promise<string | null> => {
+export const getWeatherForecast = async (
+  location: string,
+  apiKey: string,
+): Promise<string | null> => {
   if (!location || !apiKey) return null;
 
   try {

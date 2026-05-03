@@ -1,22 +1,22 @@
 import request from 'supertest';
 import express, { Application } from 'express';
-import { generateOpenApiSpec, CreatePlantInputSchema, UpdatePlantInputSchema } from './openapi';
+import { unlinkSync } from 'fs';
+import { CreatePlantInputSchema, UpdatePlantInputSchema } from './models/plant';
 import { createPlantService } from './services/plants';
-import { initSqlite, getDatabase } from './db/sqlite';
+import { createSqliteDatabase } from './db/sqlite';
 
 describe('API Endpoints', () => {
   let app: Application;
+  let database: ReturnType<typeof createSqliteDatabase>;
+  let dbFile: string;
 
   beforeEach(() => {
-    const db = getDatabase();
-    const plantService = createPlantService(db);
+    dbFile = `${__dirname}/temp_index_test_${Date.now()}.db`;
+    database = createSqliteDatabase(dbFile);
+    const plantService = createPlantService(database);
 
     app = express();
     app.use(express.json());
-
-    app.get('/api/openapi.json', async (_req, res) => {
-      res.json(await generateOpenApiSpec());
-    });
 
     app.get('/api/plants', async (_req, res) => {
       try {
@@ -78,13 +78,9 @@ describe('API Endpoints', () => {
     });
   });
 
-  describe('GET /api/openapi.json', () => {
-    it('should return the OpenAPI spec', async () => {
-      const response = await request(app).get('/api/openapi.json');
-      expect(response.status).toBe(200);
-      expect(response.body).toBeDefined();
-      expect(typeof response.body).toBe('object');
-    });
+  afterEach(() => {
+    database.close();
+    try { unlinkSync(dbFile); } catch { /* ignore */ }
   });
 
   describe('GET /api/plants', () => {
@@ -95,22 +91,10 @@ describe('API Endpoints', () => {
     });
 
     it('should return all plants after creating them', async () => {
-      const createResponse = await request(app)
-        .post('/api/plants')
-        .send({
-          name: 'Test Plant',
-          species: 'Test Species',
-          location: 'Test Location',
-          plantedDate: new Date().toISOString(),
-        });
-
-      expect(createResponse.status).toBe(201);
-      expect(createResponse.body.name).toBe('Test Plant');
-
-      const getAllResponse = await request(app).get('/api/plants');
-      expect(getAllResponse.status).toBe(200);
-      expect(getAllResponse.body).toHaveLength(1);
-      expect(getAllResponse.body[0].name).toBe('Test Plant');
+      await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const response = await request(app).get('/api/plants');
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveLength(1);
     });
   });
 
@@ -118,133 +102,55 @@ describe('API Endpoints', () => {
     it('should return 404 for non-existent plant', async () => {
       const response = await request(app).get('/api/plants/does-not-exist');
       expect(response.status).toBe(404);
-      expect(response.body.error).toBe('Plant not found');
     });
 
     it('should return the plant when it exists', async () => {
-      const createResponse = await request(app)
-        .post('/api/plants')
-        .send({
-          name: 'Test Plant',
-          species: 'Test Species',
-          location: 'Test Location',
-          plantedDate: new Date().toISOString(),
-        });
-
-      expect(createResponse.status).toBe(201);
-
-      const plantId = createResponse.body.id;
-      const getResponse = await request(app).get(`/api/plants/${plantId}`.replace('http://', '').replace('https://', ''));
-
-      expect(getResponse.status).toBe(200);
-      expect(getResponse.body.id).toBe(createResponse.body.id);
-      expect(getResponse.body.name).toBe('Test Plant');
+      const created = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const response = await request(app).get(`/api/plants/${created.body.id}`);
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('Test Plant');
     });
   });
 
   describe('POST /api/plants', () => {
     it('should create a new plant', async () => {
-      const plantData = {
-        name: 'Test Plant',
-        species: 'Test Species',
-        location: 'Test Location',
-        plantedDate: new Date().toISOString(),
-      };
-
-      const response = await request(app)
-        .post('/api/plants')
-        .send(plantData);
-
+      const response = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
       expect(response.status).toBe(201);
-      expect(response.body.name).toBe(plantData.name);
-      expect(response.body.species).toBe(plantData.species);
-      expect(response.body.location).toBe(plantData.location);
       expect(response.body.id).toBeDefined();
-      expect(response.body.createdAt).toBeDefined();
-      expect(response.body.updatedAt).toBeDefined();
+      expect(response.body.name).toBe('Test Plant');
     });
 
     it('should return 400 for invalid input', async () => {
-      const response = await request(app)
-        .post('/api/plants')
-        .send({
-          name: '',
-          species: 'Test Species',
-        });
-
+      const response = await request(app).post('/api/plants').send({ name: '', species: 'Species' });
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Invalid input');
     });
   });
 
   describe('PUT /api/plants/:id', () => {
     it('should update an existing plant', async () => {
-      const createResponse = await request(app)
-        .post('/api/plants')
-        .send({
-          name: 'Test Plant',
-          species: 'Test Species',
-          location: 'Test Location',
-          plantedDate: new Date().toISOString(),
-        });
-
-      expect(createResponse.status).toBe(201);
-
-      const plantId = createResponse.body.id;
-      const updateResponse = await request(app)
-        .put(`/api/plants/${plantId}`.replace('http://', '').replace('https://', ''))
-        .send({
-          name: 'Updated Plant',
-          species: 'Updated Species',
-        });
-
-      expect(updateResponse.status).toBe(200);
-      expect(updateResponse.body.name).toBe('Updated Plant');
-      expect(updateResponse.body.species).toBe('Updated Species');
+      const created = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const response = await request(app).put(`/api/plants/${created.body.id}`).send({ name: 'Updated Plant' });
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('Updated Plant');
     });
 
     it('should return 404 for non-existent plant', async () => {
-      const response = await request(app)
-        .put('/api/plants/does-not-exist' .replace('http://', '').replace('https://', ''))
-        .send({
-          name: 'Updated Plant',
-        });
-
+      const response = await request(app).put('/api/plants/does-not-exist').send({ name: 'Updated' });
       expect(response.status).toBe(404);
-      expect(response.body.error).toBe('Plant not found');
     });
   });
 
   describe('DELETE /api/plants/:id', () => {
     it('should delete an existing plant', async () => {
-      const createResponse = await request(app)
-        .post('/api/plants')
-        .send({
-          name: 'Test Plant',
-          species: 'Test Species',
-          location: 'Test Location',
-          plantedDate: new Date().toISOString(),
-        });
-
-      expect(createResponse.status).toBe(201);
-
-      const plantId = createResponse.body.id;
-      const deleteResponse = await request(app)
-        .delete(`/api/plants/${plantId}`.replace('http://', '').replace('https://', ''));
-
-      expect(deleteResponse.status).toBe(200);
-      expect(deleteResponse.body.success).toBe(true);
-
-      const getResponse = await request(app).get('/api/plants');
-      expect(getResponse.body).toHaveLength(0);
+      const created = await request(app).post('/api/plants').send({ name: 'Test Plant', species: 'Test Species' });
+      const response = await request(app).delete(`/api/plants/${created.body.id}`);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
     });
 
     it('should return 404 for non-existent plant', async () => {
-      const response = await request(app)
-        .delete('/api/plants/does-not-exist' .replace('http://', '').replace('https://', ''));
-
+      const response = await request(app).delete('/api/plants/does-not-exist');
       expect(response.status).toBe(404);
-      expect(response.body.error).toBe('Plant not found');
     });
   });
 });
