@@ -10,7 +10,7 @@ export const PlantSchema = z.object({
   wateringFrequency: z.number().int().min(1).optional(),
   lastFertilized: z.string().datetime().optional(),
   fertilizingFrequency: z.number().int().min(1).optional(),
-  notes: z.string().optional(),
+  notes: z.string().max(50000).optional(),
   sunlightRequirement: z.enum(['full-sun', 'partial-shade', 'shade']).optional(),
   soilType: z.string().max(100).optional(),
   harvestDate: z.string().datetime().optional(),
@@ -29,7 +29,7 @@ export const CreatePlantInputSchema = PlantSchema.omit({
   lastWatered: true,
   lastFertilized: true,
   harvestDate: true,
-});
+}).strict();
 
 export type CreatePlantInput = z.infer<typeof CreatePlantInputSchema>;
 

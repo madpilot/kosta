@@ -2,18 +2,18 @@ type Hemisphere = 'northern' | 'southern';
 type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
 const northernSeasons: Season[] = [
-  'winter',  // Jan
-  'winter',  // Feb
-  'spring',  // Mar
-  'spring',  // Apr
-  'spring',  // May
-  'summer',  // Jun
-  'summer',  // Jul
-  'summer',  // Aug
-  'autumn',  // Sep
-  'autumn',  // Oct
-  'autumn',  // Nov
-  'winter',  // Dec
+  'winter', // Jan
+  'winter', // Feb
+  'spring', // Mar
+  'spring', // Apr
+  'spring', // May
+  'summer', // Jun
+  'summer', // Jul
+  'summer', // Aug
+  'autumn', // Sep
+  'autumn', // Oct
+  'autumn', // Nov
+  'winter', // Dec
 ];
 
 export const getCurrentSeason = (hemisphere: Hemisphere): Season => {

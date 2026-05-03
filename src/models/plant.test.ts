@@ -1,5 +1,4 @@
-import { expect } from 'vitest';
-import { PlantSchema, CreatePlantInputSchema, UpdatePlantInputSchema } from '../models/plant';
+import { PlantSchema, CreatePlantInputSchema, UpdatePlantInputSchema } from './plant';
 
 describe('Plant Model', () => {
   describe('PlantSchema', () => {
@@ -317,7 +316,7 @@ describe('Plant Model', () => {
       expect(typeof plant.id).toBe('string');
       expect(typeof plant.name).toBe('string');
       expect(typeof plant.species).toBe('string');
-      expect(typeof plant.location).toBe('string' || 'undefined');
+      expect(['string', 'undefined']).toContain(typeof plant.location);
       expect(typeof plant.createdAt).toBe('string');
       expect(typeof plant.updatedAt).toBe('string');
     });
@@ -339,8 +338,8 @@ describe('Plant Model', () => {
         species: 'Species',
       });
 
-      expect(typeof plant.name).toBe('string' || 'undefined');
-      expect(typeof plant.species).toBe('string' || 'undefined');
+      expect(['string', 'undefined']).toContain(typeof plant.name);
+      expect(['string', 'undefined']).toContain(typeof plant.species);
     });
   });
 });

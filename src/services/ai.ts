@@ -312,7 +312,10 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
         workingMessages.push({ role: 'tool', content: JSON.stringify(result) });
       }
 
-      response = await client.chat({ model: config.ollama.model, messages: workingMessages, tools });
+      // eslint-disable-next-line no-await-in-loop
+      response = await client.chat({
+        model: config.ollama.model, messages: workingMessages, tools,
+      });
     }
 
     return response.message.content;
@@ -341,7 +344,8 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
     });
 
     try {
-      const parsed = JSON.parse(response.message.content) as { summary?: string; memories?: unknown[] };
+      type SummaryPayload = { summary?: string; memories?: unknown[] };
+      const parsed = JSON.parse(response.message.content) as SummaryPayload;
       return {
         summary: typeof parsed.summary === 'string' ? parsed.summary : '',
         memories: Array.isArray(parsed.memories)
