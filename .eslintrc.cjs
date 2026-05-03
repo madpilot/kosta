@@ -5,9 +5,7 @@ module.exports = {
     node: true,
     jest: true,
   },
-  extends: [
-    'airbnb-base',
-  ],
+  extends: ['airbnb-base', 'prettier'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 'latest',
@@ -21,7 +19,14 @@ module.exports = {
     'import/no-cycle': 'off',
     'import/prefer-default-export': 'off',
     'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': 'warn',
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      },
+    ],
     'jest/no-disabled-tests': 'warn',
     'jest/no-focused-tests': 'error',
     'no-console': 'off',

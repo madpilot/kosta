@@ -1,23 +1,18 @@
 import { createHash } from 'crypto';
 import type { UserDatabase } from '../db/index';
-import type {
-  User, CreateUserInput, LoginInput, ChangePasswordInput,
-} from '../models/user';
+import type { User, CreateUserInput, LoginInput, ChangePasswordInput } from '../models/user';
 import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } from '../models/user';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-export const hashPassword = (password: string): string => (
-  createHash('sha256').update(password).digest('hex')
-);
+export const hashPassword = (password: string): string =>
+  createHash('sha256').update(password).digest('hex');
 
-export const verifyPassword = (password: string, hash: string): boolean => (
-  hashPassword(password) === hash
-);
+export const verifyPassword = (password: string, hash: string): boolean =>
+  hashPassword(password) === hash;
 
-export const generateResetUrl = (token: string): string => (
-  `${config.app.baseUrl}/reset-password/${token}`
-);
+export const generateResetUrl = (token: string): string =>
+  `${config.app.baseUrl}/reset-password/${token}`;
 
 const sendPasswordResetEmail = (email: string, name: string, token: string): void => {
   logger.info('Password reset email sent', { email, name, resetUrl: generateResetUrl(token) });
@@ -49,8 +44,8 @@ export const createUserService = (db: UserDatabase) => ({
 
   authenticateUser(input: LoginInput): User | null {
     const validInput = LoginInputSchema.parse(input);
-    const user = db.getUserByUsername(validInput.username)
-      || db.getUserByEmail(validInput.username);
+    const user =
+      db.getUserByUsername(validInput.username) || db.getUserByEmail(validInput.username);
     if (!user) return null;
     if (!verifyPassword(validInput.password, user.passwordHash)) {
       return null;

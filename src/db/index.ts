@@ -4,7 +4,9 @@ import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
 import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
 
-export type PlantCareDates = Partial<Pick<Plant, 'lastWatered' | 'lastFertilized' | 'plantedDate' | 'harvestDate'>>;
+export type PlantCareDates = Partial<
+  Pick<Plant, 'lastWatered' | 'lastFertilized' | 'plantedDate' | 'harvestDate'>
+>;
 
 export interface DatabaseWrapper {
   getAllPlants(): Plant[];
@@ -16,7 +18,9 @@ export interface DatabaseWrapper {
   deletePlant(id: string): boolean;
   getAllCalendarEvents(): CalendarEvent[];
   getCalendarEventById(id: string): CalendarEvent | null;
-  createCalendarEvent(event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>): CalendarEvent;
+  createCalendarEvent(
+    event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>,
+  ): CalendarEvent;
   updateCalendarEvent(
     id: string,
     event: Partial<Omit<CalendarEvent, 'id' | 'createdAt' | 'updatedAt'>>,
@@ -30,7 +34,12 @@ export interface EmailService {
 }
 
 export interface UserDatabase extends DatabaseWrapper {
-  createUser(input: Omit<User, 'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'>): User;
+  createUser(
+    input: Omit<
+      User,
+      'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'
+    >,
+  ): User;
   getUserByUsername(username: string): User | null;
   getUserByEmail(email: string): User | null;
   verifyResetToken(token: string): User | null;
@@ -49,7 +58,12 @@ export interface ChatDatabase {
   updateChatSession(id: string, updates: Partial<Pick<ChatSession, 'summary'>>): ChatSession | null;
   deleteChatSession(id: string): boolean;
   listChatSessions(): ChatSession[];
-  createChatMessage(sessionId: string, role: ChatMessage['role'], content: string, model?: string): ChatMessage;
+  createChatMessage(
+    sessionId: string,
+    role: ChatMessage['role'],
+    content: string,
+    model?: string,
+  ): ChatMessage;
   getChatMessages(sessionId: string): ChatMessage[];
   createChatMemory(content: string): ChatMemory;
   listChatMemories(): ChatMemory[];

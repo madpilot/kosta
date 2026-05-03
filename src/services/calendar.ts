@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { CalendarEvent, CreateCalendarEventInput, UpdateCalendarEventInput } from '../models/calendar';
+import type {
+  CalendarEvent,
+  CreateCalendarEventInput,
+  UpdateCalendarEventInput,
+} from '../models/calendar';
 import type { CalendarDatabase } from '../models/calendar-db';
 
 const CreateCalendarEventSchema = z.object({
