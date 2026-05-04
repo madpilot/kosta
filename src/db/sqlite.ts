@@ -11,7 +11,75 @@ let db: Database.Database | null = null;
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
-type Row = Record<string, unknown>;
+// Row types mirror the on-disk SQLite schema. Casting `stmt.get(...) as
+// SomeRow | undefined` happens once at each query site; the mappers below
+// then operate on fully-typed values. If a column is added to a table,
+// updating its row type forces the mapper to handle it.
+
+type PlantRow = {
+  id: string;
+  name: string;
+  species: string;
+  location: string | null;
+  plantedDate: string | null;
+  lastWatered: string | null;
+  wateringFrequency: number | null;
+  lastFertilized: string | null;
+  fertilizingFrequency: number | null;
+  notes: string | null;
+  sunlightRequirement: Plant['sunlightRequirement'] | null;
+  soilType: string | null;
+  harvestDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type CalendarRow = {
+  id: string;
+  plant_id: string;
+  type: CalendarEvent['type'] | null;
+  date: string;
+  notes: string | null;
+  completed: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type UserRow = {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  password_hash: string;
+  reset_token: string | null;
+  reset_token_expiry: string | null;
+  created_at: string;
+  updated_at: string;
+  avatar_url: string | null;
+};
+
+type ChatSessionRow = {
+  id: string;
+  summary: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ChatMessageRow = {
+  id: string;
+  session_id: string;
+  role: ChatMessage['role'];
+  content: string;
+  model: string | null;
+  created_at: string;
+};
+
+type ChatMemoryRow = {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
 
 const getDbPath = (): string => {
   const envPath = process.env.DATABASE_URL;
@@ -29,50 +97,73 @@ export const initSqlite = (dbFile?: string): Database.Database => {
   return db;
 };
 
-const mapCalendarRow = (row: Row): CalendarEvent => ({
-  id: row.id as string,
-  plantId: row.plant_id as string,
-  type: ((row.type as string) || 'other') as CalendarEvent['type'],
-  date: row.date as string,
-  notes: (row.notes as string | null) ?? undefined,
+const mapCalendarRow = (row: CalendarRow): CalendarEvent => ({
+  id: row.id,
+  plantId: row.plant_id,
+  type: row.type ?? 'other',
+  date: row.date,
+  notes: row.notes ?? undefined,
   completed: Boolean(row.completed),
-  createdAt: row.created_at as string,
-  updatedAt: row.updated_at as string,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
 });
 
-const mapPlantRow = (row: Row): Plant => ({
-  id: row.id as string,
-  name: row.name as string,
-  species: row.species as string,
-  location: (row.location as string | null) ?? undefined,
-  plantedDate: (row.plantedDate as string | null) ?? undefined,
-  lastWatered: (row.lastWatered as string | null) ?? undefined,
-  wateringFrequency: (row.wateringFrequency as number | null) ?? undefined,
-  lastFertilized: (row.lastFertilized as string | null) ?? undefined,
-  fertilizingFrequency: (row.fertilizingFrequency as number | null) ?? undefined,
-  notes: (row.notes as string | null) ?? undefined,
-  sunlightRequirement: (row.sunlightRequirement as Plant['sunlightRequirement']) ?? undefined,
-  soilType: (row.soilType as string | null) ?? undefined,
-  harvestDate: (row.harvestDate as string | null) ?? undefined,
-  createdAt: row.createdAt as string,
-  updatedAt: row.updatedAt as string,
+const mapPlantRow = (row: PlantRow): Plant => ({
+  id: row.id,
+  name: row.name,
+  species: row.species,
+  location: row.location ?? undefined,
+  plantedDate: row.plantedDate ?? undefined,
+  lastWatered: row.lastWatered ?? undefined,
+  wateringFrequency: row.wateringFrequency ?? undefined,
+  lastFertilized: row.lastFertilized ?? undefined,
+  fertilizingFrequency: row.fertilizingFrequency ?? undefined,
+  notes: row.notes ?? undefined,
+  sunlightRequirement: row.sunlightRequirement ?? undefined,
+  soilType: row.soilType ?? undefined,
+  harvestDate: row.harvestDate ?? undefined,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
 });
 
-const mapUserRow = (row: Row | undefined): User | null => {
+const mapUserRow = (row: UserRow | undefined): User | null => {
   if (!row) return null;
   return {
-    id: row.id as string,
-    name: row.name as string,
-    username: row.username as string,
-    email: row.email as string,
-    passwordHash: row.password_hash as string,
-    resetToken: (row.reset_token as string | null) ?? undefined,
-    resetTokenExpiry: (row.reset_token_expiry as string | null) ?? undefined,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
-    avatarUrl: (row.avatar_url as string | null) ?? undefined,
+    id: row.id,
+    name: row.name,
+    username: row.username,
+    email: row.email,
+    passwordHash: row.password_hash,
+    resetToken: row.reset_token ?? undefined,
+    resetTokenExpiry: row.reset_token_expiry ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    avatarUrl: row.avatar_url ?? undefined,
   };
 };
+
+const mapChatSessionRow = (row: ChatSessionRow): ChatSession => ({
+  id: row.id,
+  summary: row.summary,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const mapChatMessageRow = (row: ChatMessageRow): ChatMessage => ({
+  id: row.id,
+  sessionId: row.session_id,
+  role: row.role,
+  content: row.content,
+  model: row.model,
+  createdAt: row.created_at,
+});
+
+const mapChatMemoryRow = (row: ChatMemoryRow): ChatMemory => ({
+  id: row.id,
+  content: row.content,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
 
 export const createPlantTable = (database: Database.Database): void => {
   database.exec(`
@@ -166,17 +257,21 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
 
   const wrapper: AppDatabase = {
     getAllPlants(): Plant[] {
-      const stmt = database.prepare('SELECT * FROM plants ORDER BY createdAt DESC');
-      return (stmt.all() as Row[]).map(mapPlantRow);
+      const rows = database
+        .prepare('SELECT * FROM plants ORDER BY createdAt DESC')
+        .all() as PlantRow[];
+      return rows.map(mapPlantRow);
     },
     getPlantById(id: string): Plant | null {
-      const row = database.prepare('SELECT * FROM plants WHERE id = ?').get(id) as Row | undefined;
+      const row = database.prepare('SELECT * FROM plants WHERE id = ?').get(id) as
+        | PlantRow
+        | undefined;
       return row ? mapPlantRow(row) : null;
     },
     getPlantByName(name: string): Plant | null {
       const row = database
         .prepare('SELECT * FROM plants WHERE LOWER(name) = LOWER(?) LIMIT 1')
-        .get(name) as Row | undefined;
+        .get(name) as PlantRow | undefined;
       return row ? mapPlantRow(row) : null;
     },
     createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant {
@@ -276,12 +371,12 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
     getAllCalendarEvents(): CalendarEvent[] {
       const rows = database
         .prepare('SELECT * FROM calendar_events ORDER BY date ASC, type ASC')
-        .all() as Row[];
+        .all() as CalendarRow[];
       return rows.map(mapCalendarRow);
     },
     getCalendarEventById(id: string): CalendarEvent | null {
       const row = database.prepare('SELECT * FROM calendar_events WHERE id = ?').get(id) as
-        | Row
+        | CalendarRow
         | undefined;
       return row ? mapCalendarRow(row) : null;
     },
@@ -380,25 +475,27 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
       };
     },
     getUserById(id: string): User | null {
-      const row = database.prepare('SELECT * FROM users WHERE id = ?').get(id) as Row | undefined;
+      const row = database.prepare('SELECT * FROM users WHERE id = ?').get(id) as
+        | UserRow
+        | undefined;
       return mapUserRow(row);
     },
     getUserByUsername(username: string): User | null {
       const row = database.prepare('SELECT * FROM users WHERE username = ?').get(username) as
-        | Row
+        | UserRow
         | undefined;
       return mapUserRow(row);
     },
     getUserByEmail(email: string): User | null {
       const row = database.prepare('SELECT * FROM users WHERE email = ?').get(email) as
-        | Row
+        | UserRow
         | undefined;
       return mapUserRow(row);
     },
     verifyResetToken(token: string): User | null {
       const row = database
         .prepare('SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > ?')
-        .get(token, new Date().toISOString()) as Row | undefined;
+        .get(token, new Date().toISOString()) as UserRow | undefined;
       return mapUserRow(row);
     },
     issueResetToken(userId: string): string {
@@ -413,24 +510,24 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
       id: string,
       updates: Partial<Pick<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry'>>,
     ): User | null {
-      const row = database.prepare('SELECT * FROM users WHERE id = ?').get(id) as Row | undefined;
+      const row = database.prepare('SELECT * FROM users WHERE id = ?').get(id) as
+        | UserRow
+        | undefined;
       if (!row) return null;
       const now = new Date().toISOString();
-      const passwordHash = updates.passwordHash ?? (row.password_hash as string);
-      const resetToken =
-        'resetToken' in updates ? (updates.resetToken ?? null) : (row.reset_token ?? null);
+      const passwordHash = updates.passwordHash ?? row.password_hash;
+      const resetToken = 'resetToken' in updates ? (updates.resetToken ?? null) : row.reset_token;
       const resetTokenExpiry =
-        'resetTokenExpiry' in updates
-          ? (updates.resetTokenExpiry ?? null)
-          : (row.reset_token_expiry ?? null);
+        'resetTokenExpiry' in updates ? (updates.resetTokenExpiry ?? null) : row.reset_token_expiry;
       database
         .prepare(
           'UPDATE users SET password_hash = ?, reset_token = ?, reset_token_expiry = ?, updated_at = ? WHERE id = ?',
         )
         .run(passwordHash, resetToken, resetTokenExpiry, now, id);
-      return mapUserRow(
-        database.prepare('SELECT * FROM users WHERE id = ?').get(id) as Row | undefined,
-      );
+      const updated = database.prepare('SELECT * FROM users WHERE id = ?').get(id) as
+        | UserRow
+        | undefined;
+      return mapUserRow(updated);
     },
 
     // --- Chat ---
@@ -448,15 +545,9 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
 
     getChatSession(id: string): ChatSession | null {
       const row = database.prepare('SELECT * FROM chat_sessions WHERE id = ?').get(id) as
-        | Row
+        | ChatSessionRow
         | undefined;
-      if (!row) return null;
-      return {
-        id: row.id as string,
-        summary: (row.summary as string | null) ?? null,
-        createdAt: row.created_at as string,
-        updatedAt: row.updated_at as string,
-      };
+      return row ? mapChatSessionRow(row) : null;
     },
 
     updateChatSession(
@@ -478,13 +569,8 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
     listChatSessions(): ChatSession[] {
       const rows = database
         .prepare('SELECT * FROM chat_sessions ORDER BY created_at DESC')
-        .all() as Row[];
-      return rows.map((r) => ({
-        id: r.id as string,
-        summary: (r.summary as string | null) ?? null,
-        createdAt: r.created_at as string,
-        updatedAt: r.updated_at as string,
-      }));
+        .all() as ChatSessionRow[];
+      return rows.map(mapChatSessionRow);
     },
 
     createChatMessage(
@@ -506,15 +592,8 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
     getChatMessages(sessionId: string): ChatMessage[] {
       const rows = database
         .prepare('SELECT * FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC')
-        .all(sessionId) as Row[];
-      return rows.map((r) => ({
-        id: r.id as string,
-        sessionId: r.session_id as string,
-        role: r.role as ChatMessage['role'],
-        content: r.content as string,
-        model: (r.model as string | null) ?? null,
-        createdAt: r.created_at as string,
-      }));
+        .all(sessionId) as ChatMessageRow[];
+      return rows.map(mapChatMessageRow);
     },
 
     createChatMemory(content: string): ChatMemory {
@@ -531,13 +610,8 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
     listChatMemories(): ChatMemory[] {
       const rows = database
         .prepare('SELECT * FROM chat_memories ORDER BY created_at DESC')
-        .all() as Row[];
-      return rows.map((r) => ({
-        id: r.id as string,
-        content: r.content as string,
-        createdAt: r.created_at as string,
-        updatedAt: r.updated_at as string,
-      }));
+        .all() as ChatMemoryRow[];
+      return rows.map(mapChatMemoryRow);
     },
   };
 
