@@ -29,23 +29,15 @@ export interface DatabaseWrapper {
   close(): void;
 }
 
-export interface EmailService {
-  sendPasswordReset(email: string, name: string, token: string): Promise<void>;
-}
-
 export interface UserDatabase extends DatabaseWrapper {
   createUser(
-    input: Omit<
-      User,
-      'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt' | 'avatarUrl'
-    >,
+    input: Omit<User, 'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt'>,
   ): User;
+  getUserById(id: string): User | null;
   getUserByUsername(username: string): User | null;
   getUserByEmail(email: string): User | null;
   verifyResetToken(token: string): User | null;
-  generateResetToken(): string;
-  sendPasswordResetEmail(user: User, emailService: EmailService): void;
-  mapRowToUser(row: any): User | null;
+  issueResetToken(userId: string): string;
   updateUser(
     id: string,
     updates: Partial<Pick<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry'>>,
@@ -68,5 +60,7 @@ export interface ChatDatabase {
   createChatMemory(content: string): ChatMemory;
   listChatMemories(): ChatMemory[];
 }
+
+export type Database = DatabaseWrapper & UserDatabase & ChatDatabase;
 
 export type getDatabase = ReturnType<typeof createSqliteDatabase>;

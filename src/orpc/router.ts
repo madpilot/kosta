@@ -6,7 +6,16 @@ import {
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
 } from '../models/calendar';
-import { UserSchema, LoginInputSchema, ChangePasswordInputSchema } from '../models/user';
+import {
+  UserSchema,
+  LoginInputSchema,
+  ChangePasswordInputSchema,
+  CreateUserInputSchema,
+} from '../models/user';
+
+// Handlers in this router are stubs — the router exists only to generate the
+// OpenAPI spec served at /api/openapi.json. The Express app in src/index.ts
+// owns the runtime behaviour for each route.
 
 const PublicUserSchema = UserSchema.omit({
   passwordHash: true,
@@ -187,9 +196,7 @@ export const router = {
         tags: ['Calendar'],
       })
       .input(z.object({ date: z.string() }))
-      .output(
-        z.array(z.object({ event: CalendarEventSchema, status: z.enum(['upcoming', 'past']) })),
-      )
+      .output(z.array(z.object({ event: CalendarEventSchema, type: z.enum(['upcoming', 'past']) })))
       .handler(() => []),
 
     get: os
@@ -265,6 +272,21 @@ export const router = {
   },
 
   auth: {
+    register: os
+      .route({
+        method: 'POST',
+        path: '/api/auth/register',
+        summary: 'Register a new user',
+        description: 'Create a new user account and return an auth token',
+        successStatus: 201,
+        tags: ['Auth'],
+      })
+      .input(CreateUserInputSchema)
+      .output(z.object({ user: PublicUserSchema, token: z.string() }))
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
     login: os
       .route({
         method: 'POST',

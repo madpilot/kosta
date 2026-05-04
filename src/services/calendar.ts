@@ -1,19 +1,10 @@
-import { z } from 'zod';
 import type {
   CalendarEvent,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
 } from '../models/calendar';
+import { CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from '../models/calendar';
 import type { CalendarDatabase } from '../models/calendar-db';
-
-const CreateCalendarEventSchema = z.object({
-  plantId: z.string().uuid(),
-  type: z.enum(['water', 'fertilize', 'harvest', 'other']),
-  date: z.string().datetime(),
-  notes: z.string().max(5000).optional(),
-});
-
-const UpdateCalendarEventSchema = CreateCalendarEventSchema.partial();
 
 export interface CalendarService {
   getAllEvents(): CalendarEvent[];
@@ -106,19 +97,13 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
     },
 
     createEvent(event: CreateCalendarEventInput): CalendarEvent {
-      const result = CreateCalendarEventSchema.safeParse(event);
-      if (!result.success) {
-        throw new Error('Invalid calendar event data');
-      }
-      return db.createCalendarEvent(result.data);
+      const validated = CreateCalendarEventInputSchema.parse(event);
+      return db.createCalendarEvent(validated);
     },
 
     updateEvent(id: string, event: UpdateCalendarEventInput): CalendarEvent | null {
-      const result = UpdateCalendarEventSchema.safeParse(event);
-      if (!result.success) {
-        throw new Error('Invalid calendar event data');
-      }
-      return db.updateCalendarEvent(id, result.data);
+      const validated = UpdateCalendarEventInputSchema.parse(event);
+      return db.updateCalendarEvent(id, validated);
     },
 
     deleteEvent(id: string): boolean {
@@ -126,9 +111,7 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
     },
 
     completeEvent(id: string): boolean {
-      const event = this.getEventById(id);
-      if (!event) return false;
-      return db.updateCalendarEvent(id, { completed: true }) !== null;
+      return service.updateEvent(id, { completed: true }) !== null;
     },
 
     getDailySchedule(date: string) {

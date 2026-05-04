@@ -22,6 +22,8 @@ export const CreateCalendarEventInputSchema = CalendarEventSchema.omit({
 
 export type CreateCalendarEventInput = z.infer<typeof CreateCalendarEventInputSchema>;
 
-export const UpdateCalendarEventInputSchema = CreateCalendarEventInputSchema.partial();
+export const UpdateCalendarEventInputSchema = CreateCalendarEventInputSchema.partial().extend({
+  completed: z.boolean().optional(),
+});
 
 export type UpdateCalendarEventInput = z.infer<typeof UpdateCalendarEventInputSchema>;

@@ -17,8 +17,8 @@ export const createPlantService = (db: DatabaseWrapper) => ({
   },
 
   updatePlant(id: string, input: UpdatePlantInput): Plant | null {
-    UpdatePlantInputSchema.parse(input);
-    return db.updatePlant(id, input);
+    const validInput = UpdatePlantInputSchema.parse(input);
+    return db.updatePlant(id, validInput);
   },
 
   deletePlant(id: string): boolean {
