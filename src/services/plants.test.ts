@@ -366,20 +366,6 @@ describe('Plant Service', () => {
 
   describe('deletePlant', () => {
     it('should delete an existing plant', () => {
-      const existingPlant: Plant = {
-        id: '1',
-        name: 'Test Plant',
-        species: 'Test Species',
-        location: 'Test Location',
-        plantedDate: new Date().toISOString(),
-        lastWatered: new Date().toISOString(),
-        wateringFrequency: 7,
-        lastFertilized: new Date().toISOString(),
-        fertilizingFrequency: 30,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
       db.deletePlant = () => true;
 
       const deleted = plantService.deletePlant('1');

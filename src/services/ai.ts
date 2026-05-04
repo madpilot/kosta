@@ -153,6 +153,8 @@ export const buildTools = (): Tool[] => [
 
 type ToolArgs = Record<string, unknown>;
 
+const MEMORY_PROMPT_LIMIT = 50;
+
 const EventTypeSchema = z.enum(['water', 'fertilize', 'harvest', 'other']);
 const IsoDateTimeSchema = z
   .string()
@@ -300,7 +302,8 @@ export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
     }
   }
 
-  const memories = db.listChatMemories();
+  // Cap memories included in the prompt — listChatMemories returns newest first.
+  const memories = db.listChatMemories().slice(0, MEMORY_PROMPT_LIMIT);
   if (memories.length > 0) {
     parts.push('\nUseful context from previous conversations:');
     memories.forEach((m) => parts.push(`- ${m.content}`));

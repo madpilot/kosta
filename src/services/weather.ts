@@ -1,5 +1,7 @@
 import { logger } from '../utils/logger';
 
+const FORECAST_TIMEOUT_MS = 5_000;
+
 type DayForecast = {
   date: string;
   description: string;
@@ -25,10 +27,19 @@ const groupByDay = (items: ForecastItem[]): Record<string, ForecastItem[]> => {
   return days;
 };
 
+const hourOf = (item: ForecastItem): number =>
+  Number.parseInt(item.dt_txt.split(' ')[1]?.split(':')[0] ?? '0', 10);
+
+const closestToNoon = (items: ForecastItem[]): ForecastItem | undefined =>
+  items.reduce<ForecastItem | undefined>((best, item) => {
+    if (!best) return item;
+    return Math.abs(hourOf(item) - 12) < Math.abs(hourOf(best) - 12) ? item : best;
+  }, undefined);
+
 const summariseDay = (date: string, items: ForecastItem[]): DayForecast => {
   const temps = items.flatMap((i) => [i.main.temp_min, i.main.temp_max]);
   const rain = items.reduce((sum, i) => sum + (i.rain?.['3h'] ?? 0), 0);
-  const description = items[Math.floor(items.length / 2)]?.weather[0]?.description ?? '';
+  const description = closestToNoon(items)?.weather[0]?.description ?? '';
   return {
     date,
     description,
@@ -44,9 +55,12 @@ export const getWeatherForecast = async (
 ): Promise<string | null> => {
   if (!location || !apiKey) return null;
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FORECAST_TIMEOUT_MS);
+
   try {
     const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric&cnt=40`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) return null;
 
     const data = (await res.json()) as { list: ForecastItem[] };
@@ -65,5 +79,7 @@ export const getWeatherForecast = async (
   } catch (error) {
     logger.warn('Weather forecast lookup failed', { location, error });
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 };
