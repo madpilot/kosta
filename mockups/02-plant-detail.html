@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Garden Agent — Cherry Tomato</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest-900: #0f2419;
+        --forest-800: #163528;
+        --forest-700: #1c4232;
+        --forest-500: #2f6a52;
+        --forest-300: #6ea88f;
+        --forest-200: #a8d5b8;
+        --forest-100: #d3e6dc;
+
+        --tomato-700: #b8351f;
+        --tomato-500: #e2553a;
+        --tomato-300: #f49077;
+        --tomato-100: #fbe0d6;
+
+        --peach-200: #fbdcb4;
+        --peach-100: #fdebd3;
+        --peach-50: #fff5e4;
+
+        --cream: #fff8ee;
+        --bone: #fefaf2;
+        --paper: #fdf5e7;
+        --ink: #1a2b25;
+        --ink-soft: #4d5e57;
+        --ink-mute: #8a978f;
+
+        --r-sm: 10px;
+        --r-md: 18px;
+        --r-lg: 28px;
+        --r-xl: 36px;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.22),
+          0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-lg: 0 22px 50px rgba(0, 0, 0, 0.32),
+          0 6px 14px rgba(0, 0, 0, 0.16);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background: var(--forest-800);
+        color: var(--forest-100);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "cv11";
+        background-image:
+          radial-gradient(ellipse 800px 500px at 80% -10%, rgba(228, 144, 119, 0.18), transparent 60%),
+          radial-gradient(ellipse 600px 400px at -5% 110%, rgba(168, 213, 184, 0.15), transparent 60%),
+          radial-gradient(circle at 30% 50%, rgba(0,0,0,0.0) 0, var(--forest-800) 70%);
+      }
+
+      /* paper grain texture overlay (very subtle) */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.06;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+        z-index: 0;
+      }
+
+      .blob {
+        position: absolute;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .blob-1 { top: -160px; right: -120px; width: 480px; opacity: 0.3; }
+      .blob-2 { bottom: -180px; left: -100px; width: 400px; opacity: 0.2; }
+
+      .app {
+        position: relative;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 28px 44px 80px;
+        z-index: 1;
+      }
+
+      /* topbar */
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+      }
+      .crumbs {
+        flex: 1;
+        font-size: 13px;
+        color: var(--forest-200);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .crumbs a {
+        color: var(--forest-200);
+        text-decoration: none;
+        opacity: 0.85;
+      }
+      .crumbs a:hover { opacity: 1; text-decoration: underline; }
+      .crumbs .sep { opacity: 0.5; }
+      .crumbs .here {
+        color: var(--cream);
+        font-weight: 600;
+      }
+
+      .btn {
+        font: 600 13.5px/1 "Inter", sans-serif;
+        border: 0;
+        padding: 11px 18px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn.ghost {
+        background: rgba(255, 248, 238, 0.08);
+        color: var(--cream);
+        backdrop-filter: blur(4px);
+      }
+      .btn.ghost:hover { background: rgba(255, 248, 238, 0.16); }
+      .btn.tomato { background: var(--tomato-500); color: white; }
+      .btn.tomato:hover { background: var(--tomato-700); }
+      .btn.cream { background: var(--cream); color: var(--forest-900); }
+
+      /* hero */
+      .hero {
+        position: relative;
+        margin-bottom: 36px;
+        padding: 8px 0 0;
+      }
+      .eyebrow {
+        font-family: "Inter", sans-serif;
+        font-weight: 700;
+        font-size: 11.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 14px;
+      }
+      .hero-title {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 144;
+        font-size: clamp(72px, 11vw, 156px);
+        line-height: 0.92;
+        letter-spacing: -0.035em;
+        color: var(--cream);
+        margin: 0;
+        position: relative;
+        z-index: 2;
+      }
+      .hero-title .ampersand,
+      .hero-title em {
+        color: var(--tomato-300);
+        font-style: italic;
+      }
+      .hero-title .upright {
+        font-style: normal;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80, "opsz" 144;
+      }
+
+      .scribble {
+        margin: -16px 0 18px -8px;
+        display: block;
+        height: 28px;
+      }
+
+      .hero-meta {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        max-width: 60%;
+      }
+      .latin {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-variation-settings: "SOFT" 100;
+        font-size: 22px;
+        color: var(--forest-200);
+        letter-spacing: 0.01em;
+      }
+      .dot { color: var(--forest-300); }
+      .hero-meta .small {
+        font-size: 14px;
+        color: var(--forest-200);
+      }
+
+      /* hero illustration breaks out */
+      .hero-illu {
+        position: absolute;
+        right: -20px;
+        top: -40px;
+        width: 360px;
+        z-index: 1;
+        filter: drop-shadow(0 30px 40px rgba(0, 0, 0, 0.35));
+      }
+
+      /* vitals strip */
+      .vitals {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 32px;
+      }
+      .vital {
+        background: var(--cream);
+        border-radius: 22px;
+        padding: 18px 20px;
+        color: var(--ink);
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
+      }
+      .vital .label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--ink-mute);
+      }
+      .vital .value {
+        margin-top: 8px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 32px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--forest-900);
+      }
+      .vital .sub {
+        margin-top: 4px;
+        font-size: 12.5px;
+        color: var(--ink-soft);
+      }
+      .vital.warn {
+        background: var(--tomato-100);
+      }
+      .vital.warn .value { color: var(--tomato-700); }
+      .vital.warn .sub { color: var(--tomato-700); opacity: 0.85; }
+
+      /* body grid */
+      .body {
+        display: grid;
+        grid-template-columns: 1.45fr 1fr;
+        gap: 22px;
+      }
+
+      .panel {
+        background: var(--cream);
+        border-radius: var(--r-lg);
+        padding: 24px 26px;
+        color: var(--ink);
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
+      }
+      .panel.paper {
+        background: var(--paper);
+      }
+      .panel h3 {
+        margin: 0 0 4px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+        color: var(--forest-900);
+      }
+      .panel .panel-sub {
+        margin: 0 0 18px;
+        font-size: 13px;
+        color: var(--ink-soft);
+      }
+
+      /* watering rhythm chart */
+      .rhythm {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        height: 140px;
+        padding-top: 8px;
+      }
+      .day {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .day .drop {
+        width: 100%;
+        max-width: 32px;
+        background: linear-gradient(180deg, #79b6d6, #3d7da3);
+        border-radius: 14px 14px 6px 6px;
+        position: relative;
+      }
+      .day.dry .drop { background: linear-gradient(180deg, #efd3a8, #c79760); opacity: 0.7; }
+      .day.heavy .drop { background: linear-gradient(180deg, #4ea0d6, #1f5e88); }
+      .day.skipped .drop { background: repeating-linear-gradient(45deg, #d8e2dc 0 6px, #c1cfc8 6px 12px); }
+      .day .lab {
+        font-size: 11px;
+        color: var(--ink-mute);
+        font-weight: 600;
+      }
+      .day.today .lab {
+        color: var(--tomato-500);
+      }
+      .day.today .drop::after {
+        content: "";
+        position: absolute;
+        inset: -3px;
+        border: 2px dashed var(--tomato-500);
+        border-radius: 16px 16px 8px 8px;
+      }
+      .legend {
+        margin-top: 14px;
+        display: flex;
+        gap: 14px;
+        font-size: 11.5px;
+        color: var(--ink-soft);
+      }
+      .legend .sw {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+
+      /* Pull quote / AI insight */
+      .insight {
+        background: var(--forest-700);
+        color: var(--cream);
+        border-radius: var(--r-lg);
+        padding: 26px 28px 24px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+      }
+      .insight .who {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 12px;
+      }
+      .insight blockquote {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 400;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 26px;
+        line-height: 1.25;
+        color: var(--cream);
+        letter-spacing: -0.005em;
+      }
+      .insight blockquote em {
+        color: var(--tomato-300);
+        font-style: italic;
+      }
+      .insight .actions {
+        margin-top: 18px;
+        display: flex;
+        gap: 8px;
+      }
+      .insight .quote-mark {
+        position: absolute;
+        top: -30px;
+        right: -10px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 600;
+        font-size: 220px;
+        line-height: 1;
+        color: var(--forest-500);
+        opacity: 0.35;
+      }
+
+      /* Journal */
+      .journal {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .entry {
+        position: relative;
+        padding-left: 22px;
+      }
+      .entry::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 8px;
+        bottom: 0;
+        width: 2px;
+        background: var(--forest-200);
+        border-radius: 2px;
+      }
+      .entry::after {
+        content: "";
+        position: absolute;
+        left: -4px;
+        top: 6px;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: var(--tomato-500);
+        box-shadow: 0 0 0 4px var(--cream);
+      }
+      .entry .when {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--ink-mute);
+      }
+      .entry h4 {
+        margin: 4px 0 6px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 17px;
+        color: var(--forest-900);
+      }
+      .entry p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+      .entry .photos {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+      }
+      .photo {
+        width: 86px;
+        height: 86px;
+        border-radius: 14px;
+        background: var(--peach-100);
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transform: rotate(-1.5deg);
+      }
+      .photo:nth-child(2) { transform: rotate(2deg); }
+      .photo:nth-child(3) { transform: rotate(-0.5deg); }
+      .photo svg { width: 100%; height: 100%; }
+
+      .handnote {
+        font-family: "Caveat", cursive;
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--tomato-700);
+        margin-top: 8px;
+        display: inline-block;
+        transform: rotate(-1.5deg);
+      }
+
+      /* tasks */
+      .upcoming {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .task-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        background: var(--bone);
+        border-radius: 16px;
+      }
+      .task-row .ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        background: var(--forest-100);
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .task-row .ico.water { background: #dceaf6; color: #1f4f7a; }
+      .task-row .ico.harvest { background: var(--tomato-100); color: var(--tomato-700); }
+      .task-row .ico.fert { background: #ecdcc7; color: #7a5318; }
+      .task-row .label { font-weight: 600; font-size: 14px; color: var(--forest-900); }
+      .task-row .when { font-size: 12.5px; color: var(--ink-mute); }
+      .task-row .right { margin-left: auto; }
+
+      /* footer info row */
+      .info {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-top: 22px;
+      }
+      .info .cell {
+        background: rgba(255, 248, 238, 0.06);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        border-radius: 18px;
+        padding: 16px 18px;
+      }
+      .info .cell .label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--forest-200);
+        opacity: 0.8;
+      }
+      .info .cell .value {
+        margin-top: 6px;
+        font-family: "Fraunces", serif;
+        font-variation-settings: "SOFT" 60;
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--cream);
+      }
+    </style>
+  </head>
+  <body>
+    <svg class="blob blob-1" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#F49077" d="M421,316Q391,383,326,427Q261,472,193,431Q125,391,99,323Q73,255,118,194Q164,134,235,98Q306,62,371,108Q437,154,449,227Q461,300,421,316Z" />
+    </svg>
+    <svg class="blob blob-2" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#A8D5B8" d="M438,318Q406,386,341,420Q276,455,206,425Q137,395,103,322Q70,249,121,184Q172,119,243,98Q315,78,381,123Q447,168,461,234Q475,300,438,318Z" />
+    </svg>
+
+    <div class="app">
+      <!-- topbar -->
+      <div class="topbar">
+        <div class="crumbs">
+          <a href="#">← Back</a>
+          <span class="sep">/</span>
+          <a href="#">My garden</a>
+          <span class="sep">/</span>
+          <a href="#">Bed 2</a>
+          <span class="sep">/</span>
+          <span class="here">Cherry tomato</span>
+        </div>
+        <button class="btn ghost">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/>
+          </svg>
+          Edit
+        </button>
+        <button class="btn ghost">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- hero -->
+      <section class="hero">
+        <div class="eyebrow">Bed 2 · Full sun · Day 64</div>
+        <h1 class="hero-title">
+          Cherry<br />
+          <em>tomato</em><span class="upright">,</span><br />
+          <span class="upright">Sungold</span>
+        </h1>
+
+        <!-- hand-drawn scribble underline -->
+        <svg class="scribble" viewBox="0 0 420 28" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path
+            d="M4 18 C 40 6, 80 26, 120 14 S 200 6, 240 16 S 320 28, 360 12 S 410 18, 416 14"
+            fill="none" stroke="#E2553A" stroke-width="3.5" stroke-linecap="round"
+          />
+        </svg>
+
+        <div class="hero-meta">
+          <span class="latin">Solanum lycopersicum</span>
+          <span class="dot">·</span>
+          <span class="small">Indeterminate · Cordon</span>
+          <span class="dot">·</span>
+          <span class="small">Planted 4 March</span>
+        </div>
+
+        <!-- hero illustration -->
+        <svg class="hero-illu" viewBox="0 0 360 380" xmlns="http://www.w3.org/2000/svg">
+          <!-- pot -->
+          <path d="M70 290 L290 290 L270 360 Q180 372 90 360 Z" fill="#B8351F" />
+          <path d="M70 290 L290 290 L286 305 L74 305 Z" fill="#8B2615" />
+          <ellipse cx="180" cy="290" rx="110" ry="10" fill="#0F2419" opacity="0.18" />
+          <!-- main stem with wobble -->
+          <path d="M180 290 C 175 220, 195 180, 178 130 C 168 90, 188 50, 175 18" stroke="#2F6A52" stroke-width="5" fill="none" stroke-linecap="round" />
+          <!-- side branches -->
+          <path d="M180 220 C 150 215, 130 200, 110 200" stroke="#2F6A52" stroke-width="3" fill="none" stroke-linecap="round" />
+          <path d="M183 170 C 215 165, 240 150, 270 152" stroke="#2F6A52" stroke-width="3" fill="none" stroke-linecap="round" />
+          <path d="M178 110 C 150 100, 130 90, 105 92" stroke="#2F6A52" stroke-width="3" fill="none" stroke-linecap="round" />
+          <!-- leaves -->
+          <path d="M110 200 Q80 195 60 178 Q78 168 100 184 Q110 195 110 200 Z" fill="#6EA88F" />
+          <path d="M270 152 Q300 142 320 122 Q302 112 280 132 Q270 145 270 152 Z" fill="#2F6A52" />
+          <path d="M105 92 Q80 88 65 70 Q82 60 100 78 Q105 86 105 92 Z" fill="#6EA88F" />
+          <path d="M180 50 Q210 38 230 18 Q210 8 188 28 Q180 40 180 50 Z" fill="#2F6A52" />
+          <path d="M180 50 Q150 38 130 18 Q150 8 172 28 Q180 40 180 50 Z" fill="#6EA88F" />
+          <!-- tomato clusters -->
+          <circle cx="155" cy="240" r="16" fill="#E2553A" />
+          <circle cx="180" cy="252" r="18" fill="#E2553A" />
+          <circle cx="205" cy="240" r="14" fill="#F49077" />
+          <circle cx="170" cy="225" r="12" fill="#E2553A" />
+          <!-- highlights -->
+          <circle cx="150" cy="234" r="3.5" fill="#FDEBD3" opacity="0.7" />
+          <circle cx="174" cy="246" r="4" fill="#FDEBD3" opacity="0.7" />
+          <circle cx="200" cy="234" r="3" fill="#FDEBD3" opacity="0.7" />
+          <!-- top cluster -->
+          <circle cx="195" cy="120" r="10" fill="#F49077" />
+          <circle cx="170" cy="130" r="9" fill="#F49077" />
+          <!-- stake -->
+          <line x1="220" y1="295" x2="220" y2="40" stroke="#7A5318" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+        </svg>
+      </section>
+
+      <!-- vitals -->
+      <div class="vitals">
+        <div class="vital">
+          <div class="label">Days alive</div>
+          <div class="value">64</div>
+          <div class="sub">Planted 4 Mar</div>
+        </div>
+        <div class="vital">
+          <div class="label">Last watered</div>
+          <div class="value">Yesterday</div>
+          <div class="sub">2.1L · 9:14 am</div>
+        </div>
+        <div class="vital warn">
+          <div class="label">Next harvest</div>
+          <div class="value">Today</div>
+          <div class="sub">6 fruit ripe</div>
+        </div>
+        <div class="vital">
+          <div class="label">Total yield</div>
+          <div class="value">1.4 kg</div>
+          <div class="sub">28 fruit so far</div>
+        </div>
+      </div>
+
+      <!-- body grid -->
+      <div class="body">
+        <!-- left column -->
+        <div style="display: flex; flex-direction: column; gap: 22px;">
+          <section class="panel">
+            <h3>Watering rhythm</h3>
+            <p class="panel-sub">Last 14 days · target every 2 days, deeper when hot</p>
+            <div class="rhythm">
+              <div class="day"><div class="drop" style="height: 50%"></div><div class="lab">M</div></div>
+              <div class="day dry"><div class="drop" style="height: 28%"></div><div class="lab">T</div></div>
+              <div class="day"><div class="drop" style="height: 56%"></div><div class="lab">W</div></div>
+              <div class="day skipped"><div class="drop" style="height: 30%"></div><div class="lab">T</div></div>
+              <div class="day"><div class="drop" style="height: 60%"></div><div class="lab">F</div></div>
+              <div class="day heavy"><div class="drop" style="height: 86%"></div><div class="lab">S</div></div>
+              <div class="day"><div class="drop" style="height: 52%"></div><div class="lab">S</div></div>
+              <div class="day"><div class="drop" style="height: 58%"></div><div class="lab">M</div></div>
+              <div class="day dry"><div class="drop" style="height: 34%"></div><div class="lab">T</div></div>
+              <div class="day"><div class="drop" style="height: 62%"></div><div class="lab">W</div></div>
+              <div class="day"><div class="drop" style="height: 64%"></div><div class="lab">T</div></div>
+              <div class="day heavy"><div class="drop" style="height: 92%"></div><div class="lab">F</div></div>
+              <div class="day"><div class="drop" style="height: 56%"></div><div class="lab">S</div></div>
+              <div class="day today"><div class="drop" style="height: 50%"></div><div class="lab">Today</div></div>
+            </div>
+            <div class="legend">
+              <span><span class="sw" style="background:#3d7da3"></span>Watered</span>
+              <span><span class="sw" style="background:#c79760"></span>Light / dry</span>
+              <span><span class="sw" style="background:#1f5e88"></span>Deep soak</span>
+              <span><span class="sw" style="background:repeating-linear-gradient(45deg,#d8e2dc 0 4px,#c1cfc8 4px 8px)"></span>Skipped (rain)</span>
+            </div>
+          </section>
+
+          <section class="panel paper">
+            <h3>Journal</h3>
+            <p class="panel-sub">Notes &amp; photos · 9 entries this season</p>
+            <div class="journal">
+              <article class="entry">
+                <div class="when">Today · 7:42 am</div>
+                <h4>First proper flush</h4>
+                <p>
+                  Six fruit fully orange this morning, a couple more blushing.
+                  Lower leaves yellowing slightly — pruned two and tied up the
+                  cordon another notch.
+                </p>
+                <span class="handnote">↳ harvest before they split!</span>
+                <div class="photos">
+                  <div class="photo">
+                    <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#FDEBD3"/><circle cx="40" cy="55" r="18" fill="#E2553A"/><circle cx="65" cy="48" r="14" fill="#F49077"/><circle cx="55" cy="68" r="12" fill="#E2553A"/></svg>
+                  </div>
+                  <div class="photo">
+                    <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#D3E6DC"/><path d="M50 90 Q48 50 52 18" stroke="#2F6A52" stroke-width="4" fill="none"/><path d="M50 50 Q30 45 18 30" stroke="#2F6A52" stroke-width="3" fill="none"/></svg>
+                  </div>
+                </div>
+              </article>
+              <article class="entry">
+                <div class="when">2 days ago</div>
+                <h4>Suckers pruned</h4>
+                <p>
+                  Removed three suckers below the lowest truss. Plant feels much
+                  airier — should slow disease pressure with this humidity.
+                </p>
+              </article>
+              <article class="entry">
+                <div class="when">1 week ago</div>
+                <h4>Aphids on a side branch</h4>
+                <p>
+                  Spotted a small cluster, sprayed with diluted soap. Released
+                  ladybirds yesterday, will check tomorrow.
+                </p>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <!-- right column -->
+        <div style="display: flex; flex-direction: column; gap: 22px;">
+          <section class="insight">
+            <span class="quote-mark">"</span>
+            <div class="who">From the agent</div>
+            <blockquote>
+              Pick the orange ones <em>today</em> — heat's climbing
+              Thursday and Sungolds split fast above 28°.
+            </blockquote>
+            <div class="actions">
+              <button class="btn cream">Open chat</button>
+              <button class="btn ghost">Mark harvested</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>Coming up</h3>
+            <p class="panel-sub">Next 10 days · auto-scheduled</p>
+            <div class="upcoming">
+              <div class="task-row">
+                <div class="ico harvest">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13" r="6"/><path d="M12 7c0-2 2-3 4-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                </div>
+                <div>
+                  <div class="label">Harvest 6 fruit</div>
+                  <div class="when">Today · before sundown</div>
+                </div>
+                <div class="right">
+                  <button class="btn tomato" style="padding:8px 14px;font-size:12.5px">Done</button>
+                </div>
+              </div>
+              <div class="task-row">
+                <div class="ico water">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3s7 8 7 13a7 7 0 1 1-14 0c0-5 7-13 7-13z"/></svg>
+                </div>
+                <div>
+                  <div class="label">Deep water · 3L</div>
+                  <div class="when">Friday · skipping Thu (rain)</div>
+                </div>
+              </div>
+              <div class="task-row">
+                <div class="ico fert">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V11"/><path d="M12 12c-3-1-5-3-5-7 3 0 5 2 5 7zM12 12c3-1 5-3 5-7-3 0-5 2-5 7z"/></svg>
+                </div>
+                <div>
+                  <div class="label">Side-dress with compost</div>
+                  <div class="when">Tue 14th · low nitrogen</div>
+                </div>
+              </div>
+              <div class="task-row">
+                <div class="ico harvest">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13" r="6"/></svg>
+                </div>
+                <div>
+                  <div class="label">Tie up cordon</div>
+                  <div class="when">Sat 18th</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>Conditions</h3>
+            <p class="panel-sub">What this plant likes</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13.5px;color:var(--ink-soft)">
+              <div><strong style="color:var(--forest-900)">Sun</strong><br/>Full · 6–8 hrs</div>
+              <div><strong style="color:var(--forest-900)">Soil</strong><br/>Loamy, pH 6.2–6.8</div>
+              <div><strong style="color:var(--forest-900)">Water</strong><br/>2L every 2 days</div>
+              <div><strong style="color:var(--forest-900)">Companions</strong><br/>Basil, marigold</div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- info row on green -->
+      <div class="info">
+        <div class="cell">
+          <div class="label">Sourced</div>
+          <div class="value">Diggers Club · Heirloom seed</div>
+        </div>
+        <div class="cell">
+          <div class="label">Bed mates</div>
+          <div class="value">Basil · Marigold · Capsicum</div>
+        </div>
+        <div class="cell">
+          <div class="label">Expected harvest end</div>
+          <div class="value">Late April</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
