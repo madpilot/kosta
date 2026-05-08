@@ -143,9 +143,16 @@ export const createApp = (db: Database) => {
     }
   });
 
+  const requestTimezone = (req: express.Request): string | undefined => {
+    const fromQuery = typeof req.query.tz === 'string' ? req.query.tz : undefined;
+    const headerValue = req.headers['x-timezone'];
+    const fromHeader = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+    return fromQuery ?? fromHeader;
+  };
+
   app.get('/api/calendar/today', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getEventsForToday();
+      const events = calendarService.getEventsForToday(requestTimezone(req));
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -155,7 +162,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/calendar/week', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getEventsForWeek();
+      const events = calendarService.getEventsForWeek(requestTimezone(req));
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -165,7 +172,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/calendar/month', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getEventsForMonth();
+      const events = calendarService.getEventsForMonth(requestTimezone(req));
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
