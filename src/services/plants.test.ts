@@ -2,6 +2,8 @@ import { createPlantService } from './plants';
 import type { Plant } from '../models/plant';
 import type { DatabaseWrapper } from '../db/index';
 
+const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
 type MockDatabase = Pick<
   DatabaseWrapper,
   | 'getAllPlants'
@@ -13,6 +15,11 @@ type MockDatabase = Pick<
   | 'deletePlant'
   | 'getAllCalendarEvents'
   | 'getCalendarEventById'
+  | 'getCalendarEventsInRange'
+  | 'getCalendarEventsByDatePrefix'
+  | 'getCalendarEventsByPlant'
+  | 'getCalendarEventsByType'
+  | 'getUpcomingCalendarEvents'
   | 'createCalendarEvent'
   | 'updateCalendarEvent'
   | 'deleteCalendarEvent'
@@ -29,19 +36,19 @@ describe('Plant Service', () => {
     store = new Map();
     counter = 0;
     db = {
-      getAllPlants(): Plant[] {
+      getAllPlants(_userId: string): Plant[] {
         return Array.from(store.values());
       },
-      getPlantById(id: string): Plant | null {
+      getPlantById(_userId: string, id: string): Plant | null {
         return store.get(id) ?? null;
       },
-      getPlantByName(name: string): Plant | null {
+      getPlantByName(_userId: string, name: string): Plant | null {
         for (const p of store.values()) {
           if (p.name.toLowerCase() === name.toLowerCase()) return p;
         }
         return null;
       },
-      createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant {
+      createPlant(_userId: string, plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant {
         counter += 1;
         const id = crypto.randomUUID();
         const ts = new Date(Date.now() + counter).toISOString();
@@ -54,8 +61,8 @@ describe('Plant Service', () => {
         store.set(id, created);
         return created;
       },
-      updatePlant(id: string, plant: Partial<Plant>): Plant | null {
-        const existing = (this as MockDatabase).getPlantById(id);
+      updatePlant(userId: string, id: string, plant: Partial<Plant>): Plant | null {
+        const existing = (this as MockDatabase).getPlantById(userId, id);
         if (!existing) return null;
         counter += 1;
         const updated: Plant = {
@@ -68,25 +75,40 @@ describe('Plant Service', () => {
         store.set(id, updated);
         return updated;
       },
-      updatePlantCareDates(_id: string, _dates: any): Plant | null {
+      updatePlantCareDates(_userId: string, _id: string, _dates: any): Plant | null {
         return null;
       },
-      deletePlant(id: string): boolean {
+      deletePlant(_userId: string, id: string): boolean {
         return store.delete(id);
       },
       getAllCalendarEvents() {
         return [];
       },
-      getCalendarEventById(_id: string) {
+      getCalendarEventById() {
         return null;
       },
-      createCalendarEvent(_event: any) {
+      getCalendarEventsInRange() {
+        return [];
+      },
+      getCalendarEventsByDatePrefix() {
+        return [];
+      },
+      getCalendarEventsByPlant() {
+        return [];
+      },
+      getCalendarEventsByType() {
+        return [];
+      },
+      getUpcomingCalendarEvents() {
+        return [];
+      },
+      createCalendarEvent(_userId: string, _event: any) {
         return null as any;
       },
-      updateCalendarEvent(_id: string, _event: any) {
+      updateCalendarEvent(_userId: string, _id: string, _event: any) {
         return null;
       },
-      deleteCalendarEvent(_id: string): boolean {
+      deleteCalendarEvent(_userId: string, _id: string): boolean {
         return false;
       },
       close() {},
@@ -107,7 +129,7 @@ describe('Plant Service', () => {
 
   describe('listPlants', () => {
     it('should return empty array when database returns empty', () => {
-      const plants = plantService.listPlants();
+      const plants = plantService.listPlants(USER);
       expect(plants).toEqual([]);
     });
 
@@ -146,16 +168,26 @@ describe('Plant Service', () => {
 
       db.getAllPlants = () => [plant1, plant2];
 
-      const plants = plantService.listPlants();
+      const plants = plantService.listPlants(USER);
       expect(plants).toHaveLength(2);
       expect(plants[0].name).toBe('Plant 1');
       expect(plants[1].name).toBe('Plant 2');
+    });
+
+    it('passes the userId through to the database', () => {
+      const calls: string[] = [];
+      db.getAllPlants = (userId: string) => {
+        calls.push(userId);
+        return [];
+      };
+      plantService.listPlants(USER);
+      expect(calls).toEqual([USER]);
     });
   });
 
   describe('getPlant', () => {
     it('should return null for non-existent plant', () => {
-      const plant = plantService.getPlant('non-existent-id');
+      const plant = plantService.getPlant(USER, 'non-existent-id');
       expect(plant).toBeNull();
     });
 
@@ -179,7 +211,7 @@ describe('Plant Service', () => {
 
       db.getPlantById = () => plant;
 
-      const retrieved = plantService.getPlant('test-plant-id');
+      const retrieved = plantService.getPlant(USER, 'test-plant-id');
       expect(retrieved).toEqual(plant);
     });
   });
@@ -201,7 +233,7 @@ describe('Plant Service', () => {
         harvestDate: new Date().toISOString(),
       };
 
-      const plant = plantService.createPlant(plantData);
+      const plant = plantService.createPlant(USER, plantData);
 
       expect(plant).toBeDefined();
       expect(typeof plant.id).toBe('string');
@@ -213,7 +245,7 @@ describe('Plant Service', () => {
       expect(plant.sunlightRequirement).toBe(plantData.sunlightRequirement);
       expect(plant.soilType).toBe(plantData.soilType);
 
-      const retrieved = db.getPlantById(plant.id);
+      const retrieved = db.getPlantById(USER, plant.id);
       expect(retrieved).toEqual(plant);
     });
 
@@ -223,7 +255,7 @@ describe('Plant Service', () => {
         species: 'Test Species',
       };
 
-      expect(() => plantService.createPlant(invalidData as any)).toThrow();
+      expect(() => plantService.createPlant(USER, invalidData as any)).toThrow();
     });
 
     it('should create plant without optional fields', () => {
@@ -232,7 +264,7 @@ describe('Plant Service', () => {
         species: 'Minimal Species',
       };
 
-      const plant = plantService.createPlant(plantData);
+      const plant = plantService.createPlant(USER, plantData);
 
       expect(plant.id).toBeDefined();
       expect(plant.name).toBe(plantData.name);
@@ -247,8 +279,8 @@ describe('Plant Service', () => {
         species: 'Test Species',
       };
 
-      const plant1 = plantService.createPlant(plantData);
-      const plant2 = plantService.createPlant(plantData);
+      const plant1 = plantService.createPlant(USER, plantData);
+      const plant2 = plantService.createPlant(USER, plantData);
 
       expect(plant1.id).not.toBe(plant2.id);
       expect(plant1.createdAt).not.toBe(plant2.createdAt);
@@ -282,7 +314,7 @@ describe('Plant Service', () => {
         species: 'Updated Species',
       };
 
-      const updated = plantService.updatePlant('1', updateData);
+      const updated = plantService.updatePlant(USER, '1', updateData);
 
       expect(updated).not.toBeNull();
       expect(updated?.name).toBe('Updated Name');
@@ -292,7 +324,7 @@ describe('Plant Service', () => {
     });
 
     it('should return null for non-existent plant', () => {
-      const updated = plantService.updatePlant('non-existent-id', { name: 'Updated' });
+      const updated = plantService.updatePlant(USER, 'non-existent-id', { name: 'Updated' });
       expect(updated).toBeNull();
     });
 
@@ -301,7 +333,7 @@ describe('Plant Service', () => {
         name: '',
       };
 
-      expect(() => plantService.updatePlant('1', invalidData as any)).toThrow();
+      expect(() => plantService.updatePlant(USER, '1', invalidData as any)).toThrow();
     });
 
     it('should keep existing fields unchanged', () => {
@@ -329,14 +361,14 @@ describe('Plant Service', () => {
         species: 'Updated Species',
       };
 
-      const updated = plantService.updatePlant('1', updateData);
+      const updated = plantService.updatePlant(USER, '1', updateData);
 
       expect(updated!.name).toBe('Updated Name');
       expect(updated!.species).toBe('Updated Species');
       expect(updated!.location).toBe('Original Location');
     });
 
-    it('should update createdAt on update', () => {
+    it('should update updatedAt on update', () => {
       const existingPlant: Plant = {
         id: '1',
         name: 'Test Plant',
@@ -357,7 +389,7 @@ describe('Plant Service', () => {
         name: 'Updated',
       };
 
-      const updated = plantService.updatePlant('1', updateData);
+      const updated = plantService.updatePlant(USER, '1', updateData);
 
       expect(updated!.name).toBe('Updated');
       expect(updated!.updatedAt).not.toBe(existingPlant.updatedAt);
@@ -368,14 +400,14 @@ describe('Plant Service', () => {
     it('should delete an existing plant', () => {
       db.deletePlant = () => true;
 
-      const deleted = plantService.deletePlant('1');
+      const deleted = plantService.deletePlant(USER, '1');
       expect(deleted).toBe(true);
     });
 
     it('should return false for non-existent plant', () => {
       db.deletePlant = () => false;
 
-      const deleted = plantService.deletePlant('non-existent-id');
+      const deleted = plantService.deletePlant(USER, 'non-existent-id');
       expect(deleted).toBe(false);
     });
   });

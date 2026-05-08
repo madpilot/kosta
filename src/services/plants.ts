@@ -3,26 +3,26 @@ import type { Plant, CreatePlantInput, UpdatePlantInput } from '../models/plant'
 import { CreatePlantInputSchema, UpdatePlantInputSchema } from '../models/plant';
 
 export const createPlantService = (db: DatabaseWrapper) => ({
-  listPlants(): Plant[] {
-    return db.getAllPlants();
+  listPlants(userId: string): Plant[] {
+    return db.getAllPlants(userId);
   },
 
-  getPlant(id: string): Plant | null {
-    return db.getPlantById(id);
+  getPlant(userId: string, id: string): Plant | null {
+    return db.getPlantById(userId, id);
   },
 
-  createPlant(input: CreatePlantInput): Plant {
+  createPlant(userId: string, input: CreatePlantInput): Plant {
     const validInput = CreatePlantInputSchema.parse(input);
-    return db.createPlant(validInput);
+    return db.createPlant(userId, validInput);
   },
 
-  updatePlant(id: string, input: UpdatePlantInput): Plant | null {
+  updatePlant(userId: string, id: string, input: UpdatePlantInput): Plant | null {
     const validInput = UpdatePlantInputSchema.parse(input);
-    return db.updatePlant(id, validInput);
+    return db.updatePlant(userId, id, validInput);
   },
 
-  deletePlant(id: string): boolean {
-    return db.deletePlant(id);
+  deletePlant(userId: string, id: string): boolean {
+    return db.deletePlant(userId, id);
   },
 });
 

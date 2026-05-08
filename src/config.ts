@@ -39,6 +39,8 @@ Use today's date (provided below) as the anchor for any relative time reference.
     // e.g. "Perth, AU" or "London, GB"
     location: process.env.USER_LOCATION || '',
     hemisphere: (process.env.USER_HEMISPHERE || 'southern') as 'northern' | 'southern',
+    // IANA timezone fallback when a user has no timezone set on their record.
+    timezone: process.env.USER_TIMEZONE || 'UTC',
   },
 
   logging: {

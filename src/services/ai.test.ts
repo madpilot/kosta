@@ -7,6 +7,7 @@ const isoNow = () => new Date().toISOString();
 
 const PLANT_UUID = '11111111-1111-4111-8111-111111111111';
 const OTHER_PLANT_UUID = '22222222-2222-4222-8222-222222222222';
+const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 const makePlant = (overrides: Partial<Plant> = {}): Plant => ({
   id: PLANT_UUID,
@@ -32,13 +33,18 @@ const stubDb = (overrides: Partial<DatabaseWrapper> = {}): DatabaseWrapper => ({
   getAllPlants: () => [],
   getPlantById: () => null,
   getPlantByName: () => null,
-  createPlant: (p) => makePlant({ ...p, id: 'plant-new' }),
+  createPlant: (_userId, p) => makePlant({ ...p, id: 'plant-new' }),
   updatePlant: () => null,
   updatePlantCareDates: () => null,
   deletePlant: () => false,
   getAllCalendarEvents: () => [],
   getCalendarEventById: () => null,
-  createCalendarEvent: (e) =>
+  getCalendarEventsInRange: () => [],
+  getCalendarEventsByDatePrefix: () => [],
+  getCalendarEventsByPlant: () => [],
+  getCalendarEventsByType: () => [],
+  getUpcomingCalendarEvents: () => [],
+  createCalendarEvent: (_userId, e) =>
     makeEvent({ ...e, id: `event-${Math.random().toString(36).slice(2, 8)}` }),
   updateCalendarEvent: () => null,
   deleteCalendarEvent: () => false,
@@ -104,8 +110,10 @@ describe('executeToolCall', () => {
   describe('find_or_create_plant', () => {
     it('returns the existing plant when one with that name exists', () => {
       const existing = makePlant({ id: 'plant-existing', name: 'Basil' });
-      const db = stubDb({ getPlantByName: (n) => (n.toLowerCase() === 'basil' ? existing : null) });
-      const result = executeToolCall('find_or_create_plant', { name: 'basil' }, db);
+      const db = stubDb({
+        getPlantByName: (_userId, n) => (n.toLowerCase() === 'basil' ? existing : null),
+      });
+      const result = executeToolCall('find_or_create_plant', { name: 'basil' }, db, USER);
       expect(result).toBe(existing);
     });
 
@@ -113,7 +121,7 @@ describe('executeToolCall', () => {
       const created: Plant[] = [];
       const db = stubDb({
         getPlantByName: () => null,
-        createPlant: (p) => {
+        createPlant: (_userId, p) => {
           const plant = makePlant({ ...p, id: OTHER_PLANT_UUID });
           created.push(plant);
           return plant;
@@ -123,6 +131,7 @@ describe('executeToolCall', () => {
         'find_or_create_plant',
         { name: 'Basil', species: 'Ocimum basilicum' },
         db,
+        USER,
       ) as Plant;
       expect(created).toHaveLength(1);
       expect(result.name).toBe('Basil');
@@ -132,15 +141,20 @@ describe('executeToolCall', () => {
     it('falls back to using the common name as species if none provided', () => {
       const db = stubDb({
         getPlantByName: () => null,
-        createPlant: (p) => makePlant({ ...p, id: OTHER_PLANT_UUID }),
+        createPlant: (_userId, p) => makePlant({ ...p, id: OTHER_PLANT_UUID }),
       });
-      const result = executeToolCall('find_or_create_plant', { name: 'Mystery Herb' }, db) as Plant;
+      const result = executeToolCall(
+        'find_or_create_plant',
+        { name: 'Mystery Herb' },
+        db,
+        USER,
+      ) as Plant;
       expect(result.species).toBe('Mystery Herb');
     });
 
     it('errors when name is missing', () => {
       const db = stubDb();
-      const result = executeToolCall('find_or_create_plant', {}, db) as { error: string };
+      const result = executeToolCall('find_or_create_plant', {}, db, USER) as { error: string };
       expect(result.error).toMatch(/name/i);
     });
 
@@ -150,6 +164,7 @@ describe('executeToolCall', () => {
         'find_or_create_plant',
         { name: 'Basil', plantedDate: '2026-05-02' },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/plantedDate/);
       expect(result.error).toMatch(/ISO 8601/);
@@ -161,18 +176,32 @@ describe('executeToolCall', () => {
         'find_or_create_plant',
         { name: 'Basil', sunlightRequirement: 'maximum' },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/sunlightRequirement/);
+    });
+
+    it('passes the userId through to the database lookup', () => {
+      const calls: string[] = [];
+      const db = stubDb({
+        getPlantByName: (userId) => {
+          calls.push(userId);
+          return null;
+        },
+        createPlant: (_userId, p) => makePlant({ ...p, id: OTHER_PLANT_UUID }),
+      });
+      executeToolCall('find_or_create_plant', { name: 'Basil' }, db, USER);
+      expect(calls).toEqual([USER]);
     });
   });
 
   describe('update_plant_care', () => {
     it('delegates to db.updatePlantCareDates', () => {
-      const calls: Array<{ id: string; dates: unknown }> = [];
+      const calls: Array<{ userId: string; id: string; dates: unknown }> = [];
       const updated = makePlant({ id: PLANT_UUID, lastWatered: '2026-05-01T00:00:00.000Z' });
       const db = stubDb({
-        updatePlantCareDates: (id, dates) => {
-          calls.push({ id, dates });
+        updatePlantCareDates: (userId, id, dates) => {
+          calls.push({ userId, id, dates });
           return updated;
         },
       });
@@ -180,8 +209,10 @@ describe('executeToolCall', () => {
         'update_plant_care',
         { plantId: PLANT_UUID, lastWatered: '2026-05-01T00:00:00.000Z' },
         db,
+        USER,
       );
       expect(result).toBe(updated);
+      expect(calls[0].userId).toBe(USER);
       expect(calls[0].id).toBe(PLANT_UUID);
       expect(calls[0].dates).toEqual({
         lastWatered: '2026-05-01T00:00:00.000Z',
@@ -193,7 +224,7 @@ describe('executeToolCall', () => {
 
     it('errors when plantId is missing', () => {
       const db = stubDb();
-      const result = executeToolCall('update_plant_care', {}, db) as { error: string };
+      const result = executeToolCall('update_plant_care', {}, db, USER) as { error: string };
       expect(result.error).toMatch(/plantId/);
     });
 
@@ -203,6 +234,7 @@ describe('executeToolCall', () => {
         'update_plant_care',
         { plantId: 'p1', lastWatered: isoNow() },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/plantId/);
       expect(result.error).toMatch(/UUID/);
@@ -210,9 +242,12 @@ describe('executeToolCall', () => {
 
     it('errors when no care date is supplied', () => {
       const db = stubDb();
-      const result = executeToolCall('update_plant_care', { plantId: PLANT_UUID }, db) as {
-        error: string;
-      };
+      const result = executeToolCall(
+        'update_plant_care',
+        { plantId: PLANT_UUID },
+        db,
+        USER,
+      ) as { error: string };
       expect(result.error).toMatch(/at least one care date/);
     });
 
@@ -222,6 +257,7 @@ describe('executeToolCall', () => {
         'update_plant_care',
         { plantId: PLANT_UUID, lastWatered: 'yesterday' },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/lastWatered/);
       expect(result.error).toMatch(/ISO 8601/);
@@ -233,6 +269,7 @@ describe('executeToolCall', () => {
         'update_plant_care',
         { plantId: PLANT_UUID, lastWatered: isoNow() },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/No plant with id/);
     });
@@ -249,6 +286,7 @@ describe('executeToolCall', () => {
           date: '2026-05-03T08:00:00.000Z',
         },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/type/);
     });
@@ -263,6 +301,7 @@ describe('executeToolCall', () => {
           date: 'next Tuesday',
         },
         db,
+        USER,
       ) as { error: string };
       expect(result.error).toMatch(/date/);
       expect(result.error).toMatch(/ISO 8601/);
@@ -273,7 +312,7 @@ describe('executeToolCall', () => {
     it('creates each event and returns them in order', () => {
       const created: CalendarEvent[] = [];
       const db = stubDb({
-        createCalendarEvent: (e) => {
+        createCalendarEvent: (_userId, e) => {
           const evt = makeEvent({ ...e, id: makeEvent().id });
           created.push(evt);
           return evt;
@@ -292,6 +331,7 @@ describe('executeToolCall', () => {
         'create_calendar_events_batch',
         { events },
         db,
+        USER,
       ) as CalendarEvent[];
       expect(result).toHaveLength(2);
       expect(result[1].notes).toBe('Check germination');
@@ -300,16 +340,19 @@ describe('executeToolCall', () => {
 
     it('errors when events is empty', () => {
       const db = stubDb();
-      const result = executeToolCall('create_calendar_events_batch', { events: [] }, db) as {
-        error: string;
-      };
+      const result = executeToolCall(
+        'create_calendar_events_batch',
+        { events: [] },
+        db,
+        USER,
+      ) as { error: string };
       expect(result.error).toMatch(/non-empty/);
     });
 
     it('errors when any event fails validation, before any DB write', () => {
       const created: CalendarEvent[] = [];
       const db = stubDb({
-        createCalendarEvent: (e) => {
+        createCalendarEvent: (_userId, e) => {
           const evt = makeEvent({ ...e });
           created.push(evt);
           return evt;
@@ -319,9 +362,12 @@ describe('executeToolCall', () => {
         { plantId: PLANT_UUID, type: 'water', date: '2026-05-03T08:00:00.000Z' },
         { plantId: PLANT_UUID, type: 'mulch', date: '2026-05-04T08:00:00.000Z' },
       ];
-      const result = executeToolCall('create_calendar_events_batch', { events }, db) as {
-        error: string;
-      };
+      const result = executeToolCall(
+        'create_calendar_events_batch',
+        { events },
+        db,
+        USER,
+      ) as { error: string };
       expect(result.error).toMatch(/type/);
       expect(created).toHaveLength(0);
     });
@@ -329,7 +375,7 @@ describe('executeToolCall', () => {
     it('returns per-event error objects when individual creates throw', () => {
       let calls = 0;
       const db = stubDb({
-        createCalendarEvent: (e) => {
+        createCalendarEvent: (_userId, e) => {
           calls += 1;
           if (calls === 2) throw new Error('boom');
           return makeEvent({ ...e });
@@ -340,7 +386,7 @@ describe('executeToolCall', () => {
         { plantId: PLANT_UUID, type: 'water', date: '2026-05-04T08:00:00.000Z' },
         { plantId: PLANT_UUID, type: 'water', date: '2026-05-05T08:00:00.000Z' },
       ];
-      const result = executeToolCall('create_calendar_events_batch', { events }, db) as Array<
+      const result = executeToolCall('create_calendar_events_batch', { events }, db, USER) as Array<
         CalendarEvent | { error: string }
       >;
       expect(result).toHaveLength(3);
@@ -349,14 +395,14 @@ describe('executeToolCall', () => {
   });
 
   it('returns an error for an unknown tool', () => {
-    const result = executeToolCall('not_a_tool', {}, stubDb()) as { error: string };
+    const result = executeToolCall('not_a_tool', {}, stubDb(), USER) as { error: string };
     expect(result.error).toMatch(/Unknown tool/);
   });
 });
 
 describe('buildSystemPrompt', () => {
   it('includes the activity-log routine instructions', async () => {
-    const prompt = await buildSystemPrompt(stubChatDb());
+    const prompt = await buildSystemPrompt(stubChatDb(), USER);
     expect(prompt).toContain('find_or_create_plant');
     expect(prompt).toContain('update_plant_care');
     expect(prompt).toContain('create_calendar_events_batch');
@@ -365,7 +411,7 @@ describe('buildSystemPrompt', () => {
   });
 
   it("includes today's date for relative-time anchoring", async () => {
-    const prompt = await buildSystemPrompt(stubChatDb());
+    const prompt = await buildSystemPrompt(stubChatDb(), USER);
     expect(prompt).toMatch(/Today is /);
   });
 });

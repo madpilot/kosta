@@ -69,7 +69,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/plants', isAuthenticated, async (req, res) => {
     try {
-      const plants = plantService.listPlants();
+      const plants = plantService.listPlants(req.userId);
       res.json(plants);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -79,7 +79,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/plants/:id', isAuthenticated, async (req, res) => {
     try {
-      const plant = plantService.getPlant(req.params.id as string);
+      const plant = plantService.getPlant(req.userId, req.params.id as string);
       if (!plant) {
         res.status(404).json({ error: 'Plant not found' });
         return;
@@ -94,7 +94,7 @@ export const createApp = (db: Database) => {
   app.post('/api/plants', isAuthenticated, async (req, res) => {
     try {
       const input = CreatePlantInputSchema.parse(req.body);
-      const plant = plantService.createPlant(input);
+      const plant = plantService.createPlant(req.userId, input);
       res.status(201).json(plant);
     } catch (error) {
       logger.warn('Invalid input', { method: req.method, path: req.path, error });
@@ -105,7 +105,7 @@ export const createApp = (db: Database) => {
   app.put('/api/plants/:id', isAuthenticated, async (req, res) => {
     try {
       const input = UpdatePlantInputSchema.parse(req.body);
-      const plant = plantService.updatePlant(req.params.id as string, input);
+      const plant = plantService.updatePlant(req.userId, req.params.id as string, input);
       if (!plant) {
         res.status(404).json({ error: 'Plant not found' });
         return;
@@ -119,7 +119,7 @@ export const createApp = (db: Database) => {
 
   app.delete('/api/plants/:id', isAuthenticated, async (req, res) => {
     try {
-      const deleted = plantService.deletePlant(req.params.id as string);
+      const deleted = plantService.deletePlant(req.userId, req.params.id as string);
       if (!deleted) {
         res.status(404).json({ error: 'Plant not found' });
         return;
@@ -135,7 +135,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/calendar', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getAllEvents();
+      const events = calendarService.getAllEvents(req.userId);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -145,7 +145,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/calendar/today', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getEventsForToday();
+      const events = calendarService.getEventsForToday(req.userId);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -155,7 +155,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/calendar/week', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getEventsForWeek();
+      const events = calendarService.getEventsForWeek(req.userId);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -165,7 +165,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/calendar/month', isAuthenticated, async (req, res) => {
     try {
-      const events = calendarService.getEventsForMonth();
+      const events = calendarService.getEventsForMonth(req.userId);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -176,7 +176,7 @@ export const createApp = (db: Database) => {
   app.get('/api/calendar/plants/:plantId', isAuthenticated, async (req, res) => {
     try {
       const plantId = req.params.plantId as string;
-      const events = calendarService.getEventsByPlant(plantId);
+      const events = calendarService.getEventsByPlant(req.userId, plantId);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -187,7 +187,7 @@ export const createApp = (db: Database) => {
   app.get('/api/calendar/date/:date', isAuthenticated, async (req, res) => {
     try {
       const date = req.params.date as string;
-      const events = calendarService.getEventsByDate(date);
+      const events = calendarService.getEventsByDate(req.userId, date);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -198,7 +198,7 @@ export const createApp = (db: Database) => {
   app.get('/api/calendar/upcoming', isAuthenticated, async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 7;
-      const events = calendarService.getUpcomingEvents(limit);
+      const events = calendarService.getUpcomingEvents(req.userId, limit);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -209,7 +209,7 @@ export const createApp = (db: Database) => {
   app.get('/api/calendar/type/:type', isAuthenticated, async (req, res) => {
     try {
       const type = req.params.type as unknown as 'water' | 'fertilize' | 'harvest' | 'other';
-      const events = calendarService.getEventsByType(type);
+      const events = calendarService.getEventsByType(req.userId, type);
       res.json(events);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -220,7 +220,7 @@ export const createApp = (db: Database) => {
   app.get('/api/calendar/daily-schedule/:date', isAuthenticated, async (req, res) => {
     try {
       const date = req.params.date as string;
-      const schedule = calendarService.getDailySchedule(date);
+      const schedule = calendarService.getDailySchedule(req.userId, date);
       res.json(schedule);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -231,7 +231,7 @@ export const createApp = (db: Database) => {
   app.post('/api/calendar', isAuthenticated, async (req, res) => {
     try {
       const input = CreateCalendarEventInputSchema.parse(req.body);
-      const event = calendarService.createEvent(input);
+      const event = calendarService.createEvent(req.userId, input);
       res.status(201).json(event);
     } catch (error) {
       logger.warn('Invalid input', { method: req.method, path: req.path, error });
@@ -242,7 +242,7 @@ export const createApp = (db: Database) => {
   app.put('/api/calendar/:id', isAuthenticated, async (req, res) => {
     try {
       const input = UpdateCalendarEventInputSchema.parse(req.body);
-      const event = calendarService.updateEvent(req.params.id as string, input);
+      const event = calendarService.updateEvent(req.userId, req.params.id as string, input);
       if (!event) {
         res.status(404).json({ error: 'Calendar event not found' });
         return;
@@ -256,7 +256,7 @@ export const createApp = (db: Database) => {
 
   app.delete('/api/calendar/:id', isAuthenticated, async (req, res) => {
     try {
-      const deleted = calendarService.deleteEvent(req.params.id as string);
+      const deleted = calendarService.deleteEvent(req.userId, req.params.id as string);
       if (!deleted) {
         res.status(404).json({ error: 'Calendar event not found' });
         return;
@@ -270,7 +270,7 @@ export const createApp = (db: Database) => {
 
   app.patch('/api/calendar/:id/complete', isAuthenticated, async (req, res) => {
     try {
-      const completed = calendarService.completeEvent(req.params.id as string);
+      const completed = calendarService.completeEvent(req.userId, req.params.id as string);
       if (!completed) {
         res.status(404).json({ error: 'Calendar event not found' });
         return;
@@ -416,7 +416,7 @@ export const createApp = (db: Database) => {
 
   app.post('/api/chat/sessions', isAuthenticated, async (req, res) => {
     try {
-      const session = chatService.createSession();
+      const session = chatService.createSession(req.userId);
       res.status(201).json(session);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -426,7 +426,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/chat/sessions', isAuthenticated, async (req, res) => {
     try {
-      const sessions = chatService.listSessions();
+      const sessions = chatService.listSessions(req.userId);
       res.json(sessions);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -436,12 +436,12 @@ export const createApp = (db: Database) => {
 
   app.get('/api/chat/sessions/:id', isAuthenticated, async (req, res) => {
     try {
-      const session = chatService.getSession(req.params.id as string);
+      const session = chatService.getSession(req.userId, req.params.id as string);
       if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
       }
-      const messages = db.getChatMessages(req.params.id as string);
+      const messages = db.getChatMessages(req.userId, req.params.id as string);
       res.json({ ...session, messages });
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
@@ -451,7 +451,7 @@ export const createApp = (db: Database) => {
 
   app.delete('/api/chat/sessions/:id', isAuthenticated, async (req, res) => {
     try {
-      const deleted = chatService.deleteSession(req.params.id as string);
+      const deleted = chatService.deleteSession(req.userId, req.params.id as string);
       if (!deleted) {
         res.status(404).json({ error: 'Session not found' });
         return;
@@ -466,7 +466,11 @@ export const createApp = (db: Database) => {
   app.post('/api/chat/sessions/:id/messages', isAuthenticated, async (req, res) => {
     try {
       const input = SendMessageInputSchema.parse(req.body);
-      const result = await chatService.sendMessage(req.params.id as string, input.content);
+      const result = await chatService.sendMessage(
+        req.userId,
+        req.params.id as string,
+        input.content,
+      );
       res.json(result);
     } catch (err) {
       if ((err as Error).message === 'Session not found') {
@@ -479,7 +483,7 @@ export const createApp = (db: Database) => {
 
   app.post('/api/chat/sessions/:id/end', isAuthenticated, async (req, res) => {
     try {
-      const result = await chatService.endSession(req.params.id as string);
+      const result = await chatService.endSession(req.userId, req.params.id as string);
       res.json(result);
     } catch (err) {
       if ((err as Error).message === 'Session not found') {
@@ -492,7 +496,7 @@ export const createApp = (db: Database) => {
 
   app.get('/api/chat/memories', isAuthenticated, async (req, res) => {
     try {
-      const memories = chatService.listMemories();
+      const memories = chatService.listMemories(req.userId);
       res.json(memories);
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });

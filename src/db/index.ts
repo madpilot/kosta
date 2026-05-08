@@ -8,28 +8,37 @@ export type PlantCareDates = Partial<
   Pick<Plant, 'lastWatered' | 'lastFertilized' | 'plantedDate' | 'harvestDate'>
 >;
 
+export type CalendarEventType = CalendarEvent['type'];
+
 export interface DatabaseWrapper {
-  getAllPlants(): Plant[];
-  getPlantById(id: string): Plant | null;
-  getPlantByName(name: string): Plant | null;
-  createPlant(plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant;
-  updatePlant(id: string, plant: Partial<Plant>): Plant | null;
-  updatePlantCareDates(id: string, dates: PlantCareDates): Plant | null;
-  deletePlant(id: string): boolean;
-  getAllCalendarEvents(): CalendarEvent[];
-  getCalendarEventById(id: string): CalendarEvent | null;
+  getAllPlants(userId: string): Plant[];
+  getPlantById(userId: string, id: string): Plant | null;
+  getPlantByName(userId: string, name: string): Plant | null;
+  createPlant(userId: string, plant: Omit<Plant, 'id' | 'createdAt' | 'updatedAt'>): Plant;
+  updatePlant(userId: string, id: string, plant: Partial<Plant>): Plant | null;
+  updatePlantCareDates(userId: string, id: string, dates: PlantCareDates): Plant | null;
+  deletePlant(userId: string, id: string): boolean;
+  getAllCalendarEvents(userId: string): CalendarEvent[];
+  getCalendarEventById(userId: string, id: string): CalendarEvent | null;
+  getCalendarEventsInRange(userId: string, startUtc: string, endUtc: string): CalendarEvent[];
+  getCalendarEventsByDatePrefix(userId: string, datePrefix: string): CalendarEvent[];
+  getCalendarEventsByPlant(userId: string, plantId: string): CalendarEvent[];
+  getCalendarEventsByType(userId: string, type: CalendarEventType): CalendarEvent[];
+  getUpcomingCalendarEvents(userId: string, nowIso: string, limit: number): CalendarEvent[];
   createCalendarEvent(
+    userId: string,
     event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>,
   ): CalendarEvent;
   updateCalendarEvent(
+    userId: string,
     id: string,
     event: Partial<Omit<CalendarEvent, 'id' | 'createdAt' | 'updatedAt'>>,
   ): CalendarEvent | null;
-  deleteCalendarEvent(id: string): boolean;
+  deleteCalendarEvent(userId: string, id: string): boolean;
   close(): void;
 }
 
-export interface UserDatabase extends DatabaseWrapper {
+export interface UserDatabase {
   createUser(
     input: Omit<User, 'id' | 'resetToken' | 'resetTokenExpiry' | 'createdAt' | 'updatedAt'>,
   ): User;
@@ -40,25 +49,30 @@ export interface UserDatabase extends DatabaseWrapper {
   issueResetToken(userId: string): string;
   updateUser(
     id: string,
-    updates: Partial<Pick<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry'>>,
+    updates: Partial<Pick<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry' | 'timezone'>>,
   ): User | null;
 }
 
 export interface ChatDatabase {
-  createChatSession(): ChatSession;
-  getChatSession(id: string): ChatSession | null;
-  updateChatSession(id: string, updates: Partial<Pick<ChatSession, 'summary'>>): ChatSession | null;
-  deleteChatSession(id: string): boolean;
-  listChatSessions(): ChatSession[];
+  createChatSession(userId: string): ChatSession;
+  getChatSession(userId: string, id: string): ChatSession | null;
+  updateChatSession(
+    userId: string,
+    id: string,
+    updates: Partial<Pick<ChatSession, 'summary'>>,
+  ): ChatSession | null;
+  deleteChatSession(userId: string, id: string): boolean;
+  listChatSessions(userId: string): ChatSession[];
   createChatMessage(
+    userId: string,
     sessionId: string,
     role: ChatMessage['role'],
     content: string,
     model?: string,
   ): ChatMessage;
-  getChatMessages(sessionId: string): ChatMessage[];
-  createChatMemory(content: string): ChatMemory;
-  listChatMemories(): ChatMemory[];
+  getChatMessages(userId: string, sessionId: string): ChatMessage[];
+  createChatMemory(userId: string, content: string): ChatMemory;
+  listChatMemories(userId: string): ChatMemory[];
 }
 
 export type Database = DatabaseWrapper & UserDatabase & ChatDatabase;

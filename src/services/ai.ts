@@ -204,9 +204,14 @@ const CreateCalendarEventsBatchArgs = z.object({
 const formatZodError = (error: z.ZodError): string =>
   error.errors.map((e) => `${e.path.join('.') || '(root)'}: ${e.message}`).join('; ');
 
-export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrapper): unknown => {
+export const executeToolCall = (
+  name: string,
+  args: ToolArgs,
+  db: DatabaseWrapper,
+  userId: string,
+): unknown => {
   if (name === 'get_plants') {
-    return db.getAllPlants();
+    return db.getAllPlants(userId);
   }
 
   if (name === 'find_or_create_plant') {
@@ -220,9 +225,9 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
       sunlightRequirement,
       notes,
     } = parsed.data;
-    const existing = db.getPlantByName(plantName);
+    const existing = db.getPlantByName(userId, plantName);
     if (existing) return existing;
-    return db.createPlant({
+    return db.createPlant(userId, {
       name: plantName,
       species: species || plantName,
       plantedDate,
@@ -236,7 +241,7 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
     const parsed = UpdatePlantCareArgs.safeParse(args);
     if (!parsed.success) return { error: formatZodError(parsed.error) };
     const { plantId, lastWatered, lastFertilized, plantedDate, harvestDate } = parsed.data;
-    const updated = db.updatePlantCareDates(plantId, {
+    const updated = db.updatePlantCareDates(userId, plantId, {
       lastWatered,
       lastFertilized,
       plantedDate,
@@ -249,7 +254,7 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
     const parsed = CalendarEventArgsSchema.safeParse(args);
     if (!parsed.success) return { error: formatZodError(parsed.error) };
     const { plantId, type, date, notes } = parsed.data;
-    return db.createCalendarEvent({
+    return db.createCalendarEvent(userId, {
       plantId,
       type,
       date,
@@ -262,7 +267,7 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
     if (!parsed.success) return { error: formatZodError(parsed.error) };
     return parsed.data.events.map((event) => {
       try {
-        return db.createCalendarEvent({
+        return db.createCalendarEvent(userId, {
           plantId: event.plantId,
           type: event.type,
           date: event.date,
@@ -277,7 +282,7 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
   return { error: `Unknown tool: ${name}` };
 };
 
-export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
+export const buildSystemPrompt = async (db: ChatDatabase, userId: string): Promise<string> => {
   const { preamble } = config.ai;
   const { location, hemisphere } = config.user;
   const today = new Date().toLocaleDateString('en-AU', {
@@ -303,7 +308,7 @@ export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
   }
 
   // Cap memories included in the prompt — listChatMemories returns newest first.
-  const memories = db.listChatMemories().slice(0, MEMORY_PROMPT_LIMIT);
+  const memories = db.listChatMemories(userId).slice(0, MEMORY_PROMPT_LIMIT);
   if (memories.length > 0) {
     parts.push('\nUseful context from previous conversations:');
     memories.forEach((m) => parts.push(`- ${m.content}`));
@@ -316,6 +321,7 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
   const client = new Ollama({ host: config.ollama.baseUrl });
 
   const chat = async (
+    userId: string,
     history: { role: 'user' | 'assistant'; content: string }[],
     systemPrompt: string,
   ): Promise<string> => {
@@ -333,7 +339,12 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
       for (const call of response.message.tool_calls) {
         let result: unknown;
         try {
-          result = executeToolCall(call.function.name, call.function.arguments as ToolArgs, db);
+          result = executeToolCall(
+            call.function.name,
+            call.function.arguments as ToolArgs,
+            db,
+            userId,
+          );
         } catch (err) {
           result = { error: (err as Error).message };
         }

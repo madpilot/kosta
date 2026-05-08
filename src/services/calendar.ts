@@ -5,117 +5,126 @@ import type {
 } from '../models/calendar';
 import { CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from '../models/calendar';
 import type { CalendarDatabase } from '../models/calendar-db';
+import type { UserDatabase } from '../db/index';
+import { config } from '../config';
+import {
+  dayBoundariesUtc,
+  getZonedDateString,
+  monthBoundariesUtc,
+  weekBoundariesUtc,
+} from '../utils/timezone';
 
 export interface CalendarService {
-  getAllEvents(): CalendarEvent[];
-  getEventById(id: string): CalendarEvent | null;
-  getEventsForToday(): CalendarEvent[];
-  getEventsForWeek(): CalendarEvent[];
-  getEventsForMonth(): CalendarEvent[];
-  getUpcomingEvents(limit?: number): CalendarEvent[];
-  getEventsByPlant(plantId: string): CalendarEvent[];
-  getEventsByDate(date: string): CalendarEvent[];
-  getEventsByType(type: 'water' | 'fertilize' | 'harvest' | 'other'): CalendarEvent[];
-  createEvent(event: CreateCalendarEventInput): CalendarEvent;
-  updateEvent(id: string, event: UpdateCalendarEventInput): CalendarEvent | null;
-  deleteEvent(id: string): boolean;
-  completeEvent(id: string): boolean;
-  getDailySchedule(date: string): Array<{
+  getAllEvents(userId: string): CalendarEvent[];
+  getEventById(userId: string, id: string): CalendarEvent | null;
+  getEventsForToday(userId: string): CalendarEvent[];
+  getEventsForWeek(userId: string): CalendarEvent[];
+  getEventsForMonth(userId: string): CalendarEvent[];
+  getUpcomingEvents(userId: string, limit?: number): CalendarEvent[];
+  getEventsByPlant(userId: string, plantId: string): CalendarEvent[];
+  getEventsByDate(userId: string, date: string): CalendarEvent[];
+  getEventsByType(
+    userId: string,
+    type: 'water' | 'fertilize' | 'harvest' | 'other',
+  ): CalendarEvent[];
+  createEvent(userId: string, event: CreateCalendarEventInput): CalendarEvent;
+  updateEvent(
+    userId: string,
+    id: string,
+    event: UpdateCalendarEventInput,
+  ): CalendarEvent | null;
+  deleteEvent(userId: string, id: string): boolean;
+  completeEvent(userId: string, id: string): boolean;
+  getDailySchedule(
+    userId: string,
+    date: string,
+  ): Array<{
     event: CalendarEvent;
     type: 'upcoming' | 'past';
   }>;
 }
 
-export function createCalendarService(db: CalendarDatabase): CalendarService {
+export type CalendarServiceDb = CalendarDatabase & Pick<UserDatabase, 'getUserById'>;
+
+const userTimezone = (db: CalendarServiceDb, userId: string): string => {
+  const user = db.getUserById(userId);
+  return user?.timezone || config.user.timezone || 'UTC';
+};
+
+export function createCalendarService(db: CalendarServiceDb): CalendarService {
   const service: CalendarService = {
-    getAllEvents(): CalendarEvent[] {
-      return db.getAllCalendarEvents();
+    getAllEvents(userId: string): CalendarEvent[] {
+      return db.getAllCalendarEvents(userId);
     },
 
-    getEventById(id: string): CalendarEvent | null {
-      return db.getCalendarEventById(id);
+    getEventById(userId: string, id: string): CalendarEvent | null {
+      return db.getCalendarEventById(userId, id);
     },
 
-    getEventsForToday(): CalendarEvent[] {
-      const today = new Date().toISOString().split('T')[0];
-      return this.getEventsByDate(today);
+    getEventsForToday(userId: string): CalendarEvent[] {
+      const tz = userTimezone(db, userId);
+      const today = getZonedDateString(new Date(), tz);
+      const { start, end } = dayBoundariesUtc(today, tz);
+      return db.getCalendarEventsInRange(userId, start, end);
     },
 
-    getEventsForWeek(): CalendarEvent[] {
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-      const start = startOfWeek.toISOString();
-      const end = endOfWeek.toISOString();
-
-      return this.getAllEvents().filter((event) => {
-        if (!event.date) return false;
-        const eventDate = new Date(event.date);
-        return eventDate >= new Date(start) && eventDate <= new Date(end);
-      });
+    getEventsForWeek(userId: string): CalendarEvent[] {
+      const tz = userTimezone(db, userId);
+      const { start, end } = weekBoundariesUtc(new Date(), tz);
+      return db.getCalendarEventsInRange(userId, start, end);
     },
 
-    getEventsForMonth(): CalendarEvent[] {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      const start = startOfMonth.toISOString();
-      const end = endOfMonth.toISOString();
-
-      return this.getAllEvents().filter((event) => {
-        if (!event.date) return false;
-        const eventDate = new Date(event.date);
-        return eventDate >= new Date(start) && eventDate <= new Date(end);
-      });
+    getEventsForMonth(userId: string): CalendarEvent[] {
+      const tz = userTimezone(db, userId);
+      const { start, end } = monthBoundariesUtc(new Date(), tz);
+      return db.getCalendarEventsInRange(userId, start, end);
     },
 
-    getUpcomingEvents(limit = 7): CalendarEvent[] {
-      return this.getAllEvents()
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, limit)
-        .filter((event) => !event.completed);
+    getUpcomingEvents(userId: string, limit = 7): CalendarEvent[] {
+      return db.getUpcomingCalendarEvents(userId, new Date().toISOString(), limit);
     },
 
-    getEventsByPlant(plantId: string): CalendarEvent[] {
-      return this.getAllEvents().filter((event) => event.plantId === plantId);
+    getEventsByPlant(userId: string, plantId: string): CalendarEvent[] {
+      return db.getCalendarEventsByPlant(userId, plantId);
     },
 
-    getEventsByDate(date: string): CalendarEvent[] {
-      return this.getAllEvents().filter((event) => {
-        if (!event.date) return false;
-        return event.date.startsWith(date);
-      });
+    getEventsByDate(userId: string, date: string): CalendarEvent[] {
+      // `date` is treated as a literal prefix on the event's stored ISO string,
+      // matching the legacy behaviour for callers that pass YYYY-MM-DD.
+      return db.getCalendarEventsByDatePrefix(userId, date);
     },
 
-    getEventsByType(type: 'water' | 'fertilize' | 'harvest' | 'other'): CalendarEvent[] {
-      return this.getAllEvents().filter((event) => event.type === type);
+    getEventsByType(
+      userId: string,
+      type: 'water' | 'fertilize' | 'harvest' | 'other',
+    ): CalendarEvent[] {
+      return db.getCalendarEventsByType(userId, type);
     },
 
-    createEvent(event: CreateCalendarEventInput): CalendarEvent {
+    createEvent(userId: string, event: CreateCalendarEventInput): CalendarEvent {
       const validated = CreateCalendarEventInputSchema.parse(event);
-      return db.createCalendarEvent(validated);
+      return db.createCalendarEvent(userId, validated);
     },
 
-    updateEvent(id: string, event: UpdateCalendarEventInput): CalendarEvent | null {
+    updateEvent(
+      userId: string,
+      id: string,
+      event: UpdateCalendarEventInput,
+    ): CalendarEvent | null {
       const validated = UpdateCalendarEventInputSchema.parse(event);
-      return db.updateCalendarEvent(id, validated);
+      return db.updateCalendarEvent(userId, id, validated);
     },
 
-    deleteEvent(id: string): boolean {
-      return db.deleteCalendarEvent(id);
+    deleteEvent(userId: string, id: string): boolean {
+      return db.deleteCalendarEvent(userId, id);
     },
 
-    completeEvent(id: string): boolean {
-      return service.updateEvent(id, { completed: true }) !== null;
+    completeEvent(userId: string, id: string): boolean {
+      return service.updateEvent(userId, id, { completed: true }) !== null;
     },
 
-    getDailySchedule(date: string) {
-      const events = this.getEventsByDate(date);
+    getDailySchedule(userId: string, date: string) {
+      const events = service.getEventsByDate(userId, date);
       const today = new Date().toISOString();
 
       const schedule: Array<{

@@ -5,6 +5,8 @@ import { CreatePlantInputSchema, UpdatePlantInputSchema } from './models/plant';
 import { createPlantService } from './services/plants';
 import { createSqliteDatabase } from './db/sqlite';
 
+const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
 describe('API Endpoints', () => {
   let app: Application;
   let database: ReturnType<typeof createSqliteDatabase>;
@@ -20,7 +22,7 @@ describe('API Endpoints', () => {
 
     app.get('/api/plants', async (_req, res) => {
       try {
-        const plants = plantService.listPlants();
+        const plants = plantService.listPlants(USER);
         res.json(plants);
       } catch {
         res.status(500).json({ error: 'Internal server error' });
@@ -29,7 +31,7 @@ describe('API Endpoints', () => {
 
     app.get('/api/plants/:id', async (req, res) => {
       try {
-        const plant = plantService.getPlant(req.params.id);
+        const plant = plantService.getPlant(USER, req.params.id);
         if (!plant) {
           res.status(404).json({ error: 'Plant not found' });
           return;
@@ -43,7 +45,7 @@ describe('API Endpoints', () => {
     app.post('/api/plants', async (req, res) => {
       try {
         const input = CreatePlantInputSchema.parse(req.body);
-        const plant = plantService.createPlant(input);
+        const plant = plantService.createPlant(USER, input);
         res.status(201).json(plant);
       } catch {
         res.status(400).json({ error: 'Invalid input' });
@@ -53,7 +55,7 @@ describe('API Endpoints', () => {
     app.put('/api/plants/:id', async (req, res) => {
       try {
         const input = UpdatePlantInputSchema.parse(req.body);
-        const plant = plantService.updatePlant(req.params.id, input);
+        const plant = plantService.updatePlant(USER, req.params.id, input);
         if (!plant) {
           res.status(404).json({ error: 'Plant not found' });
           return;
@@ -66,7 +68,7 @@ describe('API Endpoints', () => {
 
     app.delete('/api/plants/:id', async (req, res) => {
       try {
-        const deleted = plantService.deletePlant(req.params.id);
+        const deleted = plantService.deletePlant(USER, req.params.id);
         if (!deleted) {
           res.status(404).json({ error: 'Plant not found' });
           return;

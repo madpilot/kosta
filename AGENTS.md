@@ -37,6 +37,7 @@ src/
 **plants table**
 
 - `id`: UUID primary key
+- `user_id`: Owning user (FK by convention to `users.id`)
 - `name`: Plant name
 - `species`: Plant species
 - `location`: Plant location
@@ -47,11 +48,22 @@ src/
 **calendar_events table**
 
 - `id`: UUID primary key
+- `user_id`: Owning user
 - `plant_id`: Foreign key to plants table
 - `type`: water | fertilize | harvest | other
 - `date`: ISO datetime
 - `notes`: Event description
 - `completed`: Boolean completion status
+
+**users table**
+
+- `id`: UUID primary key
+- `username`, `email`, `password_hash`: credentials
+- `timezone`: IANA timezone (e.g. `Australia/Perth`); falls back to `USER_TIMEZONE` env var
+
+**chat_sessions / chat_memories tables**
+
+- Both scoped by `user_id`. `chat_messages` are scoped via `session_id`.
 
 ## Agent Guidelines
 

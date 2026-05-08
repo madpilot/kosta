@@ -14,6 +14,8 @@ jest.mock('./weather', () => ({
   getWeatherForecast: jest.fn().mockResolvedValue(null),
 }));
 
+const USER = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
 describe('chat agentic loop — activity log flow', () => {
   let dbFile: string;
   let database: ReturnType<typeof createSqliteDatabase>;
@@ -46,7 +48,7 @@ describe('chat agentic loop — activity log flow', () => {
   });
 
   it('records past activity (find_or_create_plant + update_plant_care) and proposes a schedule without persisting events', async () => {
-    const session = chatService.createSession();
+    const session = chatService.createSession(USER);
     const plantedDate = new Date('2026-05-02T00:00:00.000Z').toISOString();
 
     chatMock
@@ -65,7 +67,7 @@ describe('chat agentic loop — activity log flow', () => {
         },
       })
       .mockImplementationOnce(async () => {
-        const plant = database.getPlantByName('Basil');
+        const plant = database.getPlantByName(USER, 'Basil');
         return {
           message: {
             role: 'assistant',
@@ -89,21 +91,21 @@ describe('chat agentic loop — activity log flow', () => {
         },
       });
 
-    await chatService.sendMessage(session.id, 'Today I planted some basil seeds.');
+    await chatService.sendMessage(USER, session.id, 'Today I planted some basil seeds.');
 
-    const plant = database.getPlantByName('Basil');
+    const plant = database.getPlantByName(USER, 'Basil');
     expect(plant).not.toBeNull();
     expect(plant!.plantedDate).toBe(plantedDate);
-    expect(database.getAllCalendarEvents()).toHaveLength(0);
+    expect(database.getAllCalendarEvents(USER)).toHaveLength(0);
 
-    const messages = database.getChatMessages(session.id);
+    const messages = database.getChatMessages(USER, session.id);
     const assistant = messages.find((m) => m.role === 'assistant');
     expect(assistant?.content).toMatch(/proposed schedule/i);
   });
 
   it('persists events via create_calendar_events_batch only after the user confirms', async () => {
-    const session = chatService.createSession();
-    const plant = database.createPlant({
+    const session = chatService.createSession(USER);
+    const plant = database.createPlant(USER, {
       name: 'Basil',
       species: 'Ocimum basilicum',
       plantedDate: new Date().toISOString(),
@@ -152,9 +154,11 @@ describe('chat agentic loop — activity log flow', () => {
         },
       });
 
-    await chatService.sendMessage(session.id, 'Yes please');
+    await chatService.sendMessage(USER, session.id, 'Yes please');
 
-    const events = database.getAllCalendarEvents().filter((e) => e.plantId === plant.id);
+    const events = database
+      .getAllCalendarEvents(USER)
+      .filter((e) => e.plantId === plant.id);
     expect(events).toHaveLength(3);
     expect(events.map((e) => e.notes).sort()).toEqual([
       'Check germination',
