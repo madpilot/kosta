@@ -12,6 +12,7 @@ import {
   ChangePasswordInputSchema,
   CreateUserInputSchema,
 } from '../models/user';
+import { SettingsSchema, UpdateSettingsInputSchema } from '../models/settings';
 
 // Handlers in this router are stubs — the router exists only to generate the
 // OpenAPI spec served at /api/openapi.json. The Express app in src/index.ts
@@ -271,22 +272,39 @@ export const router = {
       }),
   },
 
-  auth: {
-    register: os
+  onboarding: {
+    status: os
+      .route({
+        method: 'GET',
+        path: '/api/onboarding/status',
+        summary: 'Get onboarding status',
+        description:
+          'Returns whether the install has been onboarded (i.e. an initial user has been created).',
+        tags: ['Onboarding'],
+      })
+      .output(z.object({ onboarded: z.boolean() }))
+      .handler(async () => ({ onboarded: false })),
+
+    complete: os
       .route({
         method: 'POST',
-        path: '/api/auth/register',
-        summary: 'Register a new user',
-        description: 'Create a new user account and return an auth token',
+        path: '/api/onboarding',
+        summary: 'Complete onboarding',
+        description:
+          'Create the initial user account and persist the install settings. Only callable while no user exists.',
         successStatus: 201,
-        tags: ['Auth'],
+        tags: ['Onboarding'],
       })
-      .input(CreateUserInputSchema)
-      .output(z.object({ user: PublicUserSchema, token: z.string() }))
+      .input(z.object({ user: CreateUserInputSchema, settings: SettingsSchema }))
+      .output(
+        z.object({ user: PublicUserSchema, settings: SettingsSchema, token: z.string() }),
+      )
       .handler(async () => {
         throw new Error('stub');
       }),
+  },
 
+  auth: {
     login: os
       .route({
         method: 'POST',
@@ -354,6 +372,35 @@ export const router = {
         tags: ['User'],
       })
       .output(PublicUserSchema)
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+  },
+
+  settings: {
+    get: os
+      .route({
+        method: 'GET',
+        path: '/api/settings',
+        summary: 'Get current settings',
+        description: 'Returns the install settings configured during onboarding.',
+        tags: ['Settings'],
+      })
+      .output(SettingsSchema)
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
+    update: os
+      .route({
+        method: 'PUT',
+        path: '/api/settings',
+        summary: 'Update settings',
+        description: 'Update the install settings.',
+        tags: ['Settings'],
+      })
+      .input(UpdateSettingsInputSchema)
+      .output(SettingsSchema)
       .handler(async () => {
         throw new Error('stub');
       }),

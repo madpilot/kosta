@@ -121,4 +121,6 @@ export const createUserService = (
   },
 });
 
+export type UserService = ReturnType<typeof createUserService>;
+
 export default createUserService;

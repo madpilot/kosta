@@ -6,6 +6,7 @@ import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
 import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
+import { SettingsSchema, type Settings } from '../models/settings';
 
 let db: Database.Database | null = null;
 
@@ -78,6 +79,12 @@ type ChatMemoryRow = {
   id: string;
   content: string;
   created_at: string;
+  updated_at: string;
+};
+
+type SettingsRow = {
+  id: number;
+  data: string;
   updated_at: string;
 };
 
@@ -220,6 +227,16 @@ export const createUsersTable = (database: Database.Database): void => {
   `);
 };
 
+export const createSettingsTable = (database: Database.Database): void => {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      data TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+};
+
 export const createChatTables = (database: Database.Database): void => {
   database.exec(`
     CREATE TABLE IF NOT EXISTS chat_sessions (
@@ -254,6 +271,7 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
   createCalendarTable(database);
   createUsersTable(database);
   createChatTables(database);
+  createSettingsTable(database);
 
   const wrapper: AppDatabase = {
     getAllPlants(): Plant[] {
@@ -500,6 +518,12 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
         | undefined;
       return mapUserRow(row);
     },
+    countUsers(): number {
+      const row = database.prepare('SELECT COUNT(*) as count FROM users').get() as {
+        count: number;
+      };
+      return row.count;
+    },
     verifyResetToken(token: string): User | null {
       const row = database
         .prepare('SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > ?')
@@ -620,6 +644,28 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
         .prepare('SELECT * FROM chat_memories ORDER BY created_at DESC')
         .all() as ChatMemoryRow[];
       return rows.map(mapChatMemoryRow);
+    },
+
+    // --- Settings ---
+
+    getSettings(): Settings | null {
+      const row = database.prepare('SELECT * FROM settings WHERE id = 1').get() as
+        | SettingsRow
+        | undefined;
+      if (!row) return null;
+      const parsed = SettingsSchema.safeParse(JSON.parse(row.data));
+      return parsed.success ? parsed.data : null;
+    },
+
+    saveSettings(settings: Settings): Settings {
+      const validated = SettingsSchema.parse(settings);
+      const now = new Date().toISOString();
+      database
+        .prepare(
+          'INSERT INTO settings (id, data, updated_at) VALUES (1, @data, @updatedAt) ON CONFLICT(id) DO UPDATE SET data = @data, updated_at = @updatedAt',
+        )
+        .run({ data: JSON.stringify(validated), updatedAt: now });
+      return validated;
     },
   };
 

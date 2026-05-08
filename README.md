@@ -125,10 +125,17 @@ GET /api/openapi.json
 
 Key route groups:
 
+- `/api/onboarding` — first-run setup. `GET /api/onboarding/status` reports
+  whether the install has been onboarded; `POST /api/onboarding` creates the
+  initial user and persists settings (AI backend, location, hemisphere,
+  weather key, etc.). The endpoint is only callable while no user exists.
+- `/api/settings` — read/update the install settings post-onboarding.
 - `/api/plants` — CRUD for plants in your garden.
 - `/api/calendar` — list / create / complete garden tasks.
 - `/api/chat/sessions` — chat with Costa; see `POST /api/chat/sessions/:id/messages`.
-- `/api/auth` — login, password reset, change password.
+- `/api/auth` — login, password reset, change password. There is no public
+  registration endpoint — the first (and only) user is created via
+  `/api/onboarding`.
 
 ## License
 

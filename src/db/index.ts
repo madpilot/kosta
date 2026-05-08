@@ -3,6 +3,7 @@ import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
 import type { User } from '../models/user';
 import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
+import type { Settings } from '../models/settings';
 
 export type PlantCareDates = Partial<
   Pick<Plant, 'lastWatered' | 'lastFertilized' | 'plantedDate' | 'harvestDate'>
@@ -37,12 +38,18 @@ export interface UserDatabase extends DatabaseWrapper {
   getUserById(id: string): User | null;
   getUserByUsername(username: string): User | null;
   getUserByEmail(email: string): User | null;
+  countUsers(): number;
   verifyResetToken(token: string): User | null;
   issueResetToken(userId: string): string;
   updateUser(
     id: string,
     updates: Partial<Pick<User, 'passwordHash' | 'resetToken' | 'resetTokenExpiry'>>,
   ): User | null;
+}
+
+export interface SettingsDatabase {
+  getSettings(): Settings | null;
+  saveSettings(settings: Settings): Settings;
 }
 
 export interface ChatDatabase {
@@ -62,6 +69,6 @@ export interface ChatDatabase {
   listChatMemories(): ChatMemory[];
 }
 
-export type Database = DatabaseWrapper & UserDatabase & ChatDatabase;
+export type Database = DatabaseWrapper & UserDatabase & ChatDatabase & SettingsDatabase;
 
 export type getDatabase = ReturnType<typeof createSqliteDatabase>;
