@@ -1,7 +1,8 @@
 import { buildTools, executeToolCall, buildSystemPrompt } from './ai';
-import type { DatabaseWrapper, ChatDatabase } from '../db/index';
+import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
 import type { Plant } from '../models/plant';
 import type { CalendarEvent } from '../models/calendar';
+import type { Settings } from '../models/settings';
 
 const isoNow = () => new Date().toISOString();
 
@@ -47,7 +48,7 @@ const stubDb = (overrides: Partial<DatabaseWrapper> = {}): DatabaseWrapper => ({
   ...overrides,
 });
 
-const stubChatDb = (): ChatDatabase => ({
+const stubChatDb = (settings: Settings | null = null): ChatDatabase & SettingsDatabase => ({
   createChatSession: () => ({
     id: 's',
     summary: null,
@@ -74,6 +75,8 @@ const stubChatDb = (): ChatDatabase => ({
     updatedAt: isoNow(),
   }),
   listChatMemories: () => [],
+  getSettings: () => settings,
+  saveSettings: (s) => s,
 });
 
 describe('buildTools', () => {
@@ -368,5 +371,19 @@ describe('buildSystemPrompt', () => {
   it("includes today's date for relative-time anchoring", async () => {
     const prompt = await buildSystemPrompt(stubChatDb());
     expect(prompt).toMatch(/Today is /);
+  });
+
+  it('includes location and hemisphere from saved settings', async () => {
+    const prompt = await buildSystemPrompt(
+      stubChatDb({
+        aiBackend: 'ollama',
+        ollamaBaseUrl: 'http://localhost:11434',
+        ollamaModel: 'llama3.2',
+        location: 'Hobart, AU',
+        hemisphere: 'southern',
+      }),
+    );
+    expect(prompt).toContain('Hobart, AU');
+    expect(prompt).toContain('southern');
   });
 });

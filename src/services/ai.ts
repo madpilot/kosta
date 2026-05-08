@@ -2,10 +2,11 @@ import { Ollama } from 'ollama';
 import type { Message, Tool } from 'ollama';
 import { z } from 'zod';
 import { config } from '../config';
+import { getRuntimeConfig } from '../runtime-config';
 import { getCurrentSeason } from '../utils/season';
 import { getWeatherForecast } from './weather';
 import { logger } from '../utils/logger';
-import type { DatabaseWrapper, ChatDatabase } from '../db/index';
+import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
 
 export const buildTools = (): Tool[] => [
   {
@@ -277,9 +278,10 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
   return { error: `Unknown tool: ${name}` };
 };
 
-export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
+export const buildSystemPrompt = async (db: ChatDatabase & SettingsDatabase): Promise<string> => {
+  const runtime = getRuntimeConfig(db);
   const { preamble } = config.ai;
-  const { location, hemisphere } = config.user;
+  const { location, hemisphere } = runtime.user;
   const today = new Date().toLocaleDateString('en-AU', {
     weekday: 'long',
     year: 'numeric',
@@ -295,8 +297,8 @@ export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
     parts.push(`Current season: ${season}`);
   }
 
-  if (config.weather.apiKey && location) {
-    const forecast = await getWeatherForecast(location, config.weather.apiKey);
+  if (runtime.weather.apiKey && location) {
+    const forecast = await getWeatherForecast(location, runtime.weather.apiKey);
     if (forecast) {
       parts.push(`\nWeather forecast:\n${forecast}`);
     }
@@ -312,17 +314,31 @@ export const buildSystemPrompt = async (db: ChatDatabase): Promise<string> => {
   return parts.join('\n');
 };
 
-export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
-  const client = new Ollama({ host: config.ollama.baseUrl });
+export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDatabase) => {
+  // Resolve the Ollama client lazily on each call so the user can change the
+  // base URL via PUT /api/settings without restarting the process.
+  const ollamaClient = (): { client: Ollama; model: string } => {
+    const runtime = getRuntimeConfig(db);
+    if (runtime.aiBackend !== 'ollama') {
+      logger.warn('Non-ollama AI backend selected but only ollama is implemented; using ollama', {
+        configured: runtime.aiBackend,
+      });
+    }
+    return {
+      client: new Ollama({ host: runtime.ollama.baseUrl }),
+      model: runtime.ollama.model,
+    };
+  };
 
   const chat = async (
     history: { role: 'user' | 'assistant'; content: string }[],
     systemPrompt: string,
   ): Promise<string> => {
     const messages: Message[] = [{ role: 'system', content: systemPrompt }, ...history];
+    const { client, model } = ollamaClient();
 
     const tools = buildTools();
-    let response = await client.chat({ model: config.ollama.model, messages, tools });
+    let response = await client.chat({ model, messages, tools });
 
     const workingMessages: Message[] = [...messages];
 
@@ -342,7 +358,7 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
 
       // eslint-disable-next-line no-await-in-loop
       response = await client.chat({
-        model: config.ollama.model,
+        model,
         messages: workingMessages,
         tools,
       });
@@ -355,9 +371,10 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase) => {
     history: { role: 'user' | 'assistant'; content: string }[],
   ): Promise<{ summary: string; memories: string[] }> => {
     const conversationText = history.map((m) => `${m.role}: ${m.content}`).join('\n\n');
+    const { client, model } = ollamaClient();
 
     const response = await client.chat({
-      model: config.ollama.model,
+      model,
       messages: [
         {
           role: 'system',

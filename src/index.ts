@@ -6,6 +6,12 @@ import { createCalendarService } from './services/calendar';
 import { createUserService } from './services/user';
 import { createAuthService } from './services/auth';
 import { createChatService } from './services/chat';
+import { createSettingsService } from './services/settings';
+import {
+  createOnboardingService,
+  OnboardingInputSchema,
+  OnboardingAlreadyCompleteError,
+} from './services/onboarding';
 import { createSqliteDatabase } from './db/sqlite';
 import {
   generateOpenApiSpec,
@@ -14,7 +20,8 @@ import {
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
 } from './openapi';
-import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } from './models/user';
+import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
+import { UpdateSettingsInputSchema } from './models/settings';
 import { SendMessageInputSchema } from './models/chat';
 import { logger } from './utils/logger';
 
@@ -33,6 +40,8 @@ export const createApp = (db: Database) => {
   const userService = createUserService(db);
   const authService = createAuthService();
   const chatService = createChatService(db);
+  const settingsService = createSettingsService(db);
+  const onboardingService = createOnboardingService(db, userService, settingsService);
 
   const app = express();
   app.use(express.json());
@@ -289,12 +298,16 @@ export const createApp = (db: Database) => {
     }
   });
 
-  // --- Auth ---
+  // --- Onboarding (public until first user is created) ---
 
-  app.post('/api/auth/register', async (req, res) => {
+  app.get('/api/onboarding/status', async (_req, res) => {
+    res.json(onboardingService.getStatus());
+  });
+
+  app.post('/api/onboarding', async (req, res) => {
     try {
-      const input = CreateUserInputSchema.parse(req.body);
-      const user = userService.createUser(input);
+      const input = OnboardingInputSchema.parse(req.body);
+      const { user, settings } = onboardingService.complete(input);
       const token = await authService.generateToken(user.id);
       res.status(201).json({
         user: {
@@ -304,13 +317,20 @@ export const createApp = (db: Database) => {
           email: user.email,
           avatarUrl: user.avatarUrl,
         },
+        settings,
         token,
       });
     } catch (error) {
+      if (error instanceof OnboardingAlreadyCompleteError) {
+        res.status(409).json({ error: 'Onboarding has already been completed' });
+        return;
+      }
       logger.warn('Invalid input', { method: req.method, path: req.path, error });
       res.status(400).json({ error: 'Invalid input' });
     }
   });
+
+  // --- Auth ---
 
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -416,6 +436,33 @@ export const createApp = (db: Database) => {
     } catch (error) {
       logger.error('Request failed', { method: req.method, path: req.path, error });
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // --- Settings (auth required) ---
+
+  app.get('/api/settings', isAuthenticated, async (req, res) => {
+    try {
+      const settings = settingsService.getSettings();
+      if (!settings) {
+        res.status(404).json({ error: 'Settings not configured' });
+        return;
+      }
+      res.json(settings);
+    } catch (error) {
+      logger.error('Request failed', { method: req.method, path: req.path, error });
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.put('/api/settings', isAuthenticated, async (req, res) => {
+    try {
+      const input = UpdateSettingsInputSchema.parse(req.body);
+      const settings = settingsService.saveSettings(input);
+      res.json(settings);
+    } catch (error) {
+      logger.warn('Invalid input', { method: req.method, path: req.path, error });
+      res.status(400).json({ error: 'Invalid input' });
     }
   });
 
