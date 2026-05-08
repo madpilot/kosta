@@ -100,10 +100,7 @@ describe('Calendar Service date filters', () => {
       const service = createCalendarService(database);
       service.getEventsForToday();
       service.getEventsForToday('Not/A_Real_Zone');
-      const utcCall: [string, string] = [
-        '2026-05-08T00:00:00.000Z',
-        '2026-05-09T00:00:00.000Z',
-      ];
+      const utcCall: [string, string] = ['2026-05-08T00:00:00.000Z', '2026-05-09T00:00:00.000Z'];
       expect(getCalendarEventsBetweenSpy).toHaveBeenNthCalledWith(1, ...utcCall);
       expect(getCalendarEventsBetweenSpy).toHaveBeenNthCalledWith(2, ...utcCall);
     } finally {

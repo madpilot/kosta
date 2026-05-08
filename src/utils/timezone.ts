@@ -44,12 +44,7 @@ const getZonedParts = (date: Date, timeZone: string): ZonedParts => {
 // Convert a wall-clock date/time in `timeZone` to the corresponding UTC instant.
 // Uses one offset-correction iteration, which is correct outside of the
 // fall-back hour where wall-clock times are ambiguous.
-const zonedWallClockToUtc = (
-  year: number,
-  month: number,
-  day: number,
-  timeZone: string,
-): Date => {
+const zonedWallClockToUtc = (year: number, month: number, day: number, timeZone: string): Date => {
   const guess = Date.UTC(year, month - 1, day, 0, 0, 0);
   const asZoned = getZonedParts(new Date(guess), timeZone);
   const asZonedUtc = Date.UTC(
