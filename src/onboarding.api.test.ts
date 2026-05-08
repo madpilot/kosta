@@ -158,9 +158,7 @@ describe('Onboarding API', () => {
     const onboard = await request(app).post('/api/onboarding').send(validInput);
     const { token } = onboard.body;
 
-    const get = await request(app)
-      .get('/api/settings')
-      .set('Authorization', `Bearer ${token}`);
+    const get = await request(app).get('/api/settings').set('Authorization', `Bearer ${token}`);
     expect(get.status).toBe(200);
     expect(get.body.location).toBe('Perth, AU');
 

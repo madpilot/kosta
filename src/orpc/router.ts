@@ -296,9 +296,7 @@ export const router = {
         tags: ['Onboarding'],
       })
       .input(z.object({ user: CreateUserInputSchema, settings: SettingsSchema }))
-      .output(
-        z.object({ user: PublicUserSchema, settings: SettingsSchema, token: z.string() }),
-      )
+      .output(z.object({ user: PublicUserSchema, settings: SettingsSchema, token: z.string() }))
       .handler(async () => {
         throw new Error('stub');
       }),
