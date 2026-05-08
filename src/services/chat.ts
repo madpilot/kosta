@@ -1,8 +1,8 @@
-import type { DatabaseWrapper, ChatDatabase } from '../db/index';
+import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
 import { buildSystemPrompt, createAiService } from './ai';
 import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
 
-export type ChatDb = DatabaseWrapper & ChatDatabase;
+export type ChatDb = DatabaseWrapper & ChatDatabase & SettingsDatabase;
 
 export const createChatService = (db: ChatDb) => {
   const ai = createAiService(db);
