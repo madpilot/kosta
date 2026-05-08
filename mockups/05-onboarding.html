@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Garden Agent — Setting up</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest-900: #0f2419;
+        --forest-800: #163528;
+        --forest-700: #1c4232;
+        --forest-600: #245440;
+        --forest-500: #2f6a52;
+        --forest-300: #6ea88f;
+        --forest-200: #a8d5b8;
+        --forest-100: #d3e6dc;
+
+        --tomato-700: #b8351f;
+        --tomato-500: #e2553a;
+        --tomato-300: #f49077;
+        --tomato-100: #fbe0d6;
+
+        --peach-200: #fbdcb4;
+        --peach-100: #fdebd3;
+        --peach-50: #fff5e4;
+
+        --cream: #fff8ee;
+        --bone: #fefaf2;
+        --paper: #fdf5e7;
+        --ink: #1a2b25;
+        --ink-soft: #4d5e57;
+        --ink-mute: #8a978f;
+
+        --r-sm: 10px;
+        --r-md: 18px;
+        --r-lg: 28px;
+        --r-xl: 36px;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.22),
+          0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-lg: 0 22px 50px rgba(0, 0, 0, 0.30),
+          0 6px 14px rgba(0, 0, 0, 0.14);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--forest-800);
+        color: var(--forest-100);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "cv11";
+        background-image:
+          radial-gradient(ellipse 800px 500px at 80% -10%, rgba(228, 144, 119, 0.18), transparent 60%),
+          radial-gradient(ellipse 600px 400px at -5% 110%, rgba(168, 213, 184, 0.15), transparent 60%);
+        min-height: 100vh;
+      }
+      body::before {
+        content: "";
+        position: fixed; inset: 0;
+        pointer-events: none;
+        opacity: 0.06; z-index: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+      }
+
+      .blob { position: absolute; z-index: 0; pointer-events: none; }
+      .blob-1 { top: -200px; right: -180px; width: 580px; opacity: 0.22; }
+      .blob-2 { bottom: -150px; left: -140px; width: 420px; opacity: 0.18; }
+
+      .frame {
+        position: relative;
+        z-index: 1;
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 28px 36px 64px;
+      }
+
+      /* ==== Top bar ==== */
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 48px;
+      }
+      .brand {
+        display: flex; align-items: center; gap: 12px;
+      }
+      .brand-mark {
+        width: 36px; height: 36px;
+        border-radius: 12px;
+        background: var(--cream);
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .brand-name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 18px;
+        color: var(--cream);
+      }
+
+      .progress {
+        margin-left: auto;
+        display: flex; align-items: center; gap: 14px;
+      }
+      .progress .step-label {
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--forest-300);
+      }
+      .stages {
+        display: flex; align-items: center; gap: 6px;
+      }
+      .stage {
+        width: 22px; height: 22px;
+        display: grid; place-items: center;
+        opacity: 0.4;
+      }
+      .stage.done { opacity: 0.95; }
+      .stage.now { opacity: 1; transform: scale(1.18); }
+      .save-exit {
+        font-size: 13px; font-weight: 500;
+        color: var(--forest-200);
+        text-decoration: none;
+        opacity: 0.85;
+      }
+      .save-exit:hover { opacity: 1; color: var(--cream); }
+
+      /* ==== Eyebrow + heading ==== */
+      .eyebrow {
+        font-weight: 700; font-size: 11.5px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 12px;
+      }
+      .h1 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 64px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        color: var(--cream);
+        max-width: 640px;
+      }
+      .h1 em {
+        font-style: italic;
+        color: var(--tomato-300);
+        font-weight: 500;
+      }
+      .scribble {
+        display: block;
+        margin: -2px 0 18px -4px;
+        height: 22px;
+        max-width: 240px;
+      }
+      .lede {
+        max-width: 540px;
+        font-size: 15px;
+        line-height: 1.55;
+        color: var(--forest-200);
+        margin: 0 0 36px;
+      }
+
+      /* ==== Prior turns thread ==== */
+      .thread {
+        margin: 0 0 28px;
+        padding: 14px 18px;
+        background: rgba(255, 248, 238, 0.04);
+        border: 1px solid rgba(255, 248, 238, 0.08);
+        border-radius: var(--r-md);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .thread .lab {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--forest-300);
+        margin-bottom: 2px;
+      }
+      .turn-row {
+        display: flex; align-items: center; gap: 12px;
+        font-size: 13.5px;
+      }
+      .turn-row .av {
+        width: 22px; height: 22px;
+        border-radius: 7px;
+        background: var(--cream);
+        display: grid; place-items: center;
+        flex: none;
+      }
+      .turn-row .q {
+        color: var(--forest-200);
+        opacity: 0.85;
+      }
+      .turn-row .arrow {
+        color: var(--forest-300);
+        opacity: 0.7;
+      }
+      .turn-row .a {
+        color: var(--cream);
+        font-weight: 600;
+      }
+      .turn-row .check {
+        margin-left: auto;
+        width: 18px; height: 18px;
+        border-radius: 999px;
+        background: var(--forest-500);
+        display: grid; place-items: center;
+        color: white;
+      }
+      .turn-row .edit {
+        font-size: 12px;
+        color: var(--forest-300);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .turn-row .edit:hover { color: var(--cream); }
+
+      /* ==== Sprout's question ==== */
+      .sprout-q {
+        display: flex; gap: 14px; align-items: flex-start;
+        margin-bottom: 22px;
+      }
+      .sprout-q .av {
+        width: 38px; height: 38px;
+        border-radius: 12px;
+        background: var(--cream);
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+        flex: none;
+      }
+      .sprout-q .bubble {
+        background: var(--cream);
+        color: var(--ink);
+        padding: 16px 22px;
+        border-radius: 6px 22px 22px 22px;
+        max-width: 540px;
+        font-size: 16px;
+        line-height: 1.5;
+        position: relative;
+      }
+      .sprout-q .bubble::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 6px 22px 22px 22px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'><path d='M14 8 C 80 4, 160 12, 240 6 S 400 14, 500 4 S 590 18, 588 60 S 595 100, 590 110 S 580 118, 500 116 S 300 118, 180 116 S 30 118, 12 110 S 4 80, 8 50 S 4 14, 14 8 Z' fill='none' stroke='%231c4232' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.13'/></svg>") no-repeat center/100% 100%;
+        pointer-events: none;
+      }
+      .sprout-q .agent-name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 13px;
+        color: var(--forest-700);
+        margin-bottom: 4px;
+      }
+      .sprout-q strong {
+        background: linear-gradient(180deg, transparent 60%, var(--peach-100) 60%);
+        font-weight: 600;
+        padding: 0 2px;
+      }
+
+      /* ==== Picker grid ==== */
+      .picker {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        max-width: 720px;
+        margin-left: 52px;
+        position: relative;
+      }
+      .opt {
+        background: var(--cream);
+        border-radius: var(--r-lg);
+        padding: 18px 20px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        border: 2.5px solid transparent;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+        color: var(--ink);
+      }
+      .opt:hover {
+        transform: translateY(-2px);
+      }
+      .opt.selected {
+        border-color: var(--tomato-500);
+      }
+      .opt.selected::after {
+        content: "";
+        position: absolute;
+        top: 14px; right: 14px;
+        width: 24px; height: 24px;
+        border-radius: 999px;
+        background: var(--tomato-500);
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+        background-size: 14px;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      .opt .illu {
+        height: 100px;
+        background: var(--peach-50);
+        border-radius: 18px;
+        display: grid; place-items: center;
+        margin-bottom: 14px;
+        position: relative;
+        overflow: hidden;
+      }
+      .opt h4 {
+        margin: 0 0 4px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 18px;
+        letter-spacing: -0.005em;
+        color: var(--forest-900);
+      }
+      .opt .desc {
+        font-size: 13px;
+        color: var(--ink-soft);
+        line-height: 1.4;
+      }
+      .opt .badge-recommended {
+        position: absolute;
+        top: -10px; left: 16px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 12.5px;
+        background: var(--tomato-500);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 999px;
+        letter-spacing: 0.005em;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* hand-drawn note pointing at recommended option */
+      .reco-note {
+        position: absolute;
+        right: -120px;
+        top: 30px;
+        width: 160px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 14.5px;
+        color: var(--tomato-300);
+        line-height: 1.3;
+        transform: rotate(3deg);
+      }
+      .reco-note .arr {
+        display: block;
+        width: 80px;
+        margin: 6px 0 0 -10px;
+      }
+
+      /* ==== CTA row ==== */
+      .actions {
+        margin: 32px 0 0 52px;
+        display: flex; align-items: center; gap: 12px;
+        max-width: 720px;
+      }
+      .btn {
+        font: 600 14px/1 "Inter", sans-serif;
+        border: 0;
+        padding: 14px 24px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn.tomato {
+        background: var(--tomato-500);
+        color: white;
+        box-shadow: var(--shadow-sm);
+      }
+      .btn.tomato:hover { background: var(--tomato-700); }
+      .btn.ghost {
+        background: rgba(255, 248, 238, 0.08);
+        color: var(--cream);
+      }
+      .btn.ghost:hover { background: rgba(255, 248, 238, 0.14); }
+
+      .small-skip {
+        margin-left: auto;
+        font-size: 13px;
+        color: var(--forest-200);
+        opacity: 0.7;
+        text-decoration: none;
+      }
+      .small-skip:hover { opacity: 1; }
+
+      /* hint helper */
+      .hint {
+        margin: 22px 0 0 52px;
+        font-size: 12.5px;
+        color: var(--forest-300);
+        font-style: italic;
+        font-family: "Fraunces", serif;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        max-width: 640px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg class="blob blob-1" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#F49077" d="M421,316Q391,383,326,427Q261,472,193,431Q125,391,99,323Q73,255,118,194Q164,134,235,98Q306,62,371,108Q437,154,449,227Q461,300,421,316Z"/>
+    </svg>
+    <svg class="blob blob-2" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#A8D5B8" d="M438,318Q406,386,341,420Q276,455,206,425Q137,395,103,322Q70,249,121,184Q172,119,243,98Q315,78,381,123Q447,168,461,234Q475,300,438,318Z"/>
+    </svg>
+
+    <div class="frame">
+      <!-- top bar -->
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+              <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+            </svg>
+          </div>
+          <div class="brand-name">Garden Agent</div>
+        </div>
+
+        <div class="progress">
+          <span class="step-label">Step 3 of 5</span>
+          <div class="stages" aria-label="Progress">
+            <!-- 1: seed (done) -->
+            <div class="stage done" title="Step 1: name">
+              <svg width="18" height="18" viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="6" ry="7" fill="#a8d5b8"/><path d="M12 8 c -1 -3 1 -5 3 -5" stroke="#a8d5b8" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+            </div>
+            <!-- 2: sprout (done) -->
+            <div class="stage done" title="Step 2: location">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 21V12" stroke="#a8d5b8" stroke-width="2" stroke-linecap="round"/><path d="M12 13 C 12 13 8 12 7 9 C 7 7 9 7 11 9 C 12 10.5 12 13 12 13" fill="#a8d5b8"/><path d="M12 13 C 12 13 16 12 17 9 C 17 7 15 7 13 9 C 12 10.5 12 13 12 13" fill="#6ea88f"/></svg>
+            </div>
+            <!-- 3: leafy (now) -->
+            <div class="stage now" title="Step 3: your space">
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path d="M12 21V8" stroke="#E2553A" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M12 12 C 8 12 5 9 5 6 C 8 6 11 8 12 12 Z" fill="#E2553A"/>
+                <path d="M12 10 C 16 10 19 7 19 4 C 16 4 13 6 12 10 Z" fill="#F49077"/>
+              </svg>
+            </div>
+            <!-- 4: bud (todo) -->
+            <div class="stage" title="Step 4: what you grow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a8d5b8" stroke-width="1.6"><path d="M12 21V12"/><circle cx="12" cy="8" r="4"/></svg>
+            </div>
+            <!-- 5: fruit (todo) -->
+            <div class="stage" title="Step 5: goals">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a8d5b8" stroke-width="1.6"><circle cx="12" cy="14" r="6"/><path d="M12 8 c 0 -3 2 -4 4 -4"/></svg>
+            </div>
+          </div>
+        </div>
+        <a href="#" class="save-exit">Save &amp; finish later</a>
+      </div>
+
+      <!-- Heading -->
+      <div class="eyebrow">Setting up · 3 of 5</div>
+      <h1 class="h1">Where <em>do you</em><br/>garden, Kosta?</h1>
+      <svg class="scribble" viewBox="0 0 240 22" preserveAspectRatio="none">
+        <path d="M4 14 C 30 4, 60 22, 90 10 S 150 4, 180 14 S 220 22, 236 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <p class="lede">
+        Sprout uses your space to plan watering, sun exposure, and what'll
+        actually thrive. You can change this later — and add more spaces
+        too (a balcony at one place, a community plot at another).
+      </p>
+
+      <!-- Prior turns -->
+      <div class="thread">
+        <div class="lab">↶ already covered</div>
+        <div class="turn-row">
+          <div class="av">
+            <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/></svg>
+          </div>
+          <span class="q">What should I call you?</span>
+          <span class="arrow">→</span>
+          <span class="a">Kosta</span>
+          <a href="#" class="edit">Edit</a>
+          <span class="check">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+        </div>
+        <div class="turn-row">
+          <div class="av">
+            <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/></svg>
+          </div>
+          <span class="q">Where in the world?</span>
+          <span class="arrow">→</span>
+          <span class="a">Brunswick, VIC · zone 10b</span>
+          <a href="#" class="edit">Edit</a>
+          <span class="check">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Sprout's current question -->
+      <div class="sprout-q">
+        <div class="av">
+          <svg width="22" height="22" viewBox="0 0 24 24">
+            <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+            <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+          </svg>
+        </div>
+        <div>
+          <div class="agent-name">Sprout</div>
+          <div class="bubble">
+            What does your space look like? Pick the closest match —
+            <strong>I'll tailor everything</strong> from there.
+          </div>
+        </div>
+      </div>
+
+      <!-- Picker -->
+      <div class="picker">
+        <!-- Balcony / patio -->
+        <div class="opt">
+          <div class="illu">
+            <svg width="160" height="92" viewBox="0 0 200 110">
+              <!-- balcony rail -->
+              <line x1="10" y1="90" x2="190" y2="90" stroke="#7A5318" stroke-width="3"/>
+              <line x1="20" y1="90" x2="20" y2="60" stroke="#7A5318" stroke-width="2"/>
+              <line x1="180" y1="90" x2="180" y2="60" stroke="#7A5318" stroke-width="2"/>
+              <line x1="10" y1="60" x2="190" y2="60" stroke="#7A5318" stroke-width="2"/>
+              <line x1="60" y1="90" x2="60" y2="60" stroke="#7A5318" stroke-width="1.5"/>
+              <line x1="100" y1="90" x2="100" y2="60" stroke="#7A5318" stroke-width="1.5"/>
+              <line x1="140" y1="90" x2="140" y2="60" stroke="#7A5318" stroke-width="1.5"/>
+              <!-- pots -->
+              <rect x="30" y="68" width="22" height="22" rx="3" fill="#B8351F"/>
+              <path d="M30 70 L 52 70" stroke="#8B2615" stroke-width="2"/>
+              <path d="M41 68 Q 39 50 44 38 Q 48 30 41 22" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="36" cy="44" rx="6" ry="9" fill="#6EA88F" transform="rotate(-15 36 44)"/>
+              <ellipse cx="46" cy="36" rx="6" ry="9" fill="#2F6A52" transform="rotate(15 46 36)"/>
+
+              <rect x="70" y="72" width="20" height="18" rx="3" fill="#B8351F"/>
+              <path d="M80 72 Q 80 60 80 50" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <circle cx="76" cy="56" r="6" fill="#6EA88F"/>
+              <circle cx="84" cy="50" r="6" fill="#2F6A52"/>
+
+              <rect x="110" y="65" width="26" height="25" rx="4" fill="#B8351F"/>
+              <path d="M123 65 Q 121 45 123 30" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="118" cy="42" rx="7" ry="10" fill="#6EA88F" transform="rotate(-10 118 42)"/>
+              <ellipse cx="128" cy="36" rx="7" ry="10" fill="#2F6A52" transform="rotate(10 128 36)"/>
+              <circle cx="123" cy="30" r="5" fill="#F49077"/>
+
+              <rect x="150" y="74" width="18" height="16" rx="3" fill="#B8351F"/>
+              <ellipse cx="159" cy="62" rx="7" ry="9" fill="#6EA88F"/>
+            </svg>
+          </div>
+          <h4>Balcony / patio</h4>
+          <div class="desc">Pots and planters, vertical-friendly</div>
+        </div>
+
+        <!-- Backyard with raised beds (recommended + selected) -->
+        <div class="opt selected">
+          <span class="badge-recommended">recommended for you</span>
+          <div class="illu">
+            <svg width="170" height="92" viewBox="0 0 200 110">
+              <!-- ground -->
+              <rect x="0" y="92" width="200" height="18" fill="#A8D5B8" opacity="0.5"/>
+              <!-- back fence -->
+              <line x1="0" y1="60" x2="200" y2="60" stroke="#7A5318" stroke-width="1.2" opacity="0.5"/>
+              <!-- raised bed 1 -->
+              <rect x="20" y="78" width="60" height="14" rx="2" fill="#7A5318"/>
+              <rect x="22" y="74" width="56" height="6" fill="#a87838"/>
+              <!-- plants in bed 1 (tomato cluster) -->
+              <path d="M40 74 Q 38 50 42 30" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="35" cy="52" rx="6" ry="8" fill="#6EA88F" transform="rotate(-15 35 52)"/>
+              <ellipse cx="46" cy="46" rx="6" ry="8" fill="#2F6A52" transform="rotate(15 46 46)"/>
+              <circle cx="38" cy="62" r="4" fill="#E2553A"/>
+              <circle cx="46" cy="58" r="3.5" fill="#F49077"/>
+              <!-- second plant cluster -->
+              <path d="M60 74 Q 60 56 60 42" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <circle cx="56" cy="50" r="6" fill="#6EA88F"/>
+              <circle cx="64" cy="46" r="6" fill="#2F6A52"/>
+
+              <!-- raised bed 2 -->
+              <rect x="100" y="80" width="80" height="12" rx="2" fill="#7A5318"/>
+              <rect x="102" y="76" width="76" height="6" fill="#a87838"/>
+              <!-- lettuces -->
+              <ellipse cx="115" cy="74" rx="9" ry="6" fill="#A8D5B8"/>
+              <ellipse cx="115" cy="72" rx="6" ry="4" fill="#6EA88F"/>
+              <ellipse cx="135" cy="72" rx="9" ry="6" fill="#A8D5B8"/>
+              <ellipse cx="135" cy="70" rx="6" ry="4" fill="#6EA88F"/>
+              <ellipse cx="155" cy="74" rx="9" ry="6" fill="#A8D5B8"/>
+              <ellipse cx="155" cy="72" rx="6" ry="4" fill="#6EA88F"/>
+              <ellipse cx="170" cy="73" rx="7" ry="5" fill="#A8D5B8"/>
+
+              <!-- watering can in corner -->
+              <path d="M170 92 L 178 92 L 180 84 L 172 84 Z" fill="#3d7da3"/>
+              <path d="M180 86 L 188 82" stroke="#3d7da3" stroke-width="2"/>
+            </svg>
+          </div>
+          <h4>Backyard with beds</h4>
+          <div class="desc">Raised or in-ground beds, room to spread out</div>
+        </div>
+
+        <!-- Larger yard / acreage -->
+        <div class="opt">
+          <div class="illu">
+            <svg width="170" height="92" viewBox="0 0 200 110">
+              <rect x="0" y="92" width="200" height="18" fill="#A8D5B8" opacity="0.5"/>
+              <!-- big tree -->
+              <line x1="40" y1="92" x2="40" y2="50" stroke="#7A5318" stroke-width="3"/>
+              <ellipse cx="40" cy="42" rx="22" ry="20" fill="#2F6A52"/>
+              <ellipse cx="48" cy="34" rx="14" ry="12" fill="#6EA88F"/>
+              <!-- multiple beds -->
+              <rect x="80" y="82" width="36" height="10" rx="2" fill="#7A5318"/>
+              <ellipse cx="90" cy="76" rx="6" ry="5" fill="#A8D5B8"/>
+              <ellipse cx="106" cy="76" rx="6" ry="5" fill="#6EA88F"/>
+              <rect x="125" y="80" width="40" height="12" rx="2" fill="#7A5318"/>
+              <path d="M138 80 Q 138 62 138 50" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="135" cy="60" rx="5" ry="7" fill="#6EA88F"/>
+              <ellipse cx="143" cy="56" rx="5" ry="7" fill="#2F6A52"/>
+              <circle cx="155" cy="76" r="4" fill="#E2553A"/>
+              <!-- compost / shed -->
+              <rect x="170" y="74" width="22" height="18" fill="#a87838"/>
+              <path d="M170 74 L 181 64 L 192 74 Z" fill="#7A5318"/>
+            </svg>
+          </div>
+          <h4>Larger yard or acreage</h4>
+          <div class="desc">Multiple beds, fruit trees, room to experiment</div>
+        </div>
+
+        <!-- Community plot -->
+        <div class="opt">
+          <div class="illu">
+            <svg width="170" height="92" viewBox="0 0 200 110">
+              <rect x="0" y="92" width="200" height="18" fill="#A8D5B8" opacity="0.5"/>
+              <!-- grid of plots, others ghosted -->
+              <rect x="10" y="64" width="40" height="28" rx="2" fill="#7A5318" opacity="0.4"/>
+              <rect x="55" y="64" width="40" height="28" rx="2" fill="#7A5318"/>
+              <rect x="100" y="64" width="40" height="28" rx="2" fill="#7A5318" opacity="0.4"/>
+              <rect x="145" y="64" width="40" height="28" rx="2" fill="#7A5318" opacity="0.4"/>
+              <!-- your plot has plants -->
+              <path d="M68 64 Q 66 46 70 30" stroke="#2F6A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="64" cy="40" rx="5" ry="7" fill="#6EA88F" transform="rotate(-15 64 40)"/>
+              <ellipse cx="72" cy="36" rx="5" ry="7" fill="#2F6A52" transform="rotate(15 72 36)"/>
+              <circle cx="68" cy="50" r="4" fill="#E2553A"/>
+              <ellipse cx="86" cy="62" rx="6" ry="4" fill="#A8D5B8"/>
+              <ellipse cx="86" cy="61" rx="4" ry="2.5" fill="#6EA88F"/>
+              <!-- "your plot" tag -->
+              <rect x="60" y="55" width="32" height="9" rx="3" fill="#E2553A"/>
+              <text x="76" y="62" text-anchor="middle" font-family="Inter" font-size="6" font-weight="700" fill="white" letter-spacing="0.5">YOURS</text>
+            </svg>
+          </div>
+          <h4>Community plot</h4>
+          <div class="desc">A shared garden or allotment site</div>
+        </div>
+
+        <!-- recommended note + arrow -->
+        <div class="reco-note">
+          based on your suburb,<br/>most people start here
+          <svg class="arr" viewBox="0 0 80 30">
+            <path d="M70 22 C 50 22, 30 8, 4 8" stroke="#F49077" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M12 2 L 4 8 L 10 14" stroke="#F49077" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Hint helper -->
+      <p class="hint">
+        Mix &amp; match later — you can add a windowsill setup, an indoor
+        propagation shelf, or a second plot at any time.
+      </p>
+
+      <!-- CTA row -->
+      <div class="actions">
+        <button class="btn ghost">← Back</button>
+        <button class="btn tomato">
+          Continue
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <a href="#" class="small-skip">Skip this step</a>
+      </div>
+    </div>
+  </body>
+</html>
