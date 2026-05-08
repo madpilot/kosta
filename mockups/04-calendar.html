@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprout — Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest-900: #0f2419;
+        --forest-800: #163528;
+        --forest-700: #1c4232;
+        --forest-600: #245440;
+        --forest-500: #2f6a52;
+        --forest-300: #6ea88f;
+        --forest-200: #a8d5b8;
+        --forest-100: #d3e6dc;
+
+        --tomato-700: #b8351f;
+        --tomato-500: #e2553a;
+        --tomato-300: #f49077;
+        --tomato-100: #fbe0d6;
+
+        --water-500: #3d7da3;
+        --water-300: #79b6d6;
+        --water-100: #dceaf6;
+
+        --soil-500: #a87838;
+        --soil-300: #d4a96a;
+        --soil-100: #ecdcc7;
+
+        --peach-200: #fbdcb4;
+        --peach-100: #fdebd3;
+        --peach-50: #fff5e4;
+
+        --cream: #fff8ee;
+        --bone: #fefaf2;
+        --paper: #fdf5e7;
+        --ink: #1a2b25;
+        --ink-soft: #4d5e57;
+        --ink-mute: #8a978f;
+
+        --r-sm: 10px;
+        --r-md: 18px;
+        --r-lg: 28px;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.22),
+          0 2px 6px rgba(0, 0, 0, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--forest-800);
+        color: var(--forest-100);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "cv11";
+        background-image:
+          radial-gradient(ellipse 800px 500px at 80% -10%, rgba(228, 144, 119, 0.18), transparent 60%),
+          radial-gradient(ellipse 600px 400px at -5% 110%, rgba(168, 213, 184, 0.15), transparent 60%);
+        min-height: 100vh;
+      }
+      body::before {
+        content: "";
+        position: fixed; inset: 0;
+        pointer-events: none;
+        opacity: 0.06; z-index: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+      }
+      .blob { position: absolute; z-index: 0; pointer-events: none; }
+      .blob-1 { top: -180px; right: -160px; width: 540px; opacity: 0.20; }
+      .blob-2 { bottom: -120px; left: -120px; width: 360px; opacity: 0.16; }
+
+      .app {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 268px 1fr;
+        min-height: 100vh;
+      }
+
+      /* sidebar (shared) */
+      .sidebar {
+        position: relative;
+        z-index: 2;
+        padding: 24px 18px;
+        border-right: 1px solid rgba(255, 248, 238, 0.07);
+      }
+      .brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 22px; }
+      .brand-mark {
+        width: 36px; height: 36px;
+        border-radius: 12px;
+        background: var(--cream);
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .brand-name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 19px;
+        color: var(--cream);
+      }
+      .nav { display: flex; flex-direction: column; gap: 2px; }
+      .nav a {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        color: var(--forest-100);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 14px;
+        opacity: 0.8;
+      }
+      .nav a:hover { background: rgba(255, 248, 238, 0.06); opacity: 1; }
+      .nav a.active {
+        background: var(--cream);
+        color: var(--forest-900);
+        box-shadow: var(--shadow-sm);
+        opacity: 1;
+        font-weight: 600;
+      }
+      .nav .ico { width: 17px; height: 17px; flex: none; }
+
+      .filters {
+        margin-top: 24px;
+        padding: 16px;
+        background: rgba(255, 248, 238, 0.06);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        border-radius: var(--r-md);
+      }
+      .filters .lab {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--forest-300);
+        margin-bottom: 10px;
+      }
+      .filter {
+        display: flex; align-items: center; gap: 10px;
+        padding: 7px 6px;
+        font-size: 13.5px;
+        color: var(--forest-100);
+        cursor: pointer;
+      }
+      .filter .swatch {
+        width: 12px; height: 12px;
+        border-radius: 4px;
+        flex: none;
+      }
+      .filter .count {
+        margin-left: auto;
+        font-size: 11.5px;
+        color: var(--forest-300);
+        font-weight: 600;
+      }
+      .filter input { display: none; }
+
+      /* main */
+      .main {
+        position: relative;
+        z-index: 1;
+        padding: 28px 44px 56px;
+      }
+      .topbar {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 24px;
+      }
+      .search {
+        flex: 1;
+        max-width: 420px;
+        background: rgba(255, 248, 238, 0.08);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        border-radius: 999px;
+        padding: 11px 18px 11px 42px;
+        font-size: 13.5px;
+        color: var(--forest-200);
+        position: relative;
+      }
+      .search::before {
+        content: "";
+        position: absolute;
+        left: 16px; top: 50%; transform: translateY(-50%);
+        width: 16px; height: 16px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8d5b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>") no-repeat center/contain;
+      }
+      .icon-btn {
+        width: 42px; height: 42px;
+        background: rgba(255, 248, 238, 0.08);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        border-radius: 14px;
+        display: grid; place-items: center;
+        cursor: pointer;
+      }
+      .icon-btn:hover { background: rgba(255, 248, 238, 0.14); }
+      .avatar {
+        width: 42px; height: 42px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--tomato-300), var(--tomato-500));
+        display: grid; place-items: center;
+        color: white; font-weight: 700;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* page heading */
+      .pagehead {
+        position: relative;
+        margin-bottom: 22px;
+      }
+      .eyebrow {
+        font-weight: 700; font-size: 11.5px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 8px;
+      }
+      .h1 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 64px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        color: var(--cream);
+      }
+      .h1 .upright { font-style: normal; font-weight: 600; }
+      .scribble { display: block; margin: -2px 0 10px -4px; height: 22px; max-width: 280px; }
+      .pagehead .meta {
+        font-size: 14px;
+        color: var(--forest-200);
+      }
+      .pagehead-side-note {
+        position: absolute;
+        right: 12px; top: 24px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 15px;
+        color: var(--tomato-300);
+        text-align: right;
+        line-height: 1.3;
+        transform: rotate(-2deg);
+        max-width: 220px;
+      }
+
+      /* toolbar */
+      .toolbar {
+        display: flex; align-items: center; gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+      }
+      .month-nav {
+        display: flex; align-items: center; gap: 4px;
+        background: rgba(255, 248, 238, 0.08);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        border-radius: 14px;
+        padding: 4px;
+      }
+      .month-nav button {
+        width: 32px; height: 32px;
+        border: 0; background: transparent;
+        color: var(--cream);
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .month-nav button:hover { background: rgba(255,248,238,0.10); }
+      .month-nav .label {
+        padding: 0 14px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 16px;
+        color: var(--cream);
+        letter-spacing: -0.01em;
+      }
+      .toolbar .today-btn {
+        font: 600 13px/1 "Inter", sans-serif;
+        background: rgba(255, 248, 238, 0.08);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        color: var(--cream);
+        padding: 10px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+      }
+      .view-toggle {
+        display: flex;
+        background: rgba(255, 248, 238, 0.08);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        border-radius: 12px;
+        padding: 3px;
+      }
+      .view-toggle button {
+        font: 600 13px/1 "Inter", sans-serif;
+        background: transparent;
+        border: 0;
+        color: var(--forest-200);
+        padding: 8px 14px;
+        border-radius: 9px;
+        cursor: pointer;
+      }
+      .view-toggle button.active {
+        background: var(--cream);
+        color: var(--forest-900);
+      }
+      .toolbar .spacer { flex: 1; }
+      .gen-btn {
+        font: 600 13.5px/1 "Inter", sans-serif;
+        background: var(--tomato-500);
+        color: white;
+        border: 0;
+        padding: 11px 18px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        box-shadow: var(--shadow-sm);
+      }
+      .gen-btn:hover { background: var(--tomato-700); }
+
+      /* weather strip */
+      .weather-strip {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        margin-bottom: 6px;
+        padding: 0 6px;
+      }
+      .wcell {
+        display: flex; align-items: center; justify-content: center;
+        gap: 6px;
+        padding: 6px 8px;
+        font-size: 12px;
+        color: var(--forest-200);
+        background: rgba(255, 248, 238, 0.05);
+        border-radius: 10px;
+      }
+      .wcell.rain { background: rgba(61, 125, 163, 0.18); color: var(--water-300); }
+      .wcell.hot { background: rgba(228, 85, 58, 0.16); color: var(--tomato-300); }
+      .wcell .icon { font-size: 13px; }
+
+      /* month grid */
+      .month {
+        background: var(--cream);
+        border-radius: var(--r-lg);
+        padding: 10px;
+        box-shadow: var(--shadow-md);
+        position: relative;
+      }
+      .weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        padding: 4px 8px 8px;
+      }
+      .weekdays div {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+        text-align: left;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-auto-rows: 122px;
+        gap: 4px;
+      }
+      .cell {
+        background: var(--bone);
+        border-radius: 14px;
+        padding: 8px 10px 6px;
+        position: relative;
+        overflow: hidden;
+        display: flex; flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+      }
+      .cell:hover { background: var(--paper); }
+      .cell.weekend { background: var(--peach-50); }
+      .cell.outside { background: transparent; opacity: 0.45; }
+      .cell.outside .num { color: var(--ink-mute); }
+
+      .cell .num {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 48;
+        font-size: 22px;
+        line-height: 1;
+        color: var(--forest-900);
+        letter-spacing: -0.01em;
+      }
+      .cell.today .num {
+        font-style: normal;
+        font-weight: 700;
+        color: var(--tomato-700);
+      }
+      .cell.today {
+        background: var(--cream);
+        box-shadow: 0 0 0 2px var(--tomato-500),
+          inset 0 0 0 1px var(--cream);
+      }
+      .cell.today::before {
+        content: "today";
+        position: absolute;
+        top: 8px; right: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tomato-500);
+      }
+
+      .ev {
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 3px 7px 3px 6px;
+        border-radius: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: flex; align-items: center; gap: 5px;
+        line-height: 1.2;
+      }
+      .ev .dot {
+        width: 6px; height: 6px;
+        border-radius: 999px;
+        flex: none;
+      }
+      .ev.water { background: var(--water-100); color: #1f4f7a; }
+      .ev.water .dot { background: var(--water-500); }
+      .ev.harvest { background: var(--tomato-100); color: var(--tomato-700); }
+      .ev.harvest .dot { background: var(--tomato-500); }
+      .ev.fert { background: var(--soil-100); color: #7a5318; }
+      .ev.fert .dot { background: var(--soil-500); }
+      .ev.plant { background: #d8ecde; color: #1c4232; }
+      .ev.plant .dot { background: var(--forest-500); }
+      .ev.prune { background: #e0e8d8; color: #4d5e22; }
+      .ev.prune .dot { background: #6e8a3e; }
+      .ev.ai::after {
+        content: "✦";
+        margin-left: auto;
+        color: var(--forest-500);
+        font-size: 10px;
+        opacity: 0.7;
+      }
+      .more {
+        font-size: 11px;
+        color: var(--ink-mute);
+        font-weight: 600;
+        padding: 0 6px;
+      }
+
+      /* "rain skipped" overlay strip */
+      .cell.rainy::after {
+        content: "";
+        position: absolute;
+        left: 0; right: 0; top: 0;
+        height: 3px;
+        background: repeating-linear-gradient(45deg, var(--water-300) 0 4px, transparent 4px 8px);
+        opacity: 0.7;
+      }
+
+      /* coming up footer */
+      .coming {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 18px;
+      }
+      .panel {
+        background: var(--cream);
+        border-radius: var(--r-lg);
+        padding: 22px 24px;
+        box-shadow: var(--shadow-md);
+        color: var(--ink);
+      }
+      .panel h3 {
+        margin: 0 0 4px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 60;
+        font-size: 22px;
+        color: var(--forest-900);
+        letter-spacing: -0.01em;
+      }
+      .panel h3 .upright { font-style: normal; font-weight: 600; }
+      .panel .sub {
+        margin: 0 0 16px;
+        font-size: 13px;
+        color: var(--ink-soft);
+      }
+      .focus-list { display: flex; flex-direction: column; gap: 10px; }
+      .focus-row {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 12px;
+        background: var(--bone);
+        border-radius: 14px;
+      }
+      .focus-row .when {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-variation-settings: "SOFT" 100, "opsz" 48;
+        font-weight: 500;
+        font-size: 18px;
+        color: var(--forest-700);
+        flex: none;
+        min-width: 64px;
+        letter-spacing: -0.005em;
+      }
+      .focus-row .label { font-weight: 600; font-size: 14px; color: var(--forest-900); }
+      .focus-row .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+      .focus-row .right { margin-left: auto; }
+      .focus-row .ev { font-size: 11px; }
+
+      .legend-box {
+        display: flex; flex-direction: column; gap: 10px;
+        font-size: 13px;
+        color: var(--ink-soft);
+      }
+      .legend-box .row { display: flex; align-items: center; gap: 10px; }
+      .legend-box .ai-mark {
+        font-size: 13px; color: var(--forest-500);
+      }
+    </style>
+  </head>
+  <body>
+    <svg class="blob blob-1" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#F49077" d="M421,316Q391,383,326,427Q261,472,193,431Q125,391,99,323Q73,255,118,194Q164,134,235,98Q306,62,371,108Q437,154,449,227Q461,300,421,316Z"/>
+    </svg>
+    <svg class="blob blob-2" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#A8D5B8" d="M438,318Q406,386,341,420Q276,455,206,425Q137,395,103,322Q70,249,121,184Q172,119,243,98Q315,78,381,123Q447,168,461,234Q475,300,438,318Z"/>
+    </svg>
+
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+              <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+            </svg>
+          </div>
+          <div class="brand-name">Sprout</div>
+        </div>
+        <nav class="nav">
+          <a href="#"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Today</a>
+          <a href="#"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 1 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>My garden</a>
+          <a href="#" class="active"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendar</a>
+          <a href="#"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.5-7.1L21 4v6h-6"/><circle cx="12" cy="12" r="3"/></svg>Ask Sprout</a>
+          <a href="#"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13l5 5v5a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7z"/><path d="M16 7v5h5"/></svg>Harvests</a>
+        </nav>
+
+        <div class="filters">
+          <div class="lab">Show</div>
+          <label class="filter"><span class="swatch" style="background:#3d7da3"></span>Watering<span class="count">14</span></label>
+          <label class="filter"><span class="swatch" style="background:#e2553a"></span>Harvest<span class="count">9</span></label>
+          <label class="filter"><span class="swatch" style="background:#a87838"></span>Fertilize<span class="count">4</span></label>
+          <label class="filter"><span class="swatch" style="background:#2F6A52"></span>Plant / sow<span class="count">6</span></label>
+          <label class="filter"><span class="swatch" style="background:#6e8a3e"></span>Prune<span class="count">3</span></label>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="main">
+        <div class="topbar">
+          <div class="search">Search calendar…</div>
+          <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg></div>
+          <div class="avatar">K</div>
+        </div>
+
+        <header class="pagehead">
+          <div class="eyebrow">Calendar · auto-scheduled</div>
+          <h1 class="h1"><span class="upright">May</span> <em>in the</em> garden</h1>
+          <svg class="scribble" viewBox="0 0 280 22" preserveAspectRatio="none">
+            <path d="M4 14 C 40 4, 80 22, 120 10 S 200 4, 240 14 S 270 22, 276 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="meta">36 tasks · 4 plant-out windows · last frost ~mid June</div>
+          <div class="pagehead-side-note">
+            cool weather's<br/>here — sow<br/>brassicas this week
+          </div>
+        </header>
+
+        <!-- toolbar -->
+        <div class="toolbar">
+          <div class="month-nav">
+            <button aria-label="Previous month">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <span class="label">May 2026</span>
+            <button aria-label="Next month">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+          <button class="today-btn">Today</button>
+          <div class="view-toggle">
+            <button>Day</button>
+            <button>Week</button>
+            <button class="active">Month</button>
+            <button>List</button>
+          </div>
+          <div class="spacer"></div>
+          <button class="gen-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+            </svg>
+            Re-plan with Sprout
+          </button>
+        </div>
+
+        <!-- weather strip across visible week (current week row) -->
+        <div class="weather-strip">
+          <div class="wcell"><span class="icon">☀️</span>22°</div>
+          <div class="wcell"><span class="icon">⛅</span>20°</div>
+          <div class="wcell"><span class="icon">☁️</span>18°</div>
+          <div class="wcell rain"><span class="icon">🌧️</span>16°</div>
+          <div class="wcell"><span class="icon">⛅</span>19°</div>
+          <div class="wcell hot"><span class="icon">☀️</span>26°</div>
+          <div class="wcell"><span class="icon">☀️</span>24°</div>
+        </div>
+
+        <!-- Month grid -->
+        <div class="month">
+          <div class="weekdays">
+            <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+          </div>
+          <div class="grid">
+            <!-- Row 1 (Apr 27 – May 3) -->
+            <div class="cell outside"><div class="num">27</div>
+              <div class="ev water"><span class="dot"></span>Herbs</div>
+            </div>
+            <div class="cell outside"><div class="num">28</div></div>
+            <div class="cell outside"><div class="num">29</div>
+              <div class="ev plant ai"><span class="dot"></span>Sow broccoli</div>
+            </div>
+            <div class="cell outside"><div class="num">30</div>
+              <div class="ev water"><span class="dot"></span>Bed 2</div>
+            </div>
+            <div class="cell"><div class="num">1</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+              <div class="ev harvest"><span class="dot"></span>Tomatoes</div>
+            </div>
+            <div class="cell weekend"><div class="num">2</div>
+              <div class="ev plant ai"><span class="dot"></span>Garlic</div>
+            </div>
+            <div class="cell weekend"><div class="num">3</div>
+              <div class="ev fert ai"><span class="dot"></span>Mulch beds</div>
+            </div>
+
+            <!-- Row 2 (May 4 – May 10), today is Fri 8 -->
+            <div class="cell"><div class="num">4</div>
+              <div class="ev water"><span class="dot"></span>Herbs</div>
+            </div>
+            <div class="cell"><div class="num">5</div>
+              <div class="ev plant ai"><span class="dot"></span>Sow peas</div>
+              <div class="ev water"><span class="dot"></span>Bed 1</div>
+            </div>
+            <div class="cell"><div class="num">6</div></div>
+            <div class="cell rainy"><div class="num">7</div>
+              <div class="ev water" style="opacity:.55;text-decoration:line-through"><span class="dot"></span>Skipped (rain)</div>
+            </div>
+            <div class="cell today"><div class="num">8</div>
+              <div class="ev water"><span class="dot"></span>Basil &amp; thyme</div>
+              <div class="ev harvest"><span class="dot"></span>Cherry toms</div>
+              <div class="ev fert ai"><span class="dot"></span>Capsicum</div>
+            </div>
+            <div class="cell weekend"><div class="num">9</div>
+              <div class="ev plant"><span class="dot"></span>Brassicas</div>
+              <div class="ev water"><span class="dot"></span>Bed 2</div>
+            </div>
+            <div class="cell weekend"><div class="num">10</div>
+              <div class="ev fert ai"><span class="dot"></span>Mulch herbs</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+            </div>
+
+            <!-- Row 3 (May 11 – 17) -->
+            <div class="cell"><div class="num">11</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+            </div>
+            <div class="cell"><div class="num">12</div>
+              <div class="ev prune ai"><span class="dot"></span>Prune toms</div>
+            </div>
+            <div class="cell"><div class="num">13</div>
+              <div class="ev water"><span class="dot"></span>Herbs</div>
+            </div>
+            <div class="cell"><div class="num">14</div>
+              <div class="ev fert ai"><span class="dot"></span>Side-dress</div>
+            </div>
+            <div class="cell"><div class="num">15</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+              <div class="ev harvest"><span class="dot"></span>Lettuce</div>
+              <div class="ev prune"><span class="dot"></span>Aphid check</div>
+            </div>
+            <div class="cell weekend"><div class="num">16</div></div>
+            <div class="cell weekend"><div class="num">17</div>
+              <div class="ev plant ai"><span class="dot"></span>Garlic round 2</div>
+            </div>
+
+            <!-- Row 4 (May 18 – 24) -->
+            <div class="cell"><div class="num">18</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+            </div>
+            <div class="cell"><div class="num">19</div>
+              <div class="ev harvest"><span class="dot"></span>Last toms?</div>
+            </div>
+            <div class="cell"><div class="num">20</div>
+              <div class="ev water"><span class="dot"></span>Herbs</div>
+              <div class="ev plant ai"><span class="dot"></span>Sow rocket</div>
+            </div>
+            <div class="cell"><div class="num">21</div></div>
+            <div class="cell"><div class="num">22</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+              <div class="ev fert ai"><span class="dot"></span>Brassicas</div>
+            </div>
+            <div class="cell weekend"><div class="num">23</div>
+              <div class="ev prune"><span class="dot"></span>Tidy beds</div>
+            </div>
+            <div class="cell weekend"><div class="num">24</div></div>
+
+            <!-- Row 5 (May 25 – 31) -->
+            <div class="cell"><div class="num">25</div>
+              <div class="ev water"><span class="dot"></span>Herbs</div>
+            </div>
+            <div class="cell"><div class="num">26</div>
+              <div class="ev plant ai"><span class="dot"></span>Broad beans</div>
+            </div>
+            <div class="cell"><div class="num">27</div>
+              <div class="ev water"><span class="dot"></span>All beds</div>
+            </div>
+            <div class="cell"><div class="num">28</div></div>
+            <div class="cell"><div class="num">29</div>
+              <div class="ev fert ai"><span class="dot"></span>Compost top-up</div>
+              <div class="ev water"><span class="dot"></span>Bed 2</div>
+            </div>
+            <div class="cell weekend"><div class="num">30</div>
+              <div class="ev harvest"><span class="dot"></span>Final pull</div>
+            </div>
+            <div class="cell weekend"><div class="num">31</div></div>
+          </div>
+        </div>
+
+        <!-- coming up + legend -->
+        <div class="coming">
+          <section class="panel">
+            <h3><span class="upright">This</span> weekend's <em>focus</em></h3>
+            <p class="sub">3 generated by Sprout · 1 you set</p>
+            <div class="focus-list">
+              <div class="focus-row">
+                <span class="when">Sat 9</span>
+                <div>
+                  <div class="label">Plant out winter brassicas</div>
+                  <div class="meta">Bed 1 · 8 seedlings · ground prepped</div>
+                </div>
+                <div class="right"><span class="ev plant ai"><span class="dot"></span>Plant</span></div>
+              </div>
+              <div class="focus-row">
+                <span class="when">Sat 9</span>
+                <div>
+                  <div class="label">Deep water Bed 2</div>
+                  <div class="meta">Skipped Thu's water — soil is dry</div>
+                </div>
+                <div class="right"><span class="ev water"><span class="dot"></span>Water</span></div>
+              </div>
+              <div class="focus-row">
+                <span class="when">Sun 10</span>
+                <div>
+                  <div class="label">Mulch herb bed</div>
+                  <div class="meta">Sugar-cane mulch · 5 cm</div>
+                </div>
+                <div class="right"><span class="ev fert ai"><span class="dot"></span>Mulch</span></div>
+              </div>
+              <div class="focus-row">
+                <span class="when">Sun 10</span>
+                <div>
+                  <div class="label">Water all beds before heat</div>
+                  <div class="meta">26° forecast — water early</div>
+                </div>
+                <div class="right"><span class="ev water"><span class="dot"></span>Water</span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3>Reading the <em>grid</em></h3>
+            <p class="sub">A quick key</p>
+            <div class="legend-box">
+              <div class="row"><span class="ev water"><span class="dot"></span>Watering</span> regular soaks · skipped on rainy days</div>
+              <div class="row"><span class="ev harvest"><span class="dot"></span>Harvest</span> when fruit/leaf is ready</div>
+              <div class="row"><span class="ev fert ai"><span class="dot"></span>Fertilize</span> the <span class="ai-mark">✦</span> means Sprout suggested it</div>
+              <div class="row"><span class="ev plant"><span class="dot"></span>Plant / sow</span> seasonal windows</div>
+              <div class="row"><span class="ev prune"><span class="dot"></span>Prune / tidy</span> light maintenance</div>
+              <div class="row" style="margin-top:6px">
+                <span style="display:inline-block;width:24px;height:3px;background:repeating-linear-gradient(45deg,#79b6d6 0 4px,transparent 4px 8px)"></span>
+                top stripe = rain expected
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

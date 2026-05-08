@@ -1,0 +1,1426 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprout — Style Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest-900: #0f2419;
+        --forest-800: #163528;
+        --forest-700: #1c4232;
+        --forest-600: #245440;
+        --forest-500: #2f6a52;
+        --forest-300: #6ea88f;
+        --forest-200: #a8d5b8;
+        --forest-100: #d3e6dc;
+
+        --tomato-700: #b8351f;
+        --tomato-500: #e2553a;
+        --tomato-300: #f49077;
+        --tomato-100: #fbe0d6;
+
+        --water-500: #3d7da3;
+        --water-300: #79b6d6;
+        --water-100: #dceaf6;
+
+        --soil-500: #a87838;
+        --soil-300: #d4a96a;
+        --soil-100: #ecdcc7;
+
+        --peach-200: #fbdcb4;
+        --peach-100: #fdebd3;
+        --peach-50: #fff5e4;
+
+        --cream: #fff8ee;
+        --bone: #fefaf2;
+        --paper: #fdf5e7;
+        --ink: #1a2b25;
+        --ink-soft: #4d5e57;
+        --ink-mute: #8a978f;
+
+        --r-sm: 10px;
+        --r-md: 18px;
+        --r-lg: 28px;
+        --r-xl: 36px;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.22),
+          0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-lg: 0 22px 50px rgba(0, 0, 0, 0.30),
+          0 6px 14px rgba(0, 0, 0, 0.14);
+
+        --mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--forest-800);
+        color: var(--forest-100);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "cv11";
+        background-image:
+          radial-gradient(ellipse 800px 500px at 80% -10%, rgba(228, 144, 119, 0.18), transparent 60%),
+          radial-gradient(ellipse 600px 400px at -5% 110%, rgba(168, 213, 184, 0.15), transparent 60%);
+      }
+      body::before {
+        content: "";
+        position: fixed; inset: 0;
+        pointer-events: none; opacity: 0.06; z-index: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+      }
+      .blob { position: absolute; z-index: 0; pointer-events: none; }
+      .blob-1 { top: -200px; right: -180px; width: 600px; opacity: 0.18; }
+
+      .layout {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        max-width: 1320px;
+        margin: 0 auto;
+      }
+
+      /* === Sidebar TOC === */
+      .toc {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        padding: 28px 22px 32px;
+        border-right: 1px solid rgba(255, 248, 238, 0.07);
+        overflow-y: auto;
+      }
+      .toc .brand {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+      }
+      .toc .brand-mark {
+        width: 34px; height: 34px;
+        border-radius: 12px;
+        background: var(--cream);
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .toc .brand-name {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 48;
+        font-size: 16px;
+        color: var(--cream);
+        line-height: 1.1;
+      }
+      .toc .lab {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--forest-300);
+        margin: 18px 6px 8px;
+      }
+      .toc a {
+        display: block;
+        padding: 7px 10px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--forest-100);
+        font-size: 13.5px;
+        opacity: 0.78;
+      }
+      .toc a:hover { background: rgba(255, 248, 238, 0.06); opacity: 1; }
+
+      /* === Main === */
+      .main {
+        padding: 36px 48px 80px;
+        max-width: 1080px;
+      }
+
+      .pagehead {
+        margin-bottom: 56px;
+        position: relative;
+      }
+      .eyebrow {
+        font-weight: 700; font-size: 11.5px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 10px;
+      }
+      .h1 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 144;
+        font-size: 78px;
+        line-height: 0.92;
+        letter-spacing: -0.03em;
+        color: var(--cream);
+        max-width: 760px;
+      }
+      .h1 em { font-style: italic; color: var(--tomato-300); font-weight: 500; }
+      .scribble {
+        display: block;
+        margin: -2px 0 14px -4px;
+        height: 22px;
+        max-width: 280px;
+      }
+      .lede {
+        font-size: 16px; line-height: 1.55;
+        color: var(--forest-200);
+        max-width: 580px;
+        margin: 0;
+      }
+      .lede em.tag {
+        font-style: italic;
+        color: var(--tomato-300);
+        font-family: "Fraunces", serif;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+      }
+
+      /* section */
+      section {
+        padding: 28px 0 36px;
+        border-top: 1px dashed rgba(255, 248, 238, 0.10);
+      }
+      section:first-of-type { border-top: 0; }
+      section > h2 {
+        margin: 0 0 6px;
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 40px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--cream);
+      }
+      section > h2 em { font-style: italic; color: var(--tomato-300); font-weight: 500; }
+      section > h2 .upright { font-style: normal; font-weight: 600; }
+      section > .intro {
+        margin: 4px 0 24px;
+        font-size: 14.5px;
+        color: var(--forest-200);
+        max-width: 620px;
+        line-height: 1.6;
+      }
+
+      h3.sub {
+        margin: 28px 0 14px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 60;
+        font-size: 22px;
+        color: var(--cream);
+        letter-spacing: -0.01em;
+      }
+      h3.sub .upright { font-style: normal; font-weight: 600; }
+
+      .panel {
+        background: var(--cream);
+        color: var(--ink);
+        border-radius: var(--r-lg);
+        padding: 24px 26px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 18px;
+      }
+      .panel.dark {
+        background: var(--forest-700);
+        color: var(--cream);
+      }
+      .panel.paper { background: var(--paper); }
+
+      /* code value chips */
+      code, .mono {
+        font-family: var(--mono);
+        font-size: 12.5px;
+      }
+      .token {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--mono);
+        font-size: 12px;
+        background: rgba(15, 36, 25, 0.06);
+        color: var(--ink-soft);
+        padding: 3px 8px;
+        border-radius: 6px;
+      }
+      .panel.dark .token {
+        background: rgba(255, 248, 238, 0.10);
+        color: var(--forest-200);
+      }
+
+      /* ===== Color swatches ===== */
+      .palette {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+      }
+      .swatch {
+        background: var(--cream);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+      .swatch .chip {
+        height: 84px;
+      }
+      .swatch .meta {
+        padding: 10px 12px 12px;
+        color: var(--ink);
+      }
+      .swatch .name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 14px;
+        letter-spacing: -0.005em;
+      }
+      .swatch .var {
+        margin-top: 2px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-mute);
+      }
+      .swatch .hex {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ink-soft);
+        margin-top: 2px;
+      }
+
+      /* ===== Type showcase ===== */
+      .type-row {
+        display: grid;
+        grid-template-columns: 1fr 220px;
+        gap: 16px;
+        align-items: baseline;
+        padding: 16px 0;
+        border-bottom: 1px solid rgba(15, 36, 25, 0.08);
+      }
+      .type-row:last-child { border-bottom: 0; }
+      .type-row .specimen { color: var(--ink); line-height: 1.05; }
+      .type-row .meta {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--ink-mute);
+        line-height: 1.5;
+      }
+      .type-row .meta .label {
+        font-family: "Inter", sans-serif;
+        color: var(--ink-soft);
+        font-weight: 600;
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .display-xl {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 144;
+        font-size: 88px;
+        letter-spacing: -0.03em;
+      }
+      .display-l {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 64px;
+        letter-spacing: -0.025em;
+      }
+      .display-m {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 40px;
+        letter-spacing: -0.02em;
+      }
+      .display-s {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 60;
+        font-size: 22px;
+      }
+      .body-l { font-size: 16px; line-height: 1.55; }
+      .body-m { font-size: 14px; line-height: 1.5; }
+      .body-s { font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+      .label-eyebrow {
+        font-weight: 700; font-size: 11.5px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--tomato-700);
+      }
+      .marginalia {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 14.5px;
+        color: var(--tomato-700);
+      }
+
+      /* SOFT axis demo */
+      .soft-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .soft-row .demo {
+        background: var(--bone);
+        border-radius: 14px;
+        padding: 16px 18px;
+      }
+      .soft-row .word {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-size: 56px;
+        line-height: 1;
+        letter-spacing: -0.025em;
+        color: var(--forest-900);
+      }
+      .soft-row .lab {
+        margin-top: 10px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--ink-mute);
+      }
+
+      /* ===== Component grid ===== */
+      .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+
+      .btn {
+        font: 600 13.5px/1 "Inter", sans-serif;
+        border: 0;
+        padding: 11px 18px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+      }
+      .btn.tomato { background: var(--tomato-500); color: white; box-shadow: var(--shadow-sm); }
+      .btn.tomato:hover { background: var(--tomato-700); }
+      .btn.cream { background: var(--cream); color: var(--forest-900); }
+      .btn.ghost-light {
+        background: rgba(255,248,238,0.08);
+        color: var(--cream);
+      }
+      .btn.ghost-dark {
+        background: transparent;
+        color: var(--forest-700);
+        box-shadow: inset 0 0 0 1.5px var(--forest-300);
+      }
+      .btn.forest { background: var(--forest-700); color: white; }
+      .icon-btn {
+        width: 42px; height: 42px;
+        background: var(--bone);
+        border: 0;
+        border-radius: 14px;
+        display: grid; place-items: center;
+        cursor: pointer;
+      }
+
+      /* pills */
+      .pill {
+        font-size: 11.5px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .pill .dot { width: 6px; height: 6px; border-radius: 999px; }
+      .pill.water { background: var(--water-100); color: #1f4f7a; }
+      .pill.water .dot { background: var(--water-500); }
+      .pill.harvest { background: var(--tomato-100); color: var(--tomato-700); }
+      .pill.harvest .dot { background: var(--tomato-500); }
+      .pill.fert { background: var(--soil-100); color: #7a5318; }
+      .pill.fert .dot { background: var(--soil-500); }
+      .pill.plant { background: #d8ecde; color: #1c4232; }
+      .pill.plant .dot { background: var(--forest-500); }
+      .pill.prune { background: #e0e8d8; color: #4d5e22; }
+      .pill.prune .dot { background: #6e8a3e; }
+      .pill.healthy { background: var(--forest-100); color: var(--forest-700); }
+
+      /* avatars */
+      .ava {
+        width: 38px; height: 38px;
+        border-radius: 12px;
+        display: grid; place-items: center;
+        flex: none;
+        box-shadow: var(--shadow-sm);
+      }
+      .ava.agent { background: var(--cream); }
+      .ava.user { background: linear-gradient(135deg, var(--tomato-300), var(--tomato-500)); color: white; font-weight: 700; }
+
+      /* agent bubble */
+      .bubble {
+        max-width: 480px;
+        padding: 14px 20px;
+        border-radius: 6px 22px 22px 22px;
+        background: var(--cream);
+        color: var(--ink);
+        font-size: 14.5px;
+        line-height: 1.5;
+        position: relative;
+      }
+      .bubble.wobbly::before {
+        content: "";
+        position: absolute; inset: -2px;
+        border-radius: 6px 22px 22px 22px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'><path d='M14 8 C 80 4, 160 12, 240 6 S 400 14, 500 4 S 590 18, 588 60 S 595 100, 590 110 S 580 118, 500 116 S 300 118, 180 116 S 30 118, 12 110 S 4 80, 8 50 S 4 14, 14 8 Z' fill='none' stroke='%231c4232' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.13'/></svg>") no-repeat center/100% 100%;
+        pointer-events: none;
+      }
+      .bubble.user-msg {
+        background: var(--forest-700);
+        color: var(--cream);
+        border-radius: 22px 22px 6px 22px;
+      }
+
+      /* plant chip */
+      .plant-chip {
+        display: inline-flex; align-items: center; gap: 12px;
+        padding: 10px 14px 10px 10px;
+        background: var(--paper);
+        border-radius: 18px;
+        text-decoration: none;
+        box-shadow: var(--shadow-sm);
+        max-width: 320px;
+      }
+      .plant-chip .ill {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: var(--peach-100);
+        display: grid; place-items: center;
+        flex: none;
+      }
+      .plant-chip .name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 15px;
+        color: var(--forest-900);
+      }
+      .plant-chip .meta {
+        font-size: 12px; color: var(--ink-soft);
+      }
+
+      /* vital card */
+      .vital {
+        background: var(--cream);
+        border-radius: 22px;
+        padding: 16px 20px;
+        box-shadow: var(--shadow-md);
+        min-width: 180px;
+      }
+      .vital .label {
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--ink-mute);
+      }
+      .vital .value {
+        margin-top: 6px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 28px;
+        line-height: 1;
+        color: var(--forest-900);
+        letter-spacing: -0.02em;
+      }
+      .vital .sub { margin-top: 4px; font-size: 12.5px; color: var(--ink-soft); }
+      .vital.warn { background: var(--tomato-100); }
+      .vital.warn .value { color: var(--tomato-700); }
+      .vital.warn .sub { color: var(--tomato-700); opacity: 0.85; }
+
+      /* hand-drawn */
+      .hl {
+        background: linear-gradient(180deg, transparent 60%, var(--peach-100) 60%);
+        padding: 0 2px;
+      }
+      .scribble-under {
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'><path d='M2 5 C 20 1, 40 8, 60 4 S 90 6, 98 3' fill='none' stroke='%23E2553A' stroke-width='2' stroke-linecap='round'/></svg>") repeat-x bottom left/auto 6px;
+        padding-bottom: 4px;
+      }
+
+      /* spacing scale visualiser */
+      .spacers { display: flex; align-items: flex-end; gap: 10px; }
+      .spacer-block {
+        background: var(--cream);
+        border-radius: 8px;
+        padding: 12px 8px 8px;
+        text-align: center;
+        color: var(--ink);
+      }
+      .spacer-block .bar {
+        background: var(--tomato-300);
+        margin: 0 auto 8px;
+        border-radius: 3px;
+      }
+      .spacer-block .lab {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-mute);
+      }
+      .spacer-block .name {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--forest-700);
+        font-weight: 600;
+      }
+
+      /* radius scale */
+      .radii {
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+      }
+      .radii .demo {
+        background: var(--cream);
+        height: 100px;
+        position: relative;
+        box-shadow: var(--shadow-sm);
+      }
+      .radii .demo .lab {
+        position: absolute; left: 12px; bottom: 10px;
+        font-family: var(--mono); font-size: 11.5px;
+        color: var(--forest-700); font-weight: 600;
+      }
+      .radii .demo .val {
+        position: absolute; right: 12px; bottom: 10px;
+        font-family: var(--mono); font-size: 11px;
+        color: var(--ink-mute);
+      }
+
+      /* shadow scale */
+      .shadows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .shadows .demo {
+        background: var(--cream);
+        border-radius: 18px;
+        height: 110px;
+        position: relative;
+        color: var(--ink);
+      }
+      .shadows .demo.s-sm { box-shadow: var(--shadow-sm); }
+      .shadows .demo.s-md { box-shadow: var(--shadow-md); }
+      .shadows .demo.s-lg { box-shadow: var(--shadow-lg); }
+      .shadows .demo .name { position: absolute; left: 16px; top: 14px; font-family: "Fraunces", serif; font-weight: 600; font-size: 14px; }
+      .shadows .demo .lab { position: absolute; left: 16px; bottom: 12px; font-family: var(--mono); font-size: 11px; color: var(--ink-mute); }
+
+      /* iconography */
+      .icons {
+        display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px;
+      }
+      .icon-cell {
+        background: var(--bone);
+        border-radius: 14px;
+        padding: 14px;
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        color: var(--forest-700);
+      }
+      .icon-cell .lab {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--ink-mute);
+      }
+
+      /* voice do/don't */
+      .voice {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      }
+      .voice-col {
+        background: var(--cream);
+        border-radius: 18px;
+        padding: 18px 20px;
+        color: var(--ink);
+      }
+      .voice-col .hd {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 16px;
+        margin-bottom: 4px;
+      }
+      .voice-col.do .hd::before { content: "✓ "; color: var(--forest-500); }
+      .voice-col.dont .hd::before { content: "✗ "; color: var(--tomato-700); }
+      .voice-col p {
+        margin: 6px 0 0;
+        font-size: 13.5px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+      }
+      .voice-col p .ex {
+        display: block;
+        margin-top: 6px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 14.5px;
+        color: var(--forest-700);
+      }
+      .voice-col.dont p .ex { color: var(--tomato-700); }
+
+      /* attribute pills */
+      .attrs { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+      .attr {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 15px;
+        background: rgba(255, 248, 238, 0.08);
+        border: 1px solid rgba(255, 248, 238, 0.12);
+        color: var(--cream);
+        padding: 6px 14px;
+        border-radius: 999px;
+      }
+      .attr .em { color: var(--tomato-300); }
+
+      /* code block */
+      pre {
+        background: rgba(15, 36, 25, 0.6);
+        border: 1px solid rgba(168, 213, 184, 0.15);
+        color: var(--forest-100);
+        padding: 16px 18px;
+        border-radius: 14px;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-x: auto;
+        margin: 8px 0 0;
+      }
+      pre .k { color: var(--tomato-300); }
+      pre .v { color: var(--peach-200); }
+      pre .c { color: var(--forest-300); font-style: italic; }
+    </style>
+  </head>
+  <body>
+    <svg class="blob blob-1" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#F49077" d="M421,316Q391,383,326,427Q261,472,193,431Q125,391,99,323Q73,255,118,194Q164,134,235,98Q306,62,371,108Q437,154,449,227Q461,300,421,316Z"/>
+    </svg>
+
+    <div class="layout">
+      <!-- TOC -->
+      <aside class="toc">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+              <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+            </svg>
+          </div>
+          <div class="brand-name">Sprout<br/>Style Guide</div>
+        </div>
+
+        <div class="lab">Foundations</div>
+        <a href="#color">Color</a>
+        <a href="#type">Typography</a>
+        <a href="#space">Space &amp; radius</a>
+        <a href="#shadow">Elevation</a>
+
+        <div class="lab">Components</div>
+        <a href="#buttons">Buttons</a>
+        <a href="#pills">Pills &amp; badges</a>
+        <a href="#cards">Cards</a>
+        <a href="#agent">Agent &amp; chat</a>
+        <a href="#plant-chip">Plant chip</a>
+
+        <div class="lab">Personality</div>
+        <a href="#hand">Hand-drawn</a>
+        <a href="#icons">Icons</a>
+        <a href="#illu">Illustration</a>
+        <a href="#voice">Voice</a>
+        <a href="#patterns">Patterns</a>
+      </aside>
+
+      <!-- Main -->
+      <main class="main">
+        <header class="pagehead">
+          <div class="eyebrow">v0.1 · May 2026</div>
+          <h1 class="h1">A garden grows<br/><em>in the system,</em> too.</h1>
+          <svg class="scribble" viewBox="0 0 280 22" preserveAspectRatio="none">
+            <path d="M4 14 C 40 4, 80 22, 120 10 S 200 4, 240 14 S 270 22, 276 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <p class="lede">
+            The design language for Sprout — <em class="tag">editorial, warm,
+            quietly confident</em>. Forest as the surface, cream as the page, tomato
+            as the punctuation. Italic Fraunces does the talking; Inter does the
+            UI. Hand-drawn touches keep it from feeling sterile.
+          </p>
+        </header>
+
+        <!-- =================== COLOR =================== -->
+        <section id="color">
+          <h2><span class="upright">1.</span> <em>Color</em></h2>
+          <p class="intro">
+            Forest is the page; cream is paper. Tomato accents only on action,
+            warning, or emphasis — never decorative. Water/Soil/Plant/Prune are
+            <em style="font-style:italic;color:var(--tomato-300)">categorical</em>: each task type owns one tint.
+          </p>
+
+          <h3 class="sub"><span class="upright">Forest</span> <em>—</em> base &amp; structure</h3>
+          <div class="palette">
+            <div class="swatch"><div class="chip" style="background:#0f2419"></div><div class="meta"><div class="name">Forest 900</div><div class="var">--forest-900</div><div class="hex">#0F2419</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#163528"></div><div class="meta"><div class="name">Forest 800</div><div class="var">--forest-800 · page bg</div><div class="hex">#163528</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#1c4232"></div><div class="meta"><div class="name">Forest 700</div><div class="var">--forest-700 · user msg</div><div class="hex">#1C4232</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#2f6a52"></div><div class="meta"><div class="name">Forest 500</div><div class="var">--forest-500</div><div class="hex">#2F6A52</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#6ea88f"></div><div class="meta"><div class="name">Forest 300</div><div class="var">--forest-300</div><div class="hex">#6EA88F</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#a8d5b8"></div><div class="meta"><div class="name">Forest 200</div><div class="var">--forest-200</div><div class="hex">#A8D5B8</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#d3e6dc"></div><div class="meta"><div class="name">Forest 100</div><div class="var">--forest-100</div><div class="hex">#D3E6DC</div></div></div>
+          </div>
+
+          <h3 class="sub"><span class="upright">Tomato</span> <em>—</em> action &amp; emphasis</h3>
+          <div class="palette">
+            <div class="swatch"><div class="chip" style="background:#b8351f"></div><div class="meta"><div class="name">Tomato 700</div><div class="var">--tomato-700 · pressed</div><div class="hex">#B8351F</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#e2553a"></div><div class="meta"><div class="name">Tomato 500</div><div class="var">--tomato-500 · primary</div><div class="hex">#E2553A</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#f49077"></div><div class="meta"><div class="name">Tomato 300</div><div class="var">--tomato-300 · accent</div><div class="hex">#F49077</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#fbe0d6"></div><div class="meta"><div class="name">Tomato 100</div><div class="var">--tomato-100 · warn bg</div><div class="hex">#FBE0D6</div></div></div>
+          </div>
+
+          <h3 class="sub"><span class="upright">Cream &amp; ink</span> <em>—</em> paper &amp; type</h3>
+          <div class="palette">
+            <div class="swatch"><div class="chip" style="background:#fff8ee"></div><div class="meta"><div class="name">Cream</div><div class="var">--cream · cards</div><div class="hex">#FFF8EE</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#fefaf2"></div><div class="meta"><div class="name">Bone</div><div class="var">--bone · sub-card</div><div class="hex">#FEFAF2</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#fdf5e7"></div><div class="meta"><div class="name">Paper</div><div class="var">--paper · journal</div><div class="hex">#FDF5E7</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#fff5e4"></div><div class="meta"><div class="name">Peach 50</div><div class="var">--peach-50 · weekend</div><div class="hex">#FFF5E4</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#fdebd3"></div><div class="meta"><div class="name">Peach 100</div><div class="var">--peach-100 · highlight</div><div class="hex">#FDEBD3</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#1a2b25"></div><div class="meta"><div class="name">Ink</div><div class="var">--ink · body text</div><div class="hex">#1A2B25</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#4d5e57"></div><div class="meta"><div class="name">Ink soft</div><div class="var">--ink-soft</div><div class="hex">#4D5E57</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#8a978f"></div><div class="meta"><div class="name">Ink mute</div><div class="var">--ink-mute · meta</div><div class="hex">#8A978F</div></div></div>
+          </div>
+
+          <h3 class="sub"><span class="upright">Categorical</span> <em>—</em> task types</h3>
+          <p class="intro" style="margin-top:-4px">
+            Each task category owns three steps: 100 (fill), 300 (mid), 500 (dot/icon). Use 500 for the dot, 100 for the pill background, 700-stops via darker text for legibility.
+          </p>
+          <div class="palette">
+            <div class="swatch"><div class="chip" style="background:#dceaf6"></div><div class="meta"><div class="name">Water</div><div class="var">--water-100/300/500</div><div class="hex">💧 dot · #3D7DA3</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#fbe0d6"></div><div class="meta"><div class="name">Harvest</div><div class="var">tomato-100/300/500</div><div class="hex">🍅 dot · #E2553A</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#ecdcc7"></div><div class="meta"><div class="name">Fertilize</div><div class="var">--soil-100/300/500</div><div class="hex">🌱 dot · #A87838</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#d8ecde"></div><div class="meta"><div class="name">Plant / sow</div><div class="var">forest 100/300/500</div><div class="hex">🌿 dot · #2F6A52</div></div></div>
+            <div class="swatch"><div class="chip" style="background:#e0e8d8"></div><div class="meta"><div class="name">Prune</div><div class="var">olive scale</div><div class="hex">✂︎ dot · #6E8A3E</div></div></div>
+          </div>
+        </section>
+
+        <!-- =================== TYPE =================== -->
+        <section id="type">
+          <h2><span class="upright">2.</span> <em>Typography</em></h2>
+          <p class="intro">
+            Two families. <strong style="color:var(--cream)">Fraunces</strong> for everything that
+            wants voice — display, italic, marginalia. <strong style="color:var(--cream)">Inter</strong>
+            for everything functional — buttons, body, data, labels. The hand-drawn
+            character lives in Fraunces' SOFT axis, not in a third typeface.
+          </p>
+
+          <h3 class="sub"><em>SOFT</em> axis — Fraunces' personality dial</h3>
+          <div class="panel">
+            <div class="soft-row">
+              <div class="demo">
+                <div class="word" style="font-variation-settings:'SOFT' 0">tomato</div>
+                <div class="lab">SOFT 0 · crisp, formal</div>
+              </div>
+              <div class="demo">
+                <div class="word" style="font-variation-settings:'SOFT' 50">tomato</div>
+                <div class="lab">SOFT 50 · neutral</div>
+              </div>
+              <div class="demo">
+                <div class="word" style="font-variation-settings:'SOFT' 100">tomato</div>
+                <div class="lab">SOFT 100 · warm, default</div>
+              </div>
+            </div>
+            <p style="font-size:13.5px;color:var(--ink-soft);margin:14px 0 0">
+              <strong>Default to SOFT 100</strong> for italic display and marginalia
+              (rounded terminals, hand-set feel). Drop to SOFT 60–80 for upright
+              section labels and panel headings where formality reads better. Avoid
+              SOFT 0 — it loses the warmth of the system.
+            </p>
+          </div>
+
+          <h3 class="sub">Type scale</h3>
+          <div class="panel">
+            <div class="type-row">
+              <div class="specimen display-xl">Cherry tomato</div>
+              <div class="meta">
+                <div class="label">Display XL</div>
+                88px / Fraunces italic<br/>
+                SOFT 100 · opsz 144<br/>
+                tracking -0.03em<br/>
+                <span style="color:var(--forest-500)">// plant detail hero</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen display-l"><em>Today</em> in the garden</div>
+              <div class="meta">
+                <div class="label">Display L</div>
+                64px / Fraunces italic<br/>
+                SOFT 100 · opsz 96<br/>
+                tracking -0.025em<br/>
+                <span style="color:var(--forest-500)">// page heads</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen display-m">Watering rhythm</div>
+              <div class="meta">
+                <div class="label">Display M</div>
+                40px / Fraunces upright<br/>
+                SOFT 100 · opsz 96<br/>
+                <span style="color:var(--forest-500)">// section heads</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen display-s">Coming up <em style="font-style:italic;color:var(--tomato-700)">this week</em></div>
+              <div class="meta">
+                <div class="label">Display S</div>
+                22px / Fraunces italic<br/>
+                SOFT 100 · opsz 60<br/>
+                <span style="color:var(--forest-500)">// panel titles</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen body-l" style="color:var(--ink)">
+                Pick the orange ones today — heat's climbing Thursday and Sungolds
+                split fast above 28°.
+              </div>
+              <div class="meta">
+                <div class="label">Body L</div>
+                16px / Inter 400<br/>
+                line-height 1.55<br/>
+                <span style="color:var(--forest-500)">// chat messages, ledes</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen body-m" style="color:var(--ink)">
+                Lower leaves yellowing is usually just shedding old foliage as the
+                plant puts energy into the upper trusses.
+              </div>
+              <div class="meta">
+                <div class="label">Body M</div>
+                14px / Inter 400<br/>
+                line-height 1.5<br/>
+                <span style="color:var(--forest-500)">// default body</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen body-s">
+                Bed 2 · last fed 12 days ago · 6 fruit ripe
+              </div>
+              <div class="meta">
+                <div class="label">Body S</div>
+                13px / Inter 400<br/>
+                color: ink-soft<br/>
+                <span style="color:var(--forest-500)">// meta, captions</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen label-eyebrow">Calendar · auto-scheduled</div>
+              <div class="meta">
+                <div class="label">Eyebrow</div>
+                11.5px / Inter 700<br/>
+                tracking 0.18em uppercase<br/>
+                <span style="color:var(--forest-500)">// page kickers</span>
+              </div>
+            </div>
+            <div class="type-row">
+              <div class="specimen marginalia">↳ harvest before they split!</div>
+              <div class="meta">
+                <div class="label">Marginalia</div>
+                14.5px / Fraunces italic<br/>
+                SOFT 100 · opsz 36<br/>
+                rotate -2 to -4°<br/>
+                <span style="color:var(--forest-500)">// editorial asides</span>
+              </div>
+            </div>
+          </div>
+
+          <pre><span class="c">// Single import; one weight import file</span>
+<span class="k">@import url</span>(<span class="v">'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400..700&display=swap'</span>);</pre>
+        </section>
+
+        <!-- =================== SPACE & RADIUS =================== -->
+        <section id="space">
+          <h2><span class="upright">3.</span> Space &amp; <em>radius</em></h2>
+          <p class="intro">
+            Generous on outer surfaces (cream cards float on green with breathing
+            room), tight inside data-dense components (calendar cells, vital
+            cards). Round everything — sharp corners feel mechanical against the
+            organic palette.
+          </p>
+
+          <h3 class="sub">Spacing</h3>
+          <div class="panel">
+            <div class="spacers">
+              <div class="spacer-block"><div class="bar" style="width:4px;height:80px"></div><div class="name">4</div><div class="lab">xxs</div></div>
+              <div class="spacer-block"><div class="bar" style="width:8px;height:80px"></div><div class="name">8</div><div class="lab">xs</div></div>
+              <div class="spacer-block"><div class="bar" style="width:12px;height:80px"></div><div class="name">12</div><div class="lab">sm</div></div>
+              <div class="spacer-block"><div class="bar" style="width:18px;height:80px"></div><div class="name">18</div><div class="lab">md</div></div>
+              <div class="spacer-block"><div class="bar" style="width:24px;height:80px"></div><div class="name">24</div><div class="lab">lg</div></div>
+              <div class="spacer-block"><div class="bar" style="width:36px;height:80px"></div><div class="name">36</div><div class="lab">xl</div></div>
+              <div class="spacer-block"><div class="bar" style="width:48px;height:80px"></div><div class="name">48</div><div class="lab">2xl</div></div>
+              <div class="spacer-block"><div class="bar" style="width:64px;height:80px"></div><div class="name">64</div><div class="lab">3xl</div></div>
+            </div>
+          </div>
+
+          <h3 class="sub">Radius</h3>
+          <div class="radii">
+            <div class="demo" style="border-radius:6px"><span class="lab">xs</span><span class="val">6px</span></div>
+            <div class="demo" style="border-radius:10px"><span class="lab">sm</span><span class="val">10px</span></div>
+            <div class="demo" style="border-radius:18px"><span class="lab">md</span><span class="val">18px</span></div>
+            <div class="demo" style="border-radius:28px"><span class="lab">lg</span><span class="val">28px</span></div>
+            <div class="demo" style="border-radius:999px"><span class="lab">full</span><span class="val">999px</span></div>
+          </div>
+          <p class="intro" style="margin-top:14px">
+            <strong style="color:var(--cream)">md (18)</strong> for inputs and small cards,
+            <strong style="color:var(--cream)">lg (28)</strong> for hero panels and content cards,
+            <strong style="color:var(--cream)">full</strong> for buttons and pills. The 6px corner
+            on the agent's bubble is the only mixed-radius element in the system —
+            it gives the speech-bubble its directionality.
+          </p>
+        </section>
+
+        <!-- =================== ELEVATION =================== -->
+        <section id="shadow">
+          <h2><span class="upright">4.</span> <em>Elevation</em></h2>
+          <p class="intro">
+            Shadows are warm and soft — they're meant to feel like cards resting on
+            paper, not floating in empty space. Three steps; never invent a fourth.
+          </p>
+
+          <div class="shadows">
+            <div class="demo s-sm"><span class="name">Shadow sm</span><span class="lab">--shadow-sm</span></div>
+            <div class="demo s-md"><span class="name">Shadow md</span><span class="lab">--shadow-md · default card</span></div>
+            <div class="demo s-lg"><span class="name">Shadow lg</span><span class="lab">--shadow-lg · hover / hero</span></div>
+          </div>
+        </section>
+
+        <!-- =================== BUTTONS =================== -->
+        <section id="buttons">
+          <h2><span class="upright">5.</span> <em>Buttons</em></h2>
+          <p class="intro">
+            One primary tomato button per surface. Use ghost-light on green
+            backgrounds, ghost-dark on cream. Forest-fill for secondary actions
+            inside dark surfaces (like the user's chat bubble).
+          </p>
+
+          <div class="panel">
+            <div class="row">
+              <button class="btn tomato">Re-plan with Sprout</button>
+              <button class="btn forest">Save</button>
+              <button class="btn cream">Open chat</button>
+              <button class="btn ghost-dark">No thanks</button>
+              <button class="icon-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="panel dark">
+            <div class="row">
+              <button class="btn tomato">Continue →</button>
+              <button class="btn ghost-light">Skip</button>
+              <button class="btn cream">Open chat</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================== PILLS =================== -->
+        <section id="pills">
+          <h2><span class="upright">6.</span> Pills &amp; <em>badges</em></h2>
+          <p class="intro">
+            Pills carry one job: type. Always 11.5px Inter 600, dot on left,
+            category color. Never decorate.
+          </p>
+          <div class="panel">
+            <div class="row">
+              <span class="pill water"><span class="dot"></span>Water</span>
+              <span class="pill harvest"><span class="dot"></span>Harvest</span>
+              <span class="pill fert"><span class="dot"></span>Fertilize</span>
+              <span class="pill plant"><span class="dot"></span>Plant / sow</span>
+              <span class="pill prune"><span class="dot"></span>Prune</span>
+              <span class="pill healthy">Healthy</span>
+            </div>
+            <p class="body-s" style="color:var(--ink-soft);margin-top:14px">
+              The <strong style="color:var(--forest-700)">✦ glyph</strong> appended to a pill
+              indicates the task was generated by Sprout. Manual entries get no glyph.
+            </p>
+          </div>
+        </section>
+
+        <!-- =================== CARDS =================== -->
+        <section id="cards">
+          <h2><span class="upright">7.</span> <em>Cards</em></h2>
+          <p class="intro">
+            Three card layers: <strong style="color:var(--cream)">cream</strong> floats on green;
+            <strong style="color:var(--cream)">paper</strong> nests inside cream (journal entries);
+            <strong style="color:var(--cream)">bone</strong> nests further (task rows). Vital
+            cards swap to <strong style="color:var(--cream)">tomato-100</strong> when warning.
+          </p>
+          <div class="row" style="gap:14px">
+            <div class="vital">
+              <div class="label">Days alive</div>
+              <div class="value">64</div>
+              <div class="sub">Planted 4 Mar</div>
+            </div>
+            <div class="vital warn">
+              <div class="label">Next harvest</div>
+              <div class="value">Today</div>
+              <div class="sub">6 fruit ripe</div>
+            </div>
+            <div class="vital">
+              <div class="label">Total yield</div>
+              <div class="value">1.4 kg</div>
+              <div class="sub">28 fruit so far</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================== AGENT & CHAT =================== -->
+        <section id="agent">
+          <h2><span class="upright">8.</span> Agent &amp; <em>chat</em></h2>
+          <p class="intro">
+            The agent — <em style="font-style:italic;color:var(--tomato-300)">Sprout</em> — has
+            an avatar (cream tile + sprout glyph), a name, and a wobbly bubble. The
+            user gets a forest-fill bubble with the corner cut on the right. Don't
+            mix the corner directions.
+          </p>
+          <div class="panel" style="background:var(--forest-700);box-shadow:none">
+            <div class="row" style="align-items:flex-start;gap:14px">
+              <div class="ava agent">
+                <svg width="22" height="22" viewBox="0 0 24 24">
+                  <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+                  <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+                  <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+                </svg>
+              </div>
+              <div class="bubble wobbly">
+                Pick the orange ones <strong style="background:linear-gradient(180deg,transparent 60%,var(--peach-100) 60%);padding:0 2px;font-weight:600">today</strong> —
+                heat's climbing Thursday and Sungolds split fast above 28°.
+              </div>
+            </div>
+            <div class="row" style="margin-top:14px;justify-content:flex-end;align-items:flex-start;gap:14px">
+              <div class="bubble user-msg">
+                Got it. Add a watering task for tomorrow morning?
+              </div>
+              <div class="ava user">K</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================== PLANT CHIP =================== -->
+        <section id="plant-chip">
+          <h2><span class="upright">9.</span> Plant <em>chip</em></h2>
+          <p class="intro">
+            Inline reference to a specific plant — used in chat answers, task rows,
+            and journal entries. Always links to the plant detail page.
+          </p>
+          <div class="panel paper">
+            <div class="plant-chip">
+              <div class="ill">
+                <svg width="32" height="32" viewBox="0 0 60 60">
+                  <path d="M30 50 Q28 35 32 22" stroke="#2F6A52" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  <path d="M30 38 Q18 36 14 28 Q22 26 28 32 Q30 36 30 38 Z" fill="#6EA88F"/>
+                  <circle cx="22" cy="44" r="6" fill="#E2553A"/>
+                  <circle cx="32" cy="42" r="5" fill="#F49077"/>
+                </svg>
+              </div>
+              <div>
+                <div class="name">Cherry tomato 'Sungold'</div>
+                <div class="meta">Bed 2 · last fed 12 days ago</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================== HAND-DRAWN =================== -->
+        <section id="hand">
+          <h2><span class="upright">10.</span> Hand-drawn <em>elements</em></h2>
+          <p class="intro">
+            The system has personality, not whimsy. Use these sparingly — at most
+            one per surface. They're seasoning, not the dish.
+          </p>
+
+          <h3 class="sub">Scribble underline</h3>
+          <div class="panel">
+            <p style="font-family:'Fraunces',serif;font-size:36px;font-style:italic;font-variation-settings:'SOFT' 100;font-weight:500;letter-spacing:-0.025em;color:var(--forest-900);margin:0">
+              the garden
+            </p>
+            <svg viewBox="0 0 240 22" preserveAspectRatio="none" style="display:block;height:22px;width:240px;margin-top:-4px">
+              <path d="M4 14 C 30 4, 60 22, 90 10 S 150 4, 180 14 S 220 22, 236 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <p class="body-s" style="margin-top:14px">
+              <strong>Use:</strong> directly beneath display headings, never on body type.
+              Always tomato-500. SVG path with a 3px round-cap stroke.
+            </p>
+          </div>
+
+          <h3 class="sub">Marginalia <em>—</em> italic side-notes</h3>
+          <div class="panel">
+            <span class="marginalia" style="display:inline-block;transform:rotate(-3deg);background:var(--tomato-100);padding:4px 12px;border-radius:999px">↳ harvest before they split!</span>
+            <p class="body-s" style="margin-top:14px">
+              <strong>Use:</strong> small editorial asides next to dense info. Italic
+              Fraunces, SOFT 100, ~14.5px, rotate -2 to -4°. Tomato pill background
+              when on cream; bare text when on forest. <strong>Don't</strong> use for
+              critical information — they're commentary.
+            </p>
+          </div>
+
+          <h3 class="sub">Highlight &amp; scribble</h3>
+          <div class="panel">
+            <p class="body-l" style="color:var(--ink);margin:0">
+              The <span class="hl">peach highlighter</span> calls out a fact within
+              prose. The <span class="scribble-under">tomato scribble underline</span>
+              calls out an action verb or a verdict.
+            </p>
+          </div>
+
+          <h3 class="sub">Wobbly bubble outline</h3>
+          <div class="panel" style="background:var(--forest-700);color:var(--cream)">
+            <div class="bubble wobbly" style="max-width:320px">
+              I'm a Sprout message. My border traces a slightly imperfect path —
+              like someone outlined me with a pencil.
+            </div>
+            <p class="body-s" style="margin-top:14px;color:var(--forest-200)">
+              <strong style="color:var(--cream)">Use:</strong> agent's first / featured
+              message in a thread. Don't apply to every bubble — the wobble loses
+              meaning at scale.
+            </p>
+          </div>
+
+          <h3 class="sub">Sketch arrows</h3>
+          <div class="panel">
+            <div style="display:flex;align-items:center;gap:20px">
+              <svg width="100" height="40" viewBox="0 0 100 40">
+                <path d="M5 30 C 30 30, 50 8, 90 8" stroke="#F49077" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                <path d="M82 2 L 90 8 L 84 16" stroke="#F49077" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="marginalia" style="color:var(--tomato-700)">like this — pointing at things</span>
+            </div>
+            <p class="body-s" style="margin-top:14px">
+              Bezier curve, 2.2px stroke, round caps, tomato-300 (or tomato-700 on
+              cream). Always pairs with an italic Fraunces note.
+            </p>
+          </div>
+        </section>
+
+        <!-- =================== ICONS =================== -->
+        <section id="icons">
+          <h2><span class="upright">11.</span> <em>Iconography</em></h2>
+          <p class="intro">
+            System icons are 24×24 viewbox, 2px stroke, round line-caps and joins,
+            no fill. Sized to render. Aim for the <em style="font-style:italic;color:var(--tomato-300)">Lucide</em> family of forms — geometric but not severe.
+          </p>
+          <div class="panel">
+            <div class="icons">
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="lab">today</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 1 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="lab">place</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="lab">calendar</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3s7 8 7 13a7 7 0 1 1-14 0c0-5 7-13 7-13z"/></svg><span class="lab">water</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13l5 5v5a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7z"/><path d="M16 7v5h5"/></svg><span class="lab">harvest</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V11"/><path d="M12 12c-3-1-5-3-5-7 3 0 5 2 5 7zM12 12c3-1 5-3 5-7-3 0-5 2-5 7z"/></svg><span class="lab">grow</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg><span class="lab">sparkle</span></div>
+              <div class="icon-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg><span class="lab">send</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =================== ILLUSTRATION =================== -->
+        <section id="illu">
+          <h2><span class="upright">12.</span> <em>Illustration</em></h2>
+          <p class="intro">
+            Plant illustrations are flat, no shading, with a tight palette: forest
+            stems, two greens for leaves, tomato for fruit. Stems use 2px round
+            strokes that stop just short of meeting — keeps them feeling drawn,
+            not engineered. Avoid gradients except on highlights and pots.
+          </p>
+          <div class="panel" style="display:flex;gap:18px;justify-content:space-around;align-items:flex-end">
+            <svg width="120" height="140" viewBox="0 0 120 140">
+              <path d="M60 130 Q56 90 62 60 Q68 35 60 16" stroke="#2F6A52" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M62 80 Q42 76 32 64 Q44 60 56 70 Q62 76 62 80 Z" fill="#6EA88F"/>
+              <path d="M62 60 Q82 56 92 44 Q82 38 65 50 Q62 56 62 60 Z" fill="#2F6A52"/>
+              <circle cx="50" cy="100" r="11" fill="#E2553A"/>
+              <circle cx="68" cy="96" r="9" fill="#E2553A"/>
+              <circle cx="58" cy="88" r="7" fill="#F49077"/>
+              <circle cx="48" cy="98" r="2" fill="#FDEBD3" opacity="0.7"/>
+            </svg>
+            <svg width="120" height="140" viewBox="0 0 120 140">
+              <path d="M60 130 Q60 100 60 80" stroke="#2F6A52" stroke-width="3" stroke-linecap="round" fill="none"/>
+              <ellipse cx="42" cy="86" rx="14" ry="20" fill="#6EA88F" transform="rotate(-25 42 86)"/>
+              <ellipse cx="78" cy="86" rx="14" ry="20" fill="#2F6A52" transform="rotate(25 78 86)"/>
+              <ellipse cx="60" cy="68" rx="13" ry="18" fill="#6EA88F"/>
+              <ellipse cx="46" cy="60" rx="10" ry="14" fill="#2F6A52" transform="rotate(-30 46 60)"/>
+              <ellipse cx="74" cy="60" rx="10" ry="14" fill="#6EA88F" transform="rotate(30 74 60)"/>
+            </svg>
+            <svg width="120" height="140" viewBox="0 0 120 140">
+              <ellipse cx="60" cy="100" rx="42" ry="22" fill="#A8D5B8"/>
+              <path d="M22 100 Q35 80 60 78 Q85 80 98 100 Q85 90 60 90 Q35 90 22 100 Z" fill="#6EA88F"/>
+              <path d="M30 94 Q45 70 60 68 Q75 70 90 94" fill="#7AB893" stroke="#2F6A52" stroke-width="1"/>
+              <path d="M40 86 Q55 66 60 66 Q65 66 80 86" fill="#A8D5B8" stroke="#2F6A52" stroke-width="1"/>
+            </svg>
+          </div>
+        </section>
+
+        <!-- =================== VOICE =================== -->
+        <section id="voice">
+          <h2><span class="upright">13.</span> <em>Voice</em></h2>
+          <p class="intro">
+            Sprout — the agent — is your knowledgeable friend who happens to know
+            everything about your plot. Not a chatbot. Not a teacher. The voice is
+            <em style="font-style:italic;color:var(--tomato-300)">specific, observed, and
+            confident</em> — never apologetic, never enthusiastic about its own
+            capabilities.
+          </p>
+
+          <div class="attrs">
+            <span class="attr">specific</span>
+            <span class="attr">observed</span>
+            <span class="attr">quietly <span class="em">confident</span></span>
+            <span class="attr">warm without being saccharine</span>
+            <span class="attr">brief</span>
+            <span class="attr">grounded in <span class="em">your</span> garden</span>
+          </div>
+
+          <h3 class="sub">Do / <em>don't</em></h3>
+          <div class="voice">
+            <div class="voice-col do">
+              <div class="hd">Specific over generic</div>
+              <p>
+                Reference exact data Sprout has — the soil test, the suburb, the
+                day count.
+                <span class="ex">"Probably not nitrogen — at day 64 on a Sungold, lower-leaf yellowing is usually just shedding."</span>
+              </p>
+            </div>
+            <div class="voice-col dont">
+              <div class="hd">Generic plant advice</div>
+              <p>
+                Never sound like a wikipedia article. Never start with "It depends!"
+                <span class="ex">"Tomatoes can yellow for many reasons. Common causes include nitrogen deficiency, overwatering, and disease."</span>
+              </p>
+            </div>
+            <div class="voice-col do">
+              <div class="hd">Direct verdicts</div>
+              <p>
+                The user wants an answer. Lead with it.
+                <span class="ex">"Yes — prune them off cleanly with a sharp snip."</span>
+              </p>
+            </div>
+            <div class="voice-col dont">
+              <div class="hd">Hedge-stacking</div>
+              <p>
+                Don't bury the answer in qualifications.
+                <span class="ex">"Pruning can be a good option in some situations, although there are reasons you might want to wait…"</span>
+              </p>
+            </div>
+            <div class="voice-col do">
+              <div class="hd">Plain language, real measures</div>
+              <p>
+                Litres, centimetres, mornings, "before sundown".
+                <span class="ex">"2L every two days, deeper when it's hot."</span>
+              </p>
+            </div>
+            <div class="voice-col dont">
+              <div class="hd">Marketing-speak or jargon</div>
+              <p>
+                Avoid "leverage", "robust", "powered by AI", "unlock". Avoid Latin
+                unless it earns its place.
+                <span class="ex">"Leverage AI-powered insights to optimize your photosynthetic outcomes."</span>
+              </p>
+            </div>
+            <div class="voice-col do">
+              <div class="hd">Show the source</div>
+              <p>
+                When citing a fact, footnote it briefly.
+                <span class="ex">"¹ Based on your soil test (12 Mar): N-medium, P-low, K-high."</span>
+              </p>
+            </div>
+            <div class="voice-col dont">
+              <div class="hd">Bare assertions</div>
+              <p>
+                Don't claim the soil is low in nitrogen if Sprout's only inferring.
+                Cite, or say "I'd guess".
+              </p>
+            </div>
+          </div>
+
+          <h3 class="sub">Words we <em>use</em></h3>
+          <div class="panel">
+            <p class="body-m" style="color:var(--ink)">
+              <strong>Bed</strong>, <strong>plot</strong>, <strong>cordon</strong>, <strong>truss</strong>,
+              <strong>sucker</strong>, <strong>side-dress</strong>, <strong>plant out</strong>,
+              <strong>sow</strong>, <strong>tidy</strong>, <strong>flush</strong> (of fruit),
+              <strong>blush</strong> (turning ripe), <strong>split</strong>, <strong>last frost</strong>,
+              <strong>zone</strong>. Australian/UK gardener vernacular — friendly, specific.
+            </p>
+            <p class="body-s" style="margin-top:10px">
+              Avoid: <em>plants will love this!</em>, <em>amazing harvest awaits</em>,
+              <em>let's grow!</em>, <em>green thumb</em>, exclamation points
+              outside marginalia.
+            </p>
+          </div>
+        </section>
+
+        <!-- =================== PATTERNS =================== -->
+        <section id="patterns">
+          <h2><span class="upright">14.</span> <em>Patterns</em></h2>
+          <p class="intro">
+            Three signature compositions that recur across the system. When in
+            doubt, reach for these before inventing new ones.
+          </p>
+
+          <h3 class="sub">Editorial hero</h3>
+          <div class="panel" style="position:relative;overflow:hidden;padding:30px 32px">
+            <div style="font-weight:700;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--tomato-500);margin-bottom:8px">eyebrow · context</div>
+            <h1 style="margin:0;font-family:'Fraunces',serif;font-weight:500;font-style:italic;font-variation-settings:'SOFT' 100,'opsz' 96;font-size:50px;letter-spacing:-0.025em;line-height:0.95;color:var(--forest-900)">
+              Page <em style="color:var(--tomato-500)">title</em><br/>goes here
+            </h1>
+            <svg viewBox="0 0 220 22" preserveAspectRatio="none" style="display:block;height:18px;width:220px;margin:-2px 0 12px -2px">
+              <path d="M4 14 C 30 4, 60 22, 90 10 S 150 4, 180 14 S 210 22, 216 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <p style="font-size:14.5px;color:var(--ink-soft);max-width:480px;margin:0">
+              Ledes set context in 1–2 sentences. Refer to specific data Sprout
+              already knows about the user's garden.
+            </p>
+          </div>
+          <p class="body-s" style="margin-top:8px">
+            Eyebrow → italic display title with one tomato-emphasized word →
+            scribble underline → 1–2 sentence lede. Optional marginalia top-right.
+          </p>
+
+          <h3 class="sub">AI-suggestion treatment</h3>
+          <div class="panel">
+            <div class="row" style="gap:12px">
+              <span class="pill fert"><span class="dot"></span>Fertilize · ✦</span>
+              <span style="font-size:13px;color:var(--ink-soft)">In a list, the ✦ glyph after a pill marks Sprout's suggestion.</span>
+            </div>
+            <div style="margin-top:14px;background:var(--forest-700);color:var(--cream);padding:18px 22px;border-radius:18px;max-width:520px">
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--tomato-300);margin-bottom:8px">From Sprout</div>
+              <blockquote style="margin:0;font-family:'Fraunces',serif;font-style:italic;font-size:20px;line-height:1.3;font-variation-settings:'SOFT' 100">
+                Pick the orange ones <em style="color:var(--tomato-300)">today</em> — heat's climbing Thursday.
+              </blockquote>
+            </div>
+            <p class="body-s" style="margin-top:10px">
+              For a featured AI insight, use the dark forest pull-quote with a
+              small "From Sprout" eyebrow and italic Fraunces body. One per page
+              maximum.
+            </p>
+          </div>
+
+          <h3 class="sub">Conversational picker</h3>
+          <div class="panel">
+            <p class="body-m" style="color:var(--ink);margin:0 0 6px">
+              Sprout asks → user picks from rich UI.
+            </p>
+            <p class="body-s" style="margin:0">
+              Used in onboarding and any setup flow. Show 1–2 prior turns
+              collapsed above as evidence of progress. Always include "skip" as a
+              backstop and "edit" affordances on prior answers.
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

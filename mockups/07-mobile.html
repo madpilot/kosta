@@ -1,0 +1,1402 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprout — Mobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest-900: #0f2419;
+        --forest-800: #163528;
+        --forest-700: #1c4232;
+        --forest-600: #245440;
+        --forest-500: #2f6a52;
+        --forest-300: #6ea88f;
+        --forest-200: #a8d5b8;
+        --forest-100: #d3e6dc;
+
+        --tomato-700: #b8351f;
+        --tomato-500: #e2553a;
+        --tomato-300: #f49077;
+        --tomato-100: #fbe0d6;
+
+        --water-500: #3d7da3;
+        --water-300: #79b6d6;
+        --water-100: #dceaf6;
+
+        --soil-500: #a87838;
+        --soil-100: #ecdcc7;
+
+        --peach-200: #fbdcb4;
+        --peach-100: #fdebd3;
+        --peach-50: #fff5e4;
+
+        --cream: #fff8ee;
+        --bone: #fefaf2;
+        --paper: #fdf5e7;
+        --ink: #1a2b25;
+        --ink-soft: #4d5e57;
+        --ink-mute: #8a978f;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.22),
+          0 2px 6px rgba(0, 0, 0, 0.12);
+        --shadow-lg: 0 22px 50px rgba(0, 0, 0, 0.30),
+          0 6px 14px rgba(0, 0, 0, 0.14);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--forest-800);
+        color: var(--forest-100);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "cv11";
+        background-image:
+          radial-gradient(ellipse 800px 500px at 80% -10%, rgba(228, 144, 119, 0.18), transparent 60%),
+          radial-gradient(ellipse 600px 400px at -5% 110%, rgba(168, 213, 184, 0.15), transparent 60%);
+        min-height: 100vh;
+      }
+      body::before {
+        content: "";
+        position: fixed; inset: 0;
+        pointer-events: none; opacity: 0.06; z-index: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+      }
+      .blob { position: absolute; z-index: 0; pointer-events: none; }
+      .blob-1 { top: -200px; right: -180px; width: 600px; opacity: 0.20; }
+      .blob-2 { bottom: -160px; left: -140px; width: 420px; opacity: 0.16; }
+
+      .canvas {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 36px 32px 80px;
+      }
+
+      /* ========= page heading ========= */
+      .pagehead {
+        margin-bottom: 36px;
+        position: relative;
+      }
+      .eyebrow {
+        font-weight: 700; font-size: 11.5px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 8px;
+      }
+      .h1 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 64px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        color: var(--cream);
+        max-width: 740px;
+      }
+      .h1 em { font-style: italic; color: var(--tomato-300); font-weight: 500; }
+      .h1 .upright { font-style: normal; font-weight: 600; }
+      .scribble { display: block; margin: -2px 0 14px -4px; height: 22px; max-width: 240px; }
+      .lede {
+        font-size: 15px; line-height: 1.55;
+        color: var(--forest-200); max-width: 560px; margin: 0;
+      }
+      .lede em.tag {
+        font-family: "Fraunces", serif; font-style: italic;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        color: var(--tomato-300);
+      }
+
+      /* ========= phone grid ========= */
+      .phones {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+      }
+      @media (max-width: 1100px) {
+        .phones { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      .phone-wrap {
+        display: flex; flex-direction: column; align-items: center;
+      }
+      .phone-label {
+        margin-bottom: 14px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 16px;
+        color: var(--cream);
+      }
+      .phone-label .num {
+        font-style: normal;
+        font-weight: 600;
+        color: var(--forest-300);
+        margin-right: 6px;
+      }
+
+      /* iPhone-like frame */
+      .phone {
+        width: 100%;
+        max-width: 280px;
+        aspect-ratio: 9 / 19.5;
+        background: #0a0f0c;
+        border-radius: 36px;
+        padding: 8px;
+        box-shadow: var(--shadow-lg), 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+        position: relative;
+      }
+      .phone::after {
+        /* dynamic island */
+        content: "";
+        position: absolute;
+        top: 16px; left: 50%;
+        transform: translateX(-50%);
+        width: 80px; height: 22px;
+        background: #050a07;
+        border-radius: 999px;
+        z-index: 5;
+      }
+      .screen {
+        width: 100%; height: 100%;
+        background: var(--forest-800);
+        border-radius: 28px;
+        overflow: hidden;
+        position: relative;
+        display: flex; flex-direction: column;
+      }
+
+      /* status bar */
+      .status {
+        height: 38px;
+        padding: 0 18px;
+        display: flex; align-items: flex-end;
+        justify-content: space-between;
+        flex: none;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--cream);
+        padding-bottom: 6px;
+        z-index: 4;
+      }
+      .status.dark { color: var(--forest-900); }
+      .status .right { display: flex; align-items: center; gap: 5px; }
+      .status .right svg { display: block; }
+
+      /* home indicator */
+      .home-bar {
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 3.5px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.4);
+        z-index: 6;
+      }
+      .screen.light .home-bar { background: rgba(15, 36, 25, 0.4); }
+
+      /* light-screen variant (cream pages) */
+      .screen.light { background: var(--cream); }
+
+      /* tab bar */
+      .tabbar {
+        height: 80px;
+        flex: none;
+        background: var(--forest-700);
+        border-top: 1px solid rgba(255, 248, 238, 0.08);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding: 6px 6px 18px;
+      }
+      .tab {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 3px;
+        color: var(--forest-200);
+        opacity: 0.7;
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .tab.active { color: var(--tomato-300); opacity: 1; }
+      .tab svg { display: block; }
+
+      /* Body content for each phone */
+      .body {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* shared chrome */
+      .topbar {
+        display: flex; align-items: center; gap: 10px;
+        padding: 6px 16px 8px;
+      }
+      .topbar .ttl {
+        font-family: "Fraunces", serif;
+        font-weight: 600; font-variation-settings: "SOFT" 60;
+        font-size: 15px;
+        color: var(--cream);
+        flex: 1;
+        text-align: center;
+      }
+      .topbar.light .ttl { color: var(--forest-900); }
+      .topbar .iconbtn {
+        width: 32px; height: 32px;
+        border-radius: 10px;
+        display: grid; place-items: center;
+        background: rgba(255, 248, 238, 0.08);
+      }
+      .topbar.light .iconbtn { background: var(--bone); }
+
+      .scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 16px 14px;
+      }
+      .light .scroll { color: var(--ink); }
+
+      /* eyebrow + heading on phone */
+      .eyebrow-sm {
+        font-weight: 700;
+        font-size: 9.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--tomato-300);
+        margin: 4px 0 6px;
+      }
+      .h-display {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 60;
+        font-size: 30px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--cream);
+        margin: 0 0 6px;
+      }
+      .h-display em { font-style: italic; color: var(--tomato-300); font-weight: 500; }
+      .h-display .upright { font-style: normal; font-weight: 600; }
+
+      .scribble-sm {
+        display: block;
+        margin: -2px 0 8px;
+        height: 14px;
+        max-width: 130px;
+      }
+
+      .meta-line {
+        font-size: 12px;
+        color: var(--forest-200);
+        opacity: 0.85;
+        margin-bottom: 14px;
+      }
+
+      /* card */
+      .card {
+        background: var(--cream);
+        border-radius: 18px;
+        padding: 14px 16px;
+        box-shadow: var(--shadow-sm);
+        color: var(--ink);
+        margin-bottom: 10px;
+      }
+      .card.paper { background: var(--paper); }
+      .card.bone { background: var(--bone); }
+
+      /* greeting hero on Today */
+      .hero-card {
+        background: var(--cream);
+        color: var(--ink);
+        border-radius: 22px;
+        padding: 18px 18px 16px;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 14px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-card .h {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 60;
+        font-size: 28px;
+        line-height: 0.98;
+        letter-spacing: -0.02em;
+        color: var(--forest-900);
+      }
+      .hero-card .h em {
+        font-style: italic; color: var(--tomato-500); font-weight: 500;
+      }
+      .hero-card p {
+        margin: 8px 0 0;
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+      .hero-card .hl {
+        background: linear-gradient(180deg, transparent 60%, var(--peach-100) 60%);
+        padding: 0 2px;
+      }
+      .hero-illu {
+        position: absolute;
+        right: -8px; bottom: -10px;
+        width: 90px;
+        opacity: 0.95;
+      }
+
+      /* section heading */
+      .sec-head {
+        display: flex; align-items: baseline; justify-content: space-between;
+        margin: 12px 2px 8px;
+      }
+      .sec-head h2 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 16px;
+        color: var(--cream);
+        letter-spacing: -0.005em;
+      }
+      .sec-head .upright { font-style: normal; font-weight: 600; }
+      .sec-head a {
+        color: var(--forest-200);
+        font-size: 11px; font-weight: 600;
+        text-decoration: none;
+      }
+
+      /* task pill row */
+      .task-card {
+        background: var(--cream);
+        border-radius: 16px;
+        padding: 12px 14px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 8px;
+        position: relative;
+      }
+      .task-card .row { display: flex; align-items: center; gap: 10px; }
+      .task-card .ico {
+        width: 32px; height: 32px;
+        border-radius: 10px;
+        display: grid; place-items: center;
+        flex: none;
+      }
+      .task-card.water .ico { background: var(--water-100); color: #1f4f7a; }
+      .task-card.harvest .ico { background: var(--tomato-100); color: var(--tomato-700); }
+      .task-card.fert .ico { background: var(--soil-100); color: #7a5318; }
+      .task-card .info { flex: 1; min-width: 0; }
+      .task-card .ttl {
+        font-family: "Fraunces", serif; font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 14px;
+        color: var(--forest-900);
+        letter-spacing: -0.005em;
+      }
+      .task-card .meta {
+        font-size: 11.5px; color: var(--ink-soft);
+        margin-top: 1px;
+      }
+      .task-card .check {
+        width: 26px; height: 26px;
+        border-radius: 999px;
+        border: 2px dashed var(--forest-300);
+        background: transparent;
+      }
+      .task-card .pinned-note {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 11px;
+        color: var(--tomato-700);
+        background: var(--tomato-100);
+        padding: 3px 8px;
+        border-radius: 999px;
+        position: absolute;
+        right: 10px; top: -8px;
+        transform: rotate(4deg);
+      }
+
+      /* plant tile */
+      .plant-tile {
+        background: var(--cream);
+        border-radius: 16px;
+        padding: 10px;
+        box-shadow: var(--shadow-sm);
+      }
+      .plant-tile .illu {
+        height: 64px;
+        background: var(--peach-50);
+        border-radius: 12px;
+        display: grid; place-items: center;
+      }
+      .plant-tile h4 {
+        margin: 8px 0 1px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 13.5px;
+        color: var(--forest-900);
+        letter-spacing: -0.005em;
+      }
+      .plant-tile .where {
+        font-size: 10.5px;
+        color: var(--ink-soft);
+      }
+      .pill {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font-weight: 600;
+        margin-top: 6px;
+      }
+      .pill .dot { width: 5px; height: 5px; border-radius: 999px; }
+      .pill.warn { background: var(--tomato-100); color: var(--tomato-700); }
+      .pill.warn .dot { background: var(--tomato-500); }
+      .pill.healthy { background: var(--forest-100); color: var(--forest-700); }
+      .pill.water { background: var(--water-100); color: #1f4f7a; }
+      .pill.water .dot { background: var(--water-500); }
+      .pill.harvest { background: var(--tomato-100); color: var(--tomato-700); }
+      .pill.harvest .dot { background: var(--tomato-500); }
+      .pill.fert { background: var(--soil-100); color: #7a5318; }
+      .pill.fert .dot { background: var(--soil-500); }
+      .pill.plant { background: #d8ecde; color: #1c4232; }
+      .pill.plant .dot { background: var(--forest-500); }
+
+      .plants-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      /* ====== Plant detail (mobile) ====== */
+      .pd-hero {
+        padding: 8px 16px 18px;
+        text-align: center;
+        position: relative;
+      }
+      .pd-hero .eyebrow-sm { color: var(--tomato-500); }
+      .pd-hero .h {
+        font-family: "Fraunces", serif;
+        font-weight: 500;
+        font-style: italic;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 36px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        color: var(--forest-900);
+        margin: 0;
+      }
+      .pd-hero .h .upright { font-style: normal; font-weight: 600; }
+      .pd-hero .h em { font-style: italic; color: var(--tomato-500); }
+      .pd-hero .scribble {
+        display: block; margin: -3px auto 6px;
+        height: 14px; max-width: 100px;
+      }
+      .pd-hero .latin {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 12px;
+        color: var(--ink-soft);
+      }
+      .pd-illu {
+        margin: 6px auto 0;
+        width: 110px;
+      }
+
+      .vitals {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .vital {
+        background: var(--bone);
+        border-radius: 14px;
+        padding: 10px 12px;
+      }
+      .vital.warn { background: var(--tomato-100); }
+      .vital .label {
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+      .vital .value {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 20px;
+        line-height: 1.05;
+        letter-spacing: -0.015em;
+        color: var(--forest-900);
+        margin-top: 2px;
+      }
+      .vital.warn .value { color: var(--tomato-700); }
+      .vital .sub {
+        font-size: 10.5px;
+        color: var(--ink-soft);
+        margin-top: 1px;
+      }
+      .vital.warn .sub { color: var(--tomato-700); opacity: 0.85; }
+
+      /* watering rhythm chart compact */
+      .panel-sm {
+        background: var(--bone);
+        border-radius: 16px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+      }
+      .panel-sm h3 {
+        margin: 0 0 2px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 14px;
+        color: var(--forest-900);
+        letter-spacing: -0.005em;
+      }
+      .panel-sm .sub {
+        font-size: 10.5px;
+        color: var(--ink-soft);
+        margin-bottom: 8px;
+      }
+      .rhythm {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 60px;
+      }
+      .rhythm .d {
+        flex: 1;
+        background: linear-gradient(180deg, #79b6d6, #3d7da3);
+        border-radius: 4px 4px 2px 2px;
+      }
+      .rhythm .d.dry { background: linear-gradient(180deg, #efd3a8, #c79760); opacity: 0.6; }
+      .rhythm .d.heavy { background: linear-gradient(180deg, #4ea0d6, #1f5e88); }
+      .rhythm .d.skip {
+        background: repeating-linear-gradient(45deg, #d8e2dc 0 4px, #c1cfc8 4px 8px);
+      }
+      .rhythm .d.today { box-shadow: 0 0 0 2px var(--tomato-500); }
+
+      /* journal entry */
+      .entry {
+        position: relative;
+        padding-left: 14px;
+        margin-bottom: 12px;
+      }
+      .entry::before {
+        content: "";
+        position: absolute;
+        left: 0; top: 6px; bottom: -2px;
+        width: 2px;
+        background: var(--forest-200);
+        border-radius: 2px;
+      }
+      .entry::after {
+        content: "";
+        position: absolute;
+        left: -3px; top: 4px;
+        width: 8px; height: 8px;
+        border-radius: 999px;
+        background: var(--tomato-500);
+        box-shadow: 0 0 0 3px var(--cream);
+      }
+      .entry .when {
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-mute);
+      }
+      .entry h4 {
+        margin: 1px 0 3px;
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 13px;
+        color: var(--forest-900);
+      }
+      .entry p {
+        margin: 0;
+        font-size: 11.5px;
+        line-height: 1.45;
+        color: var(--ink-soft);
+      }
+      .handnote {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 11.5px;
+        color: var(--tomato-700);
+        background: var(--tomato-100);
+        padding: 3px 9px;
+        border-radius: 999px;
+        margin-top: 5px;
+        display: inline-block;
+        transform: rotate(-1.5deg);
+      }
+
+      /* ====== Chat (mobile) ====== */
+      .chat-stream {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px 14px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .turn { display: flex; gap: 8px; align-items: flex-start; }
+      .turn.user { justify-content: flex-end; }
+      .ava {
+        width: 28px; height: 28px;
+        border-radius: 9px;
+        flex: none;
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .ava.agent { background: var(--cream); }
+      .ava.user {
+        background: linear-gradient(135deg, var(--tomato-300), var(--tomato-500));
+        color: white; font-weight: 700; font-size: 11px;
+      }
+      .bubble {
+        max-width: 200px;
+        padding: 10px 14px;
+        border-radius: 6px 16px 16px 16px;
+        background: var(--cream);
+        color: var(--ink);
+        font-size: 12.5px;
+        line-height: 1.45;
+        position: relative;
+      }
+      .bubble.wobbly::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 6px 16px 16px 16px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200' preserveAspectRatio='none'><path d='M14 8 C 80 4, 160 12, 240 6 S 400 14, 500 4 S 590 18, 588 60 S 595 120, 590 160 S 580 195, 500 192 S 300 198, 180 195 S 30 198, 12 188 S 4 120, 8 60 S 4 14, 14 8 Z' fill='none' stroke='%231c4232' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.13'/></svg>") no-repeat center/100% 100%;
+        pointer-events: none;
+      }
+      .bubble.user-msg {
+        background: var(--forest-700);
+        color: var(--cream);
+        border-radius: 16px 16px 6px 16px;
+      }
+      .bubble strong { font-weight: 600; }
+      .bubble em.tomato { font-style: italic; color: var(--tomato-700); font-weight: 500; }
+      .bubble .hl {
+        background: linear-gradient(180deg, transparent 60%, var(--peach-100) 60%);
+        padding: 0 2px;
+        font-style: normal;
+      }
+
+      .agent-name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 10.5px;
+        color: var(--forest-700);
+        margin-bottom: 2px;
+      }
+      .agent-name .badge {
+        font-family: "Inter", sans-serif;
+        background: var(--forest-100);
+        color: var(--forest-700);
+        font-size: 8px; font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border-radius: 999px;
+        margin-left: 4px;
+        vertical-align: 1px;
+      }
+
+      .plant-chip {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px 6px 6px;
+        background: var(--paper);
+        border-radius: 12px;
+        text-decoration: none;
+        box-shadow: var(--shadow-sm);
+        max-width: 100%;
+      }
+      .plant-chip .ill {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        background: var(--peach-100);
+        display: grid; place-items: center;
+        flex: none;
+      }
+      .plant-chip .name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 11.5px;
+        color: var(--forest-900);
+      }
+      .plant-chip .meta {
+        font-size: 9.5px; color: var(--ink-soft);
+      }
+
+      .composer-mobile {
+        flex: none;
+        padding: 8px 14px 8px;
+        background: linear-gradient(180deg, transparent, var(--forest-800) 30%);
+      }
+      .suggestions {
+        display: flex; gap: 6px;
+        margin-bottom: 8px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+      .chip {
+        font-size: 10.5px;
+        font-weight: 500;
+        color: var(--cream);
+        background: rgba(255, 248, 238, 0.10);
+        border: 1px dashed rgba(255, 248, 238, 0.20);
+        padding: 6px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .input-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--cream);
+        border-radius: 18px;
+        padding: 8px 8px 8px 14px;
+        box-shadow: var(--shadow-sm);
+      }
+      .input-row .ph {
+        flex: 1;
+        font-size: 12.5px;
+        color: var(--ink-mute);
+      }
+      .input-row .send {
+        width: 30px; height: 30px;
+        border-radius: 999px;
+        background: var(--tomato-500);
+        display: grid; place-items: center;
+        flex: none;
+      }
+
+      /* ====== Calendar (mobile list mode) ====== */
+      .month-strip {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 4px 16px 10px;
+      }
+      .month-strip .label {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 16px;
+        color: var(--cream);
+        letter-spacing: -0.01em;
+      }
+      .month-strip .seg {
+        display: flex;
+        background: rgba(255,248,238,0.08);
+        border-radius: 8px;
+        padding: 2px;
+      }
+      .month-strip .seg button {
+        font: 600 10.5px/1 "Inter", sans-serif;
+        background: transparent; border: 0;
+        color: var(--forest-200);
+        padding: 5px 9px; border-radius: 6px;
+      }
+      .month-strip .seg button.active {
+        background: var(--cream); color: var(--forest-900);
+      }
+      .week-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        padding: 0 12px 6px;
+      }
+      .wk {
+        text-align: center;
+        padding: 8px 0 7px;
+        border-radius: 12px;
+        background: rgba(255,248,238,0.04);
+      }
+      .wk.today { background: var(--tomato-500); }
+      .wk .d {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--forest-300);
+      }
+      .wk.today .d { color: rgba(255,255,255,0.85); }
+      .wk .n {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 16px;
+        color: var(--cream);
+        margin-top: 2px;
+      }
+      .wk.today .n { font-style: normal; font-weight: 700; color: white; }
+      .wk .pips { display: flex; justify-content: center; gap: 2px; margin-top: 2px; height: 4px; }
+      .wk .pip { width: 4px; height: 4px; border-radius: 999px; }
+
+      .day-section {
+        margin-bottom: 14px;
+      }
+      .day-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin: 4px 2px 6px;
+      }
+      .day-head h3 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 17px;
+        color: var(--cream);
+        letter-spacing: -0.005em;
+      }
+      .day-head h3 .upright { font-style: normal; font-weight: 600; }
+      .day-head .count {
+        font-size: 10.5px; color: var(--forest-300); font-weight: 600;
+      }
+      .ev-row {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--cream);
+        padding: 10px 12px;
+        border-radius: 12px;
+        margin-bottom: 6px;
+        color: var(--ink);
+      }
+      .ev-row .dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+      .ev-row .ttl {
+        font-size: 12.5px; font-weight: 600; color: var(--forest-900);
+        flex: 1;
+      }
+      .ev-row .meta { font-size: 10.5px; color: var(--ink-soft); }
+      .ev-row .ai {
+        font-size: 11px; color: var(--forest-500); margin-left: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg class="blob blob-1" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#F49077" d="M421,316Q391,383,326,427Q261,472,193,431Q125,391,99,323Q73,255,118,194Q164,134,235,98Q306,62,371,108Q437,154,449,227Q461,300,421,316Z"/>
+    </svg>
+    <svg class="blob blob-2" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#A8D5B8" d="M438,318Q406,386,341,420Q276,455,206,425Q137,395,103,322Q70,249,121,184Q172,119,243,98Q315,78,381,123Q447,168,461,234Q475,300,438,318Z"/>
+    </svg>
+
+    <div class="canvas">
+      <header class="pagehead">
+        <div class="eyebrow">Mobile · iOS &amp; Android</div>
+        <h1 class="h1"><span class="upright">In</span> <em>your</em> pocket.</h1>
+        <svg class="scribble" viewBox="0 0 240 22" preserveAspectRatio="none">
+          <path d="M4 14 C 30 4, 60 22, 90 10 S 150 4, 180 14 S 220 22, 236 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <p class="lede">
+          The same system at <em class="tag">phone scale</em>. Italic Fraunces still
+          carries the voice (down to ~30px), cream cards still float on forest,
+          and the marginalia, scribbles, and plant chips translate cleanly. Tabs
+          replace the sidebar; sheets replace the modal columns.
+        </p>
+      </header>
+
+      <div class="phones">
+
+        <!-- ============================================ PHONE 1 — TODAY ============================================ -->
+        <div class="phone-wrap">
+          <div class="phone-label"><span class="num">01</span>Today</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>9:41</span>
+                <span class="right">
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M0 9 L 14 9 M 1 7 L 13 7 M 3 5 L 11 5 M 5 3 L 9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M2 5 a 5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+                  <svg width="20" height="9" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/></svg>
+                </span>
+              </div>
+
+              <div class="body">
+                <div class="topbar">
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                  </div>
+                  <div class="ttl">Today</div>
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9z"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+                  </div>
+                </div>
+
+                <div class="scroll">
+                  <div class="hero-card">
+                    <div class="eyebrow-sm" style="color:var(--tomato-500)">Thursday · week 14</div>
+                    <div class="h">Morning,<br/>Kosta — <em>five</em><br/>things today.</div>
+                    <svg viewBox="0 0 130 16" preserveAspectRatio="none" style="display:block;height:14px;width:120px;margin:-2px 0 4px -2px">
+                      <path d="M2 10 C 22 2, 40 14, 60 8 S 100 4, 120 10 S 128 16, 128 8" fill="none" stroke="#E2553A" stroke-width="2.4" stroke-linecap="round"/>
+                    </svg>
+                    <p>
+                      <span class="hl">Sungolds ripe</span>; rain Thursday so we've
+                      pushed watering to Friday.
+                    </p>
+                    <svg class="hero-illu" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M50 160 L 150 160 L 140 195 Q 100 200 60 195 Z" fill="#B8351F"/>
+                      <path d="M100 160 Q 96 120 104 88 Q 110 60 100 32" stroke="#2F6A52" stroke-width="3" fill="none" stroke-linecap="round"/>
+                      <path d="M104 100 Q 80 92 70 78 Q 82 72 96 84 Q 104 92 104 100 Z" fill="#6EA88F"/>
+                      <path d="M100 70 Q 124 62 134 48 Q 124 40 108 56 Q 100 64 100 70 Z" fill="#2F6A52"/>
+                      <circle cx="86" cy="138" r="14" fill="#E2553A"/>
+                      <circle cx="114" cy="132" r="12" fill="#F49077"/>
+                      <circle cx="100" cy="120" r="10" fill="#E2553A"/>
+                    </svg>
+                  </div>
+
+                  <div class="sec-head">
+                    <h2><span class="upright">For</span> today</h2>
+                    <a href="#">all 5 →</a>
+                  </div>
+
+                  <div class="task-card harvest">
+                    <span class="pinned-note">do this first!</span>
+                    <div class="row">
+                      <div class="ico">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="13" r="6"/><path d="M12 7c0-2 2-3 4-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                      </div>
+                      <div class="info">
+                        <div class="ttl">Harvest cherry tomatoes</div>
+                        <div class="meta">Bed 2 · 6 fruit ripe</div>
+                      </div>
+                      <button class="check"></button>
+                    </div>
+                  </div>
+                  <div class="task-card water">
+                    <div class="row">
+                      <div class="ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3s7 8 7 13a7 7 0 1 1-14 0c0-5 7-13 7-13z"/></svg>
+                      </div>
+                      <div class="info">
+                        <div class="ttl">Water basil &amp; thyme</div>
+                        <div class="meta">Herb bed · before noon</div>
+                      </div>
+                      <button class="check"></button>
+                    </div>
+                  </div>
+                  <div class="task-card fert">
+                    <div class="row">
+                      <div class="ico">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21V11"/><path d="M12 12c-3-1-5-3-5-7 3 0 5 2 5 7zM12 12c3-1 5-3 5-7-3 0-5 2-5 7z"/></svg>
+                      </div>
+                      <div class="info">
+                        <div class="ttl">Fertilize capsicum</div>
+                        <div class="meta">Bed 2 · seaweed · evening</div>
+                      </div>
+                      <button class="check"></button>
+                    </div>
+                  </div>
+
+                  <div class="sec-head">
+                    <h2><span class="upright">Your</span> garden</h2>
+                    <a href="#">all 34 →</a>
+                  </div>
+                  <div class="plants-grid">
+                    <div class="plant-tile">
+                      <div class="illu">
+                        <svg width="50" height="50" viewBox="0 0 60 60">
+                          <path d="M30 50 Q28 35 32 22" stroke="#2F6A52" stroke-width="2" stroke-linecap="round" fill="none"/>
+                          <path d="M30 38 Q18 36 14 28 Q22 26 28 32 Q30 36 30 38 Z" fill="#6EA88F"/>
+                          <circle cx="22" cy="44" r="6" fill="#E2553A"/>
+                          <circle cx="32" cy="42" r="5" fill="#F49077"/>
+                        </svg>
+                      </div>
+                      <h4>Cherry tomato</h4>
+                      <div class="where">Bed 2</div>
+                      <span class="pill warn"><span class="dot"></span>Harvest</span>
+                    </div>
+                    <div class="plant-tile">
+                      <div class="illu">
+                        <svg width="50" height="50" viewBox="0 0 60 60">
+                          <path d="M30 50 Q30 38 30 28" stroke="#2F6A52" stroke-width="2" stroke-linecap="round"/>
+                          <ellipse cx="22" cy="32" rx="7" ry="10" fill="#6EA88F" transform="rotate(-25 22 32)"/>
+                          <ellipse cx="38" cy="32" rx="7" ry="10" fill="#2F6A52" transform="rotate(25 38 32)"/>
+                          <ellipse cx="30" cy="22" rx="6" ry="9" fill="#6EA88F"/>
+                        </svg>
+                      </div>
+                      <h4>Sweet basil</h4>
+                      <div class="where">Herb bed</div>
+                      <span class="pill water"><span class="dot"></span>Water</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- tab bar -->
+                <div class="tabbar">
+                  <div class="tab active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    Today
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 1 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    Garden
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+                    Plan
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.5-7.1L21 4v6h-6"/><circle cx="12" cy="12" r="3"/></svg>
+                    Sprout
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                    Me
+                  </div>
+                </div>
+              </div>
+
+              <div class="home-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================ PHONE 2 — PLANT DETAIL ============================================ -->
+        <div class="phone-wrap">
+          <div class="phone-label"><span class="num">02</span>Plant detail</div>
+          <div class="phone">
+            <div class="screen light">
+              <div class="status dark">
+                <span>9:41</span>
+                <span class="right">
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M0 9 L 14 9 M 1 7 L 13 7 M 3 5 L 11 5 M 5 3 L 9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M2 5 a 5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+                  <svg width="20" height="9" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/></svg>
+                </span>
+              </div>
+
+              <div class="body" style="background:var(--cream);color:var(--ink)">
+                <div class="topbar light">
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </div>
+                  <div class="ttl">Cherry tomato</div>
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1c4232" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="18" r="1"/></svg>
+                  </div>
+                </div>
+
+                <div class="scroll" style="padding-top:0">
+                  <div class="pd-hero">
+                    <div class="eyebrow-sm">Bed 2 · day 64</div>
+                    <h1 class="h">Cherry<br/><em>tomato,</em><br/><span class="upright">Sungold</span></h1>
+                    <svg class="scribble" viewBox="0 0 100 14" preserveAspectRatio="none">
+                      <path d="M2 9 C 18 3, 30 13, 50 6 S 80 4, 98 9" fill="none" stroke="#E2553A" stroke-width="2.4" stroke-linecap="round"/>
+                    </svg>
+                    <div class="latin">Solanum lycopersicum</div>
+                    <svg class="pd-illu" viewBox="0 0 200 220">
+                      <path d="M40 170 L 160 170 L 150 205 Q 100 212 50 205 Z" fill="#B8351F"/>
+                      <path d="M40 170 L 160 170 L 158 178 L 42 178 Z" fill="#8B2615"/>
+                      <path d="M100 170 Q 96 130 104 92 Q 112 60 100 24" stroke="#2F6A52" stroke-width="3" fill="none" stroke-linecap="round"/>
+                      <path d="M104 110 Q 76 100 64 84 Q 80 76 96 92 Q 104 100 104 110 Z" fill="#6EA88F"/>
+                      <path d="M100 70 Q 130 60 144 42 Q 130 32 110 52 Q 100 62 100 70 Z" fill="#2F6A52"/>
+                      <path d="M100 50 Q 70 42 56 24 Q 70 14 92 32 Q 100 42 100 50 Z" fill="#6EA88F"/>
+                      <circle cx="80" cy="140" r="14" fill="#E2553A"/>
+                      <circle cx="110" cy="146" r="13" fill="#E2553A"/>
+                      <circle cx="125" cy="138" r="9" fill="#F49077"/>
+                      <circle cx="92" cy="125" r="9" fill="#E2553A"/>
+                    </svg>
+                  </div>
+
+                  <div class="vitals">
+                    <div class="vital">
+                      <div class="label">Days alive</div>
+                      <div class="value">64</div>
+                      <div class="sub">Planted 4 Mar</div>
+                    </div>
+                    <div class="vital warn">
+                      <div class="label">Next harvest</div>
+                      <div class="value">Today</div>
+                      <div class="sub">6 fruit ripe</div>
+                    </div>
+                    <div class="vital">
+                      <div class="label">Last watered</div>
+                      <div class="value">Yesterday</div>
+                      <div class="sub">2.1L · 9:14am</div>
+                    </div>
+                    <div class="vital">
+                      <div class="label">Total yield</div>
+                      <div class="value">1.4 kg</div>
+                      <div class="sub">28 fruit</div>
+                    </div>
+                  </div>
+
+                  <div class="panel-sm">
+                    <h3>Watering rhythm</h3>
+                    <div class="sub">last 14 days</div>
+                    <div class="rhythm">
+                      <div class="d" style="height:50%"></div>
+                      <div class="d dry" style="height:30%"></div>
+                      <div class="d" style="height:60%"></div>
+                      <div class="d skip" style="height:30%"></div>
+                      <div class="d" style="height:62%"></div>
+                      <div class="d heavy" style="height:90%"></div>
+                      <div class="d" style="height:54%"></div>
+                      <div class="d" style="height:60%"></div>
+                      <div class="d dry" style="height:34%"></div>
+                      <div class="d" style="height:64%"></div>
+                      <div class="d" style="height:64%"></div>
+                      <div class="d heavy" style="height:90%"></div>
+                      <div class="d" style="height:56%"></div>
+                      <div class="d today" style="height:50%"></div>
+                    </div>
+                  </div>
+
+                  <div class="panel-sm">
+                    <h3>Journal</h3>
+                    <div class="sub">9 entries this season</div>
+                    <div class="entry">
+                      <div class="when">today · 7:42 am</div>
+                      <h4>First proper flush</h4>
+                      <p>Six fruit fully orange this morning. Pruned two yellowing lower leaves.</p>
+                      <span class="handnote">↳ harvest before split!</span>
+                    </div>
+                    <div class="entry">
+                      <div class="when">2 days ago</div>
+                      <h4>Suckers pruned</h4>
+                      <p>Removed three suckers below the lowest truss.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="home-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================ PHONE 3 — CHAT ============================================ -->
+        <div class="phone-wrap">
+          <div class="phone-label"><span class="num">03</span>Ask Sprout</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>9:41</span>
+                <span class="right">
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M0 9 L 14 9 M 1 7 L 13 7 M 3 5 L 11 5 M 5 3 L 9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M2 5 a 5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+                  <svg width="20" height="9" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/></svg>
+                </span>
+              </div>
+
+              <div class="body">
+                <div class="topbar">
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </div>
+                  <div class="ttl" style="display:flex;align-items:center;gap:6px;justify-content:center">
+                    <div class="ava agent" style="width:22px;height:22px;border-radius:7px">
+                      <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/></svg>
+                    </div>
+                    Sprout
+                  </div>
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </div>
+                </div>
+
+                <div class="chat-stream">
+                  <div class="turn user">
+                    <div class="bubble user-msg">Lower leaves on my Sungold are yellowing. Nitrogen?</div>
+                    <div class="ava user">K</div>
+                  </div>
+                  <div class="turn">
+                    <div class="ava agent">
+                      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/><path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/></svg>
+                    </div>
+                    <div>
+                      <div class="agent-name">Sprout <span class="badge">Agent</span></div>
+                      <div class="bubble wobbly">
+                        <em class="tomato">Probably not.</em> At day 64 on a Sungold,
+                        <span class="hl">lower-leaf yellowing</span> is usually just shedding old foliage.
+                        <a href="#" class="plant-chip">
+                          <span class="ill">
+                            <svg width="20" height="20" viewBox="0 0 60 60"><path d="M30 50 Q28 35 32 22" stroke="#2F6A52" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M30 38 Q18 36 14 28 Q22 26 28 32 Q30 36 30 38 Z" fill="#6EA88F"/><circle cx="22" cy="44" r="6" fill="#E2553A"/><circle cx="32" cy="42" r="5" fill="#F49077"/></svg>
+                          </span>
+                          <span>
+                            <span class="name">'Sungold'</span>
+                            <span class="meta">Bed 2 · open</span>
+                          </span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="turn user">
+                    <div class="bubble user-msg">Just the bottom three. Prune them?</div>
+                    <div class="ava user">K</div>
+                  </div>
+                  <div class="turn">
+                    <div class="ava agent">
+                      <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/></svg>
+                    </div>
+                    <div>
+                      <div class="agent-name">Sprout</div>
+                      <div class="bubble">
+                        Yes — clean snip in the morning. Want me to add a "prune &amp; tidy" task for tomorrow?
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="composer-mobile">
+                  <div class="suggestions">
+                    <span class="chip">Yes, schedule it</span>
+                    <span class="chip">No thanks</span>
+                    <span class="chip">Sterilise pruners?</span>
+                  </div>
+                  <div class="input-row">
+                    <span class="ph">Ask Sprout…</span>
+                    <button class="send" aria-label="Send">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="home-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================ PHONE 4 — CALENDAR (LIST) ============================================ -->
+        <div class="phone-wrap">
+          <div class="phone-label"><span class="num">04</span>Plan · list</div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status">
+                <span>9:41</span>
+                <span class="right">
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M0 9 L 14 9 M 1 7 L 13 7 M 3 5 L 11 5 M 5 3 L 9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  <svg width="14" height="9" viewBox="0 0 14 9"><path d="M2 5 a 5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7" r="1" fill="currentColor"/></svg>
+                  <svg width="20" height="9" viewBox="0 0 22 10"><rect x="0.5" y="0.5" width="18" height="9" rx="2" fill="none" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="14" height="6" rx="1" fill="currentColor"/></svg>
+                </span>
+              </div>
+
+              <div class="body">
+                <div class="topbar">
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                  </div>
+                  <div class="ttl">Plan</div>
+                  <div class="iconbtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFF8EE" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+                  </div>
+                </div>
+
+                <div class="month-strip">
+                  <span class="label">May 2026</span>
+                  <div class="seg">
+                    <button>Day</button>
+                    <button>Week</button>
+                    <button class="active">List</button>
+                  </div>
+                </div>
+
+                <div class="week-row">
+                  <div class="wk"><div class="d">M</div><div class="n">4</div><div class="pips"><span class="pip" style="background:var(--water-500)"></span></div></div>
+                  <div class="wk"><div class="d">T</div><div class="n">5</div><div class="pips"><span class="pip" style="background:var(--forest-500)"></span><span class="pip" style="background:var(--water-500)"></span></div></div>
+                  <div class="wk"><div class="d">W</div><div class="n">6</div><div class="pips"></div></div>
+                  <div class="wk"><div class="d">T</div><div class="n">7</div><div class="pips"><span class="pip" style="background:var(--water-300);opacity:0.5"></span></div></div>
+                  <div class="wk today"><div class="d">F</div><div class="n">8</div><div class="pips"><span class="pip" style="background:white"></span><span class="pip" style="background:white"></span><span class="pip" style="background:white"></span></div></div>
+                  <div class="wk"><div class="d">S</div><div class="n">9</div><div class="pips"><span class="pip" style="background:var(--forest-500)"></span><span class="pip" style="background:var(--water-500)"></span></div></div>
+                  <div class="wk"><div class="d">S</div><div class="n">10</div><div class="pips"><span class="pip" style="background:var(--soil-500)"></span><span class="pip" style="background:var(--water-500)"></span></div></div>
+                </div>
+
+                <div class="scroll" style="padding-top:4px">
+                  <div class="day-section">
+                    <div class="day-head">
+                      <h3><span class="upright">Today</span> · <em>Fri 8</em></h3>
+                      <span class="count">3 tasks</span>
+                    </div>
+                    <div class="ev-row"><span class="dot" style="background:var(--tomato-500)"></span><span class="ttl">Harvest cherry tomatoes</span><span class="meta">6 ripe</span></div>
+                    <div class="ev-row"><span class="dot" style="background:var(--water-500)"></span><span class="ttl">Water basil &amp; thyme</span><span class="meta">noon</span></div>
+                    <div class="ev-row"><span class="dot" style="background:var(--soil-500)"></span><span class="ttl">Fertilize capsicum</span><span class="meta">eve · ✦</span></div>
+                  </div>
+
+                  <div class="day-section">
+                    <div class="day-head">
+                      <h3><span class="upright">Sat</span> <em>9 May</em></h3>
+                      <span class="count">2 tasks</span>
+                    </div>
+                    <div class="ev-row"><span class="dot" style="background:var(--forest-500)"></span><span class="ttl">Plant out brassicas</span><span class="meta">8 seedlings</span></div>
+                    <div class="ev-row"><span class="dot" style="background:var(--water-500)"></span><span class="ttl">Deep water Bed 2</span><span class="meta">soil dry</span></div>
+                  </div>
+
+                  <div class="day-section">
+                    <div class="day-head">
+                      <h3><span class="upright">Sun</span> <em>10 May</em></h3>
+                      <span class="count">2 tasks</span>
+                    </div>
+                    <div class="ev-row"><span class="dot" style="background:var(--soil-500)"></span><span class="ttl">Mulch herb bed</span><span class="meta">5cm · ✦</span></div>
+                    <div class="ev-row"><span class="dot" style="background:var(--water-500)"></span><span class="ttl">Water all beds early</span><span class="meta">26° fcst</span></div>
+                  </div>
+                </div>
+
+                <div class="tabbar">
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    Today
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-7 8-13a8 8 0 1 0-16 0c0 6 8 13 8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    Garden
+                  </div>
+                  <div class="tab active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+                    Plan
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.5-7.1L21 4v6h-6"/><circle cx="12" cy="12" r="3"/></svg>
+                    Sprout
+                  </div>
+                  <div class="tab">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+                    Me
+                  </div>
+                </div>
+              </div>
+
+              <div class="home-bar"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sprout — Ask</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --forest-900: #0f2419;
+        --forest-800: #163528;
+        --forest-700: #1c4232;
+        --forest-600: #245440;
+        --forest-500: #2f6a52;
+        --forest-300: #6ea88f;
+        --forest-200: #a8d5b8;
+        --forest-100: #d3e6dc;
+
+        --tomato-700: #b8351f;
+        --tomato-500: #e2553a;
+        --tomato-300: #f49077;
+        --tomato-100: #fbe0d6;
+
+        --peach-100: #fdebd3;
+        --peach-50: #fff5e4;
+
+        --cream: #fff8ee;
+        --bone: #fefaf2;
+        --paper: #fdf5e7;
+        --ink: #1a2b25;
+        --ink-soft: #4d5e57;
+        --ink-mute: #8a978f;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18),
+          0 2px 8px rgba(0, 0, 0, 0.12);
+        --shadow-md: 0 8px 22px rgba(0, 0, 0, 0.22),
+          0 2px 6px rgba(0, 0, 0, 0.12);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        background: var(--forest-800);
+        color: var(--forest-100);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "ss01", "cv11";
+        background-image:
+          radial-gradient(ellipse 800px 500px at 80% -10%, rgba(228, 144, 119, 0.18), transparent 60%),
+          radial-gradient(ellipse 600px 400px at -5% 110%, rgba(168, 213, 184, 0.15), transparent 60%);
+        min-height: 100vh;
+      }
+      body::before {
+        content: "";
+        position: fixed; inset: 0;
+        pointer-events: none;
+        opacity: 0.06; z-index: 0;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+      }
+
+      .layout {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 268px 1fr;
+        min-height: 100vh;
+      }
+
+      /* sidebar */
+      .side {
+        padding: 24px 18px;
+        border-right: 1px solid rgba(255, 248, 238, 0.07);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 4px 8px 22px;
+      }
+      .brand-mark {
+        width: 36px; height: 36px;
+        border-radius: 12px;
+        background: var(--cream);
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .brand-name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 80;
+        font-size: 19px;
+        letter-spacing: -0.01em;
+        color: var(--cream);
+      }
+      .new-chat {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 14px;
+        background: var(--tomato-500);
+        color: white;
+        border-radius: 14px;
+        font-weight: 600; font-size: 14px;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+      }
+      .new-chat:hover { background: var(--tomato-700); }
+
+      .side-section-label {
+        margin: 24px 8px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--forest-300);
+      }
+      .session {
+        display: block;
+        padding: 10px 12px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--forest-100);
+        font-size: 13.5px;
+        line-height: 1.4;
+        opacity: 0.85;
+      }
+      .session:hover { background: rgba(255, 248, 238, 0.06); opacity: 1; }
+      .session.active {
+        background: rgba(255, 248, 238, 0.10);
+        opacity: 1;
+        font-weight: 500;
+      }
+      .session .when {
+        display: block;
+        font-size: 11px;
+        color: var(--forest-300);
+        margin-top: 2px;
+        font-weight: 400;
+      }
+
+      /* main */
+      .main {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .header {
+        padding: 24px 48px 12px;
+        position: relative;
+      }
+      .eyebrow {
+        font-weight: 700; font-size: 11.5px;
+        letter-spacing: 0.18em; text-transform: uppercase;
+        color: var(--tomato-300);
+        margin-bottom: 6px;
+      }
+      .h1 {
+        margin: 0;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 96;
+        font-size: 64px;
+        line-height: 0.95;
+        letter-spacing: -0.025em;
+        color: var(--cream);
+      }
+      .h1 .upright { font-style: normal; font-weight: 600; }
+      .scribble {
+        display: block;
+        margin: -6px 0 10px -6px;
+        height: 22px;
+        max-width: 320px;
+      }
+      .header-meta {
+        display: flex; align-items: center; gap: 12px;
+        color: var(--forest-200);
+        font-size: 13.5px;
+      }
+      .handnote {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        color: var(--tomato-300);
+        font-size: 14.5px;
+        transform: rotate(-2deg);
+        display: inline-block;
+        letter-spacing: 0.005em;
+      }
+
+      /* messages */
+      .stream {
+        flex: 1;
+        padding: 18px 48px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        max-width: 880px;
+      }
+
+      .turn { display: flex; gap: 14px; align-items: flex-start; }
+      .turn.user { justify-content: flex-end; }
+      .turn .avatar {
+        width: 38px; height: 38px;
+        border-radius: 12px;
+        flex: none;
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+      }
+      .turn .agent-avatar {
+        background: var(--cream);
+      }
+      .turn .user-avatar {
+        background: linear-gradient(135deg, var(--tomato-300), var(--tomato-500));
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .bubble {
+        max-width: 620px;
+        position: relative;
+        padding: 18px 22px;
+        border-radius: 22px;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .bubble.agent {
+        background: var(--cream);
+        color: var(--ink);
+        border-radius: 6px 22px 22px 22px;
+      }
+      .bubble.agent.wobbly::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 6px 22px 22px 22px;
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 200' preserveAspectRatio='none'><path d='M14 8 C 80 4, 160 12, 240 6 S 400 14, 500 4 S 590 18, 588 60 S 595 120, 590 160 S 580 195, 500 192 S 300 198, 180 195 S 30 198, 12 188 S 4 120, 8 60 S 4 14, 14 8 Z' fill='none' stroke='%231c4232' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' opacity='0.15'/></svg>") no-repeat center/100% 100%;
+        pointer-events: none;
+      }
+      .bubble.user {
+        background: var(--forest-700);
+        color: var(--cream);
+        border-radius: 22px 22px 6px 22px;
+        box-shadow: var(--shadow-sm);
+      }
+      .bubble strong { color: var(--forest-900); font-weight: 600; }
+      .bubble.agent em.hl {
+        font-style: normal;
+        background: linear-gradient(180deg, transparent 60%, var(--peach-100) 60%);
+        padding: 0 2px;
+      }
+      .bubble.agent em.tomato {
+        font-style: italic;
+        color: var(--tomato-700);
+        font-weight: 500;
+      }
+
+      /* inline plant card */
+      .plant-chip {
+        margin: 14px 0 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px 10px 10px;
+        background: var(--paper);
+        border-radius: 18px;
+        text-decoration: none;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+      }
+      .plant-chip .ill {
+        width: 48px; height: 48px;
+        border-radius: 12px;
+        background: var(--peach-100);
+        display: grid; place-items: center;
+        flex: none;
+      }
+      .plant-chip .name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 16px;
+        color: var(--forest-900);
+      }
+      .plant-chip .meta {
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin-top: 2px;
+      }
+      .plant-chip .arrow {
+        margin-left: 6px;
+        color: var(--forest-500);
+      }
+
+      /* sketch arrow connecting bubble to plant chip */
+      .sketch-arrow {
+        position: absolute;
+        left: -36px;
+        top: 14px;
+        width: 50px;
+        pointer-events: none;
+      }
+
+      /* citation footnote */
+      .footnote {
+        font-size: 12px;
+        color: var(--ink-mute);
+        margin-top: 12px;
+        font-style: italic;
+      }
+      .footnote sup {
+        background: var(--forest-100);
+        color: var(--forest-700);
+        padding: 0 5px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-style: normal;
+        margin-right: 4px;
+        font-size: 10px;
+      }
+
+      /* margin note */
+      .margin-note {
+        position: absolute;
+        right: -210px;
+        top: 6px;
+        width: 190px;
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-weight: 500;
+        font-variation-settings: "SOFT" 100, "opsz" 36;
+        font-size: 14.5px;
+        color: var(--tomato-300);
+        transform: rotate(-2deg);
+        line-height: 1.3;
+        letter-spacing: 0.005em;
+      }
+      .margin-note .arrow {
+        display: block;
+        width: 60px;
+        margin-bottom: 4px;
+        transform: rotate(180deg) translateX(0);
+      }
+
+      /* suggestions */
+      .suggestions {
+        display: flex; flex-wrap: wrap; gap: 8px;
+        margin-top: 12px;
+      }
+      .chip {
+        background: rgba(255, 248, 238, 0.10);
+        border: 1px dashed rgba(255, 248, 238, 0.25);
+        color: var(--cream);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .chip:hover { background: rgba(255, 248, 238, 0.18); }
+
+      /* action buttons within agent message */
+      .actions-row {
+        margin-top: 14px;
+        display: flex; gap: 8px; flex-wrap: wrap;
+      }
+      .btn {
+        font: 600 13px/1 "Inter", sans-serif;
+        border: 0;
+        padding: 9px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn.tomato { background: var(--tomato-500); color: white; }
+      .btn.tomato:hover { background: var(--tomato-700); }
+      .btn.ghost-dark {
+        background: transparent;
+        color: var(--forest-700);
+        box-shadow: inset 0 0 0 1.5px var(--forest-300);
+      }
+      .btn.ghost-dark:hover {
+        background: var(--forest-100);
+      }
+
+      /* composer */
+      .composer-wrap {
+        position: sticky;
+        bottom: 0;
+        padding: 14px 48px 28px;
+        background: linear-gradient(180deg, transparent, var(--forest-800) 35%);
+      }
+      .composer {
+        max-width: 880px;
+        background: var(--cream);
+        border-radius: 22px;
+        padding: 14px 14px 14px 20px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        box-shadow: var(--shadow-md);
+        position: relative;
+      }
+      .composer textarea {
+        flex: 1;
+        border: 0;
+        outline: 0;
+        resize: none;
+        background: transparent;
+        font: 400 15px/1.5 "Inter", sans-serif;
+        color: var(--ink);
+        min-height: 28px;
+        padding: 6px 0;
+      }
+      .composer textarea::placeholder { color: var(--ink-mute); }
+      .send {
+        width: 42px; height: 42px;
+        border-radius: 999px;
+        background: var(--tomato-500);
+        color: white;
+        border: 0;
+        cursor: pointer;
+        display: grid; place-items: center;
+        flex: none;
+      }
+      .send:hover { background: var(--tomato-700); }
+      .iconbtn {
+        width: 36px; height: 36px;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--forest-500);
+        border: 0;
+        cursor: pointer;
+        display: grid; place-items: center;
+      }
+      .iconbtn:hover { background: var(--forest-100); }
+
+      .quick-actions {
+        max-width: 880px;
+        display: flex; gap: 8px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .qa {
+        font-size: 12.5px;
+        color: var(--forest-200);
+        background: rgba(255, 248, 238, 0.06);
+        border: 1px solid rgba(255, 248, 238, 0.10);
+        padding: 7px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .qa:hover { background: rgba(255, 248, 238, 0.12); }
+
+      /* "thinking" sprouting indicator */
+      .thinking {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-style: italic;
+        color: var(--ink-mute);
+      }
+      .thinking .seed {
+        width: 10px; height: 10px;
+        border-radius: 999px;
+        background: var(--forest-500);
+        animation: sprout 1.6s ease-in-out infinite;
+      }
+      .thinking .seed:nth-child(2) { animation-delay: 0.2s; }
+      .thinking .seed:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes sprout {
+        0%, 100% { transform: translateY(0); opacity: 0.4; }
+        50% { transform: translateY(-3px); opacity: 1; }
+      }
+
+      /* underline scribbles for emphasis */
+      .scribble-under {
+        background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'><path d='M2 5 C 20 1, 40 8, 60 4 S 90 6, 98 3' fill='none' stroke='%23E2553A' stroke-width='2' stroke-linecap='round'/></svg>") repeat-x bottom left/auto 6px;
+        padding-bottom: 4px;
+      }
+
+      .agent-name {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-variation-settings: "SOFT" 60;
+        font-size: 13.5px;
+        color: var(--forest-700);
+        margin-bottom: 4px;
+      }
+      .agent-name .badge {
+        font-family: "Inter", sans-serif;
+        background: var(--forest-100);
+        color: var(--forest-700);
+        font-weight: 600;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 999px;
+        margin-left: 6px;
+        vertical-align: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <!-- sidebar -->
+      <aside class="side">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+              <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round" />
+              <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+              <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+            </svg>
+          </div>
+          <div class="brand-name">Sprout</div>
+        </div>
+
+        <button class="new-chat">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          New question
+        </button>
+
+        <div class="side-section-label">Today</div>
+        <a href="#" class="session active">
+          Yellowing leaves on the tomato
+          <span class="when">just now · 4 turns</span>
+        </a>
+        <a href="#" class="session">
+          What to plant in the empty bed?
+          <span class="when">2h ago · 11 turns</span>
+        </a>
+
+        <div class="side-section-label">This week</div>
+        <a href="#" class="session">
+          Companion planting for capsicum
+          <span class="when">Mon · 6 turns</span>
+        </a>
+        <a href="#" class="session">
+          Diagnosing white spots on basil
+          <span class="when">Sun · 9 turns</span>
+        </a>
+        <a href="#" class="session">
+          When to start winter brassicas
+          <span class="when">Sat · 3 turns</span>
+        </a>
+      </aside>
+
+      <!-- main -->
+      <main class="main">
+        <header class="header">
+          <div class="eyebrow">Ask Sprout</div>
+          <h1 class="h1">
+            What's the<br />
+            <span class="upright">garden</span> <em>asking</em> for?
+          </h1>
+          <svg class="scribble" viewBox="0 0 320 22" preserveAspectRatio="none">
+            <path d="M4 14 C 40 4, 80 22, 120 10 S 200 4, 240 14 S 300 22, 316 10" fill="none" stroke="#E2553A" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="header-meta">
+            <span class="handnote">↳ today, Thursday</span>
+            <span style="opacity:.5">·</span>
+            <span>Knows your 34 plants, soil test, and forecast</span>
+          </div>
+        </header>
+
+        <!-- messages -->
+        <section class="stream">
+          <!-- user turn 1 -->
+          <div class="turn user">
+            <div class="bubble user">
+              The lower leaves on my Sungold are going yellow. Is that nitrogen?
+            </div>
+            <div class="avatar user-avatar">K</div>
+          </div>
+
+          <!-- agent turn 1 -->
+          <div class="turn">
+            <div class="avatar agent-avatar">
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+                <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+              </svg>
+            </div>
+            <div style="position: relative; flex: 1; max-width: 720px;">
+              <div class="agent-name">Sprout <span class="badge">Agent</span></div>
+              <div class="bubble agent wobbly">
+                <p style="margin:0 0 10px">
+                  <em class="tomato">Probably not nitrogen</em> — at <strong>day 64</strong> on a Sungold,
+                  <em class="hl">lower leaves yellowing</em> is usually just the plant
+                  shedding old foliage as it puts energy into the upper trusses.
+                  It's normal, and a little tidy.
+                </p>
+                <p style="margin:0">
+                  But two things would change my answer:
+                </p>
+                <ol style="margin:8px 0 0; padding-left: 20px; color: var(--ink-soft);">
+                  <li>If the yellowing is <em class="hl">spreading upward fast</em> — that's likely nitrogen or magnesium.</li>
+                  <li>If the leaves are also <em class="hl">curling or speckled</em> — could be early blight starting.</li>
+                </ol>
+
+                <a href="#" class="plant-chip" style="margin-top: 16px;">
+                  <span class="ill">
+                    <svg width="36" height="36" viewBox="0 0 60 60">
+                      <path d="M30 50 Q28 35 32 22" stroke="#2F6A52" stroke-width="2" stroke-linecap="round" fill="none"/>
+                      <path d="M30 38 Q18 36 14 28 Q22 26 28 32 Q30 36 30 38 Z" fill="#6EA88F"/>
+                      <circle cx="22" cy="44" r="6" fill="#E2553A"/>
+                      <circle cx="32" cy="42" r="5" fill="#F49077"/>
+                      <circle cx="28" cy="36" r="4" fill="#E2553A"/>
+                    </svg>
+                  </span>
+                  <span>
+                    <span class="name">Cherry tomato 'Sungold'</span>
+                    <span class="meta">Bed 2 · last fed 12 days ago</span>
+                  </span>
+                  <svg class="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                    <path d="M5 12h14M13 6l6 6-6 6"/>
+                  </svg>
+                </a>
+
+                <p class="footnote">
+                  <sup>1</sup> Based on your soil test (12 Mar): N-medium, P-low, K-high. <sup>2</sup> RHS guidance on indeterminate tomatoes.
+                </p>
+
+                <div class="actions-row">
+                  <button class="btn tomato">Snap a photo</button>
+                  <button class="btn ghost-dark">Add a "watch" task</button>
+                  <button class="btn ghost-dark">Show me what blight looks like</button>
+                </div>
+              </div>
+
+              <div class="margin-note">
+                <svg class="arrow" viewBox="0 0 60 30">
+                  <path d="M55 25 C 40 25, 25 12, 8 8" stroke="#F49077" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                  <path d="M14 4 L 8 8 L 12 14" stroke="#F49077" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                tap to open<br/>the plant detail
+              </div>
+            </div>
+          </div>
+
+          <!-- user turn 2 -->
+          <div class="turn user">
+            <div class="bubble user">
+              It's just the bottom three leaves. Should I prune them?
+            </div>
+            <div class="avatar user-avatar">K</div>
+          </div>
+
+          <!-- agent turn 2 -->
+          <div class="turn">
+            <div class="avatar agent-avatar">
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+                <path d="M12 13.5C12 13.5 14.7 12.7 16.3 10.6C17.5 9.1 17.5 7 17.5 7C17.5 7 15.3 7 13.7 8C12.2 9 12 11.4 12 13.5Z" fill="#6EA88F"/>
+              </svg>
+            </div>
+            <div style="flex: 1; max-width: 720px;">
+              <div class="agent-name">Sprout <span class="badge">Agent</span></div>
+              <div class="bubble agent">
+                <p style="margin:0 0 10px">
+                  Yes — <span class="scribble-under">prune them off cleanly</span> with a sharp snip,
+                  ideally in the morning so the cut dries before evening humidity.
+                  Better airflow at the base = less disease.
+                </p>
+                <p style="margin:0">
+                  Want me to add a quick <em class="tomato">prune &amp; tidy</em> task for tomorrow morning,
+                  before the heat?
+                </p>
+                <div class="actions-row">
+                  <button class="btn tomato">Yes, schedule it</button>
+                  <button class="btn ghost-dark">No thanks</button>
+                </div>
+              </div>
+              <div class="suggestions">
+                <span class="chip">How do I sterilise pruners?</span>
+                <span class="chip">What about the upper yellowing?</span>
+                <span class="chip">Best time to feed Sungolds</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- thinking indicator -->
+          <div class="turn">
+            <div class="avatar agent-avatar">
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path d="M12 21V11" stroke="#1c4232" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M12 12C12 12 8.5 11.2 6.8 8.8C5.5 7 5.5 4.5 5.5 4.5C5.5 4.5 8 4.5 9.8 5.8C11.5 7 12 9.5 12 12Z" fill="#2F6A52"/>
+              </svg>
+            </div>
+            <div class="bubble agent">
+              <span class="thinking">
+                <span class="seed"></span>
+                <span class="seed"></span>
+                <span class="seed"></span>
+                checking your weather forecast…
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- composer -->
+        <div class="composer-wrap">
+          <div class="quick-actions">
+            <span class="qa">🍅 Diagnose a plant</span>
+            <span class="qa">📅 Plan this weekend</span>
+            <span class="qa">🌾 What's ripe?</span>
+            <span class="qa">🌱 What should I sow now?</span>
+            <span class="qa">📸 Identify from photo</span>
+          </div>
+          <div class="composer">
+            <button class="iconbtn" title="Attach photo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-9 9"/>
+              </svg>
+            </button>
+            <button class="iconbtn" title="Mention a plant">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/>
+              </svg>
+            </button>
+            <textarea placeholder="Ask anything — about a plant, a bed, the week ahead…" rows="1"></textarea>
+            <button class="send" aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
