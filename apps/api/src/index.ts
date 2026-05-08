@@ -34,7 +34,7 @@ declare global {
   }
 }
 
-export const createApp = (db: Database) => {
+export const createApp = (db: Database): express.Application => {
   const plantService = createPlantService(db);
   const calendarService = createCalendarService(db);
   const userService = createUserService(db);
