@@ -18,6 +18,7 @@ export interface DatabaseWrapper {
   deletePlant(id: string): boolean;
   getAllCalendarEvents(): CalendarEvent[];
   getCalendarEventById(id: string): CalendarEvent | null;
+  getCalendarEventsBetween(startInclusive: string, endExclusive: string): CalendarEvent[];
   createCalendarEvent(
     event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>,
   ): CalendarEvent;

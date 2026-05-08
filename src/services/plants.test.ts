@@ -13,6 +13,7 @@ type MockDatabase = Pick<
   | 'deletePlant'
   | 'getAllCalendarEvents'
   | 'getCalendarEventById'
+  | 'getCalendarEventsBetween'
   | 'createCalendarEvent'
   | 'updateCalendarEvent'
   | 'deleteCalendarEvent'
@@ -79,6 +80,9 @@ describe('Plant Service', () => {
       },
       getCalendarEventById(_id: string) {
         return null;
+      },
+      getCalendarEventsBetween(_start: string, _end: string) {
+        return [];
       },
       createCalendarEvent(_event: any) {
         return null as any;

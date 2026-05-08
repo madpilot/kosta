@@ -5,13 +5,14 @@ import type {
 } from '../models/calendar';
 import { CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from '../models/calendar';
 import type { CalendarDatabase } from '../models/calendar-db';
+import { dayRange, monthRange, resolveTimezone, weekRange } from '../utils/timezone';
 
 export interface CalendarService {
   getAllEvents(): CalendarEvent[];
   getEventById(id: string): CalendarEvent | null;
-  getEventsForToday(): CalendarEvent[];
-  getEventsForWeek(): CalendarEvent[];
-  getEventsForMonth(): CalendarEvent[];
+  getEventsForToday(timezone?: string): CalendarEvent[];
+  getEventsForWeek(timezone?: string): CalendarEvent[];
+  getEventsForMonth(timezone?: string): CalendarEvent[];
   getUpcomingEvents(limit?: number): CalendarEvent[];
   getEventsByPlant(plantId: string): CalendarEvent[];
   getEventsByDate(date: string): CalendarEvent[];
@@ -36,42 +37,19 @@ export function createCalendarService(db: CalendarDatabase): CalendarService {
       return db.getCalendarEventById(id);
     },
 
-    getEventsForToday(): CalendarEvent[] {
-      const today = new Date().toISOString().split('T')[0];
-      return this.getEventsByDate(today);
+    getEventsForToday(timezone?: string): CalendarEvent[] {
+      const { startInclusive, endExclusive } = dayRange(new Date(), resolveTimezone(timezone));
+      return db.getCalendarEventsBetween(startInclusive, endExclusive);
     },
 
-    getEventsForWeek(): CalendarEvent[] {
-      const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
-
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 7);
-
-      const start = startOfWeek.toISOString();
-      const end = endOfWeek.toISOString();
-
-      return this.getAllEvents().filter((event) => {
-        if (!event.date) return false;
-        const eventDate = new Date(event.date);
-        return eventDate >= new Date(start) && eventDate <= new Date(end);
-      });
+    getEventsForWeek(timezone?: string): CalendarEvent[] {
+      const { startInclusive, endExclusive } = weekRange(new Date(), resolveTimezone(timezone));
+      return db.getCalendarEventsBetween(startInclusive, endExclusive);
     },
 
-    getEventsForMonth(): CalendarEvent[] {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      const start = startOfMonth.toISOString();
-      const end = endOfMonth.toISOString();
-
-      return this.getAllEvents().filter((event) => {
-        if (!event.date) return false;
-        const eventDate = new Date(event.date);
-        return eventDate >= new Date(start) && eventDate <= new Date(end);
-      });
+    getEventsForMonth(timezone?: string): CalendarEvent[] {
+      const { startInclusive, endExclusive } = monthRange(new Date(), resolveTimezone(timezone));
+      return db.getCalendarEventsBetween(startInclusive, endExclusive);
     },
 
     getUpcomingEvents(limit = 7): CalendarEvent[] {

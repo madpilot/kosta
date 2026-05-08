@@ -38,6 +38,7 @@ const stubDb = (overrides: Partial<DatabaseWrapper> = {}): DatabaseWrapper => ({
   deletePlant: () => false,
   getAllCalendarEvents: () => [],
   getCalendarEventById: () => null,
+  getCalendarEventsBetween: () => [],
   createCalendarEvent: (e) =>
     makeEvent({ ...e, id: `event-${Math.random().toString(36).slice(2, 8)}` }),
   updateCalendarEvent: () => null,

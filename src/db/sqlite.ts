@@ -380,6 +380,14 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
         | undefined;
       return row ? mapCalendarRow(row) : null;
     },
+    getCalendarEventsBetween(startInclusive: string, endExclusive: string): CalendarEvent[] {
+      const rows = database
+        .prepare(
+          'SELECT * FROM calendar_events WHERE date >= ? AND date < ? ORDER BY date ASC, type ASC',
+        )
+        .all(startInclusive, endExclusive) as CalendarRow[];
+      return rows.map(mapCalendarRow);
+    },
     createCalendarEvent(
       event: Omit<CalendarEvent, 'id' | 'completed' | 'createdAt' | 'updatedAt'>,
     ): CalendarEvent {
