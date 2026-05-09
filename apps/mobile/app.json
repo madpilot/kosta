@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Sprout",
+    "slug": "sprout",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "scheme": "sprout",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "au.id.eftos.myles.sprout"
+    },
+    "android": {
+      "package": "au.id.eftos.myles.sprout",
+      "adaptiveIcon": {
+        "backgroundColor": "#163528"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "http://localhost:3000"
+    }
+  }
+}

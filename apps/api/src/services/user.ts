@@ -1,7 +1,16 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import type {
+  User,
+  CreateUserInput,
+  LoginInput,
+  ChangePasswordInput,
+} from '@sprout/shared/schemas/user';
+import {
+  CreateUserInputSchema,
+  LoginInputSchema,
+  ChangePasswordInputSchema,
+} from '@sprout/shared/schemas/user';
 import type { UserDatabase } from '../db/index';
-import type { User, CreateUserInput, LoginInput, ChangePasswordInput } from '../models/user';
-import { CreateUserInputSchema, LoginInputSchema, ChangePasswordInputSchema } from '../models/user';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 

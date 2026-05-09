@@ -1,5 +1,5 @@
+import type { Plant } from '@sprout/shared/schemas/plant';
 import { createPlantService } from './plants';
-import type { Plant } from '../models/plant';
 import type { DatabaseWrapper } from '../db/index';
 
 type MockDatabase = Pick<

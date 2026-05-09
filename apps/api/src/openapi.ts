@@ -2,12 +2,16 @@ import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodToJsonSchemaConverter } from '@orpc/zod';
 import { router } from './orpc/router';
 
-export { PlantSchema, CreatePlantInputSchema, UpdatePlantInputSchema } from './models/plant';
+export {
+  PlantSchema,
+  CreatePlantInputSchema,
+  UpdatePlantInputSchema,
+} from '@sprout/shared/schemas/plant';
 export {
   CalendarEventSchema,
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
-} from './models/calendar';
+} from '@sprout/shared/schemas/calendar';
 
 const generator = new OpenAPIGenerator({
   schemaConverters: [new ZodToJsonSchemaConverter()],

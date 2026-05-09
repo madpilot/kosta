@@ -1,0 +1,55 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    transform 100ms ease,
+    box-shadow 200ms ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tomato {
+  background: var(--color-tomato-500);
+  color: var(--color-cream);
+  box-shadow: var(--shadow-sm);
+}
+
+.tomato:hover:not(:disabled) {
+  background: var(--color-tomato-700);
+}
+
+.forest {
+  background: var(--color-forest-700);
+  color: var(--color-cream);
+}
+
+.cream {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-forest-100);
+  border: 1px solid rgba(255, 248, 238, 0.18);
+}
+
+.ghost:hover:not(:disabled) {
+  background: rgba(255, 248, 238, 0.06);
+}

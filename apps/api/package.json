@@ -11,7 +11,7 @@
       "default": "./dist/index.js"
     },
     "./orpc/router": {
-      "types": "./dist/orpc/router.d.ts",
+      "types": "./src/orpc/router.ts",
       "default": "./dist/orpc/router.js"
     }
   },
@@ -36,6 +36,7 @@
     "@orpc/server": "^1.14.0",
     "@orpc/standard-server-node": "^1.14.0",
     "@orpc/zod": "^1.14.0",
+    "@sprout/shared": "workspace:*",
     "better-sqlite3": "^11.7.0",
     "express": "^4.21.2",
     "jose": "^5.9.6",

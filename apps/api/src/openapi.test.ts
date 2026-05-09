@@ -1,4 +1,8 @@
-import { PlantSchema, CreatePlantInputSchema, UpdatePlantInputSchema } from './models/plant';
+import {
+  PlantSchema,
+  CreatePlantInputSchema,
+  UpdatePlantInputSchema,
+} from '@sprout/shared/schemas/plant';
 
 describe('OpenAPI schemas', () => {
   it('PlantSchema has safeParse', () => {

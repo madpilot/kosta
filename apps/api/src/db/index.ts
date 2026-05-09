@@ -1,9 +1,9 @@
+import type { Plant } from '@sprout/shared/schemas/plant';
+import type { CalendarEvent } from '@sprout/shared/schemas/calendar';
+import type { User } from '@sprout/shared/schemas/user';
+import type { ChatSession, ChatMessage, ChatMemory } from '@sprout/shared/schemas/chat';
+import type { Settings } from '@sprout/shared/schemas/settings';
 import type { createSqliteDatabase } from './sqlite';
-import type { Plant } from '../models/plant';
-import type { CalendarEvent } from '../models/calendar';
-import type { User } from '../models/user';
-import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
-import type { Settings } from '../models/settings';
 
 export type PlantCareDates = Partial<
   Pick<Plant, 'lastWatered' | 'lastFertilized' | 'plantedDate' | 'harvestDate'>

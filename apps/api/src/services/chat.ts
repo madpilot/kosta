@@ -1,6 +1,6 @@
+import type { ChatSession, ChatMessage, ChatMemory } from '@sprout/shared/schemas/chat';
 import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
 import { buildSystemPrompt, createAiService } from './ai';
-import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
 
 export type ChatDb = DatabaseWrapper & ChatDatabase & SettingsDatabase;
 

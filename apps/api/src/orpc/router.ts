@@ -1,18 +1,22 @@
 import { os } from '@orpc/server';
 import { z } from 'zod';
-import { PlantSchema, CreatePlantInputSchema, UpdatePlantInputSchema } from '../models/plant';
+import {
+  PlantSchema,
+  CreatePlantInputSchema,
+  UpdatePlantInputSchema,
+} from '@sprout/shared/schemas/plant';
 import {
   CalendarEventSchema,
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
-} from '../models/calendar';
+} from '@sprout/shared/schemas/calendar';
 import {
   UserSchema,
   LoginInputSchema,
   ChangePasswordInputSchema,
   CreateUserInputSchema,
-} from '../models/user';
-import { SettingsSchema, UpdateSettingsInputSchema } from '../models/settings';
+} from '@sprout/shared/schemas/user';
+import { SettingsSchema, UpdateSettingsInputSchema } from '@sprout/shared/schemas/settings';
 
 // Handlers in this router are stubs — the router exists only to generate the
 // OpenAPI spec served at /api/openapi.json. The Express app in src/index.ts

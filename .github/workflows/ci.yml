@@ -28,7 +28,13 @@ jobs:
 
       - run: pnpm format:check
 
+      - run: pnpm --filter @sprout/shared build:css
+
+      - run: pnpm --filter @sprout/shared typecheck
+      - run: pnpm --filter @sprout/api-client typecheck
       - run: pnpm --filter @sprout/api typecheck
+      - run: pnpm --filter @sprout/web typecheck
+      - run: pnpm --filter @sprout/mobile typecheck
 
       - run: pnpm --filter @sprout/api lint
 

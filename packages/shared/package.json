@@ -1,0 +1,57 @@
+{
+  "name": "@sprout/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared, framework-free schemas and design tokens for the Sprout monorepo.",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    "./tokens": {
+      "types": "./src/tokens.ts",
+      "default": "./src/tokens.ts"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./schemas/plant": {
+      "types": "./src/schemas/plant.ts",
+      "default": "./src/schemas/plant.ts"
+    },
+    "./schemas/calendar": {
+      "types": "./src/schemas/calendar.ts",
+      "default": "./src/schemas/calendar.ts"
+    },
+    "./schemas/calendar-db": {
+      "types": "./src/schemas/calendar-db.ts",
+      "default": "./src/schemas/calendar-db.ts"
+    },
+    "./schemas/user": {
+      "types": "./src/schemas/user.ts",
+      "default": "./src/schemas/user.ts"
+    },
+    "./schemas/settings": {
+      "types": "./src/schemas/settings.ts",
+      "default": "./src/schemas/settings.ts"
+    },
+    "./schemas/chat": {
+      "types": "./src/schemas/chat.ts",
+      "default": "./src/schemas/chat.ts"
+    }
+  },
+  "scripts": {
+    "build:css": "tsx scripts/build-css-vars.ts",
+    "build": "pnpm build:css",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

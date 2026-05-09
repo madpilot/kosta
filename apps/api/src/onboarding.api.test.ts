@@ -1,6 +1,7 @@
 import request from 'supertest';
 import express, { Application } from 'express';
 import { unlinkSync } from 'fs';
+import { UpdateSettingsInputSchema } from '@sprout/shared/schemas/settings';
 import { createSqliteDatabase } from './db/sqlite';
 import { createUserService } from './services/user';
 import { createAuthService } from './services/auth';
@@ -10,7 +11,6 @@ import {
   OnboardingInputSchema,
   OnboardingAlreadyCompleteError,
 } from './services/onboarding';
-import { UpdateSettingsInputSchema } from './models/settings';
 
 // Mirrors the onboarding/settings/auth slice of src/index.ts. The full
 // createApp pulls in @orpc/openapi (an ESM-only dist) which the current

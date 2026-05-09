@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "types": ["node", "expo"]
+  },
+  "include": ["app/**/*", "components/**/*", "metro.config.js", ".expo/types/**/*", "expo-env.d.ts"]
+}

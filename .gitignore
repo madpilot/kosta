@@ -1,3 +1,10 @@
 node_modules
 dist
 data
+.env
+.env.local
+
+# Expo
+.expo
+.expo-shared
+*.tsbuildinfo

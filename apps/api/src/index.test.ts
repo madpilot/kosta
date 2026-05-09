@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express, { Application } from 'express';
 import { unlinkSync } from 'fs';
-import { CreatePlantInputSchema, UpdatePlantInputSchema } from './models/plant';
+import { CreatePlantInputSchema, UpdatePlantInputSchema } from '@sprout/shared/schemas/plant';
 import { createPlantService } from './services/plants';
 import { createSqliteDatabase } from './db/sqlite';
 

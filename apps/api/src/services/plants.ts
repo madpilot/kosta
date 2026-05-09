@@ -1,6 +1,6 @@
+import type { Plant, CreatePlantInput, UpdatePlantInput } from '@sprout/shared/schemas/plant';
+import { CreatePlantInputSchema, UpdatePlantInputSchema } from '@sprout/shared/schemas/plant';
 import type { DatabaseWrapper } from '../db/index';
-import type { Plant, CreatePlantInput, UpdatePlantInput } from '../models/plant';
-import { CreatePlantInputSchema, UpdatePlantInputSchema } from '../models/plant';
 
 export const createPlantService = (db: DatabaseWrapper) => ({
   listPlants(): Plant[] {
