@@ -18,7 +18,7 @@ import {
 // it covers — the same workaround src/index.test.ts uses.
 const buildTestApp = (database: ReturnType<typeof createSqliteDatabase>): Application => {
   const userService = createUserService(database);
-  const authService = createAuthService();
+  const authService = createAuthService(database);
   const settingsService = createSettingsService(database);
   const onboardingService = createOnboardingService(database, userService, settingsService);
 

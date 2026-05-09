@@ -11,7 +11,6 @@ import {
   ChangePasswordInputSchema,
 } from '@sprout/shared/schemas/user';
 import type { UserDatabase } from '../db/index';
-import { config } from '../config';
 import { logger } from '../utils/logger';
 
 const SCRYPT_KEY_LEN = 64;
@@ -38,8 +37,8 @@ export const verifyPassword = (password: string, stored: string): boolean => {
   return timingSafeEqual(actual, expected);
 };
 
-export const generateResetUrl = (token: string): string =>
-  `${config.app.baseUrl}/reset-password/${token}`;
+export const generateResetUrl = (baseUrl: string, token: string): string =>
+  `${baseUrl}/reset-password/${token}`;
 
 export const generateGravatarUrl = (email: string): string => {
   const hash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex');

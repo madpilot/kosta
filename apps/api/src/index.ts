@@ -23,7 +23,8 @@ import {
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
 } from './openapi';
-import { logger } from './utils/logger';
+import { configureLogger, logger } from './utils/logger';
+import { getRuntimeConfig } from './runtime-config';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -38,7 +39,7 @@ export const createApp = (db: Database): express.Application => {
   const plantService = createPlantService(db);
   const calendarService = createCalendarService(db);
   const userService = createUserService(db);
-  const authService = createAuthService();
+  const authService = createAuthService(db);
   const chatService = createChatService(db);
   const settingsService = createSettingsService(db);
   const onboardingService = createOnboardingService(db, userService, settingsService);
@@ -578,6 +579,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 // server during tests that import this module.
 if (process.env.JEST_WORKER_ID === undefined) {
   const db = createSqliteDatabase();
+  configureLogger(getRuntimeConfig(db).logging);
   const app = createApp(db);
   app.listen(PORT, HOST, () => {
     logger.info('Server started', { host: HOST, port: PORT });

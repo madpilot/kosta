@@ -62,27 +62,44 @@ pnpm --filter @sprout/mobile start  # Expo dev server
 
 ## Configuration
 
-Configuration is read from environment variables in `apps/api/.env`.
-`apps/api/.env.example` lists every recognised key with its default.
+Sprout reads only the bare minimum needed to bootstrap the process from
+environment variables. Everything else (AI backend, model, location,
+weather key, logging level, etc.) lives in the SQLite database and is
+managed at runtime via the `/api/onboarding` and `/api/settings` endpoints —
+no restart required when you update them.
 
-| Variable          | Default                  | Notes                                                                              |
-| ----------------- | ------------------------ | ---------------------------------------------------------------------------------- |
-| `PORT`            | `3000`                   | HTTP listen port.                                                                  |
-| `HOST`            | `0.0.0.0`                | HTTP listen address.                                                               |
-| `APP_BASE_URL`    | `http://localhost:3000`  | Public URL — used in password-reset emails. No trailing slash.                     |
-| `DATABASE_URL`    | `./data/garden.db`       | SQLite file path. Creates the file (and parent dir) on first run.                  |
-| `AI_BACKEND`      | `ollama`                 | `ollama` or `openai`.                                                              |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL.                                                                 |
-| `OLLAMA_MODEL`    | `llama3.2`               | Ollama model tag. Pull it first with `ollama pull <model>`.                        |
-| `OPENAI_API_KEY`  | _(empty)_                | Required when `AI_BACKEND=openai`.                                                 |
-| `OPENAI_MODEL`    | `gpt-4o`                 | OpenAI model name.                                                                 |
-| `AI_PREAMBLE`     | _(built-in)_             | Override the default Sprout system prompt.                                         |
-| `WEATHER_API_KEY` | _(empty)_                | OpenWeatherMap key. Forecasts are skipped if unset.                                |
-| `USER_LOCATION`   | _(empty)_                | e.g. `Perth, AU`. Used for weather + season-aware advice.                          |
-| `USER_HEMISPHERE` | `southern`               | `northern` or `southern`. Drives season detection.                                 |
-| `LOG_LEVEL`       | `info`                   | Standard npm levels: `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly`. |
-| `LOG_FORMAT`      | `pretty`                 | `pretty` for human-readable colourised output, `json` for line-delimited JSON.     |
-| `LOG_SILENT`      | `false`                  | Silence all log output. Auto-true under `NODE_ENV=test`.                           |
+### Bootstrap environment variables
+
+| Variable       | Default            | Notes                                                                            |
+| -------------- | ------------------ | -------------------------------------------------------------------------------- |
+| `PORT`         | `3000`             | HTTP listen port.                                                                |
+| `HOST`         | `0.0.0.0`          | HTTP listen address.                                                             |
+| `DATABASE_URL` | `./data/garden.db` | SQLite file path. Required to find the DB before settings can be loaded from it. |
+
+### Database-stored settings
+
+These are written via `POST /api/onboarding` on first run and updated via
+`PUT /api/settings` afterwards. Field names match the JSON body of those
+endpoints (see `packages/shared/src/schemas/settings.ts`).
+
+| Field           | Default                  | Notes                                                                              |
+| --------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| `appBaseUrl`    | `http://localhost:3000`  | Public URL — used in password-reset emails. No trailing slash.                     |
+| `aiBackend`     | `ollama`                 | `ollama` or `openai`.                                                              |
+| `ollamaBaseUrl` | `http://localhost:11434` | Ollama server URL.                                                                 |
+| `ollamaModel`   | `llama3.2`               | Ollama model tag. Pull it first with `ollama pull <model>`.                        |
+| `openaiApiKey`  | _(empty)_                | Required when `aiBackend=openai`.                                                  |
+| `openaiModel`   | `gpt-4o`                 | OpenAI model name.                                                                 |
+| `aiPreamble`    | _(built-in)_             | Override the default Sprout system prompt.                                         |
+| `weatherApiKey` | _(empty)_                | OpenWeatherMap key. Forecasts are skipped if unset.                                |
+| `location`      | _(empty)_                | e.g. `Perth, AU`. Used for weather + season-aware advice.                          |
+| `hemisphere`    | `southern`               | `northern` or `southern`. Drives season detection.                                 |
+| `logLevel`      | `info`                   | Standard npm levels: `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly`. |
+| `logFormat`     | `pretty`                 | `pretty` for human-readable colourised output, `json` for line-delimited JSON.     |
+| `logSilent`     | `false`                  | Silence all log output. Auto-true under `NODE_ENV=test`.                           |
+
+The JWT signing secret is auto-generated on first boot and persisted in the
+database — you do not need to provision one.
 
 ## Running with Docker
 
@@ -97,13 +114,14 @@ docker build -f apps/api/Dockerfile -t sprout-api:latest .
 
 docker run --rm \
   -p 3000:3000 \
-  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
-  -e OLLAMA_MODEL=llama3.2 \
-  -e APP_BASE_URL=http://localhost:3000 \
   -v sprout-data:/data \
   --name sprout \
   sprout-api:latest
 ```
+
+Configure the AI backend, model, location, etc. via `POST /api/onboarding`
+(first run) or `PUT /api/settings` (afterwards) — they are stored in
+`/data/garden.db` and survive container restarts.
 
 ## Running with docker compose
 
@@ -124,8 +142,8 @@ The compose file declares two named volumes:
 - `sprout-data` — keeps `/data/garden.db` across restarts.
 
 To use OpenAI instead of the bundled Ollama, drop the `ollama` service from
-the compose file and set `AI_BACKEND=openai` / `OPENAI_API_KEY=...` on the
-`sprout` service.
+the compose file and switch the AI backend at runtime via the settings API
+(`PUT /api/settings` with `aiBackend: 'openai'` and an `openaiApiKey`).
 
 ## Tests
 

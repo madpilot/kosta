@@ -1,16 +1,17 @@
+import { randomBytes } from 'crypto';
 import { SignJWT, jwtVerify } from 'jose';
+import type { SystemStateDatabase } from '../db/index';
 import { logger } from '../utils/logger';
 
-const DEV_FALLBACK_SECRET = 'garden-app-secret-key-change-in-production';
+const JWT_SECRET_KEY = 'jwt_secret';
 
-const resolveSecret = (): Uint8Array => {
-  const fromEnv = process.env.JWT_SECRET;
-  if (fromEnv && fromEnv.length > 0) return new TextEncoder().encode(fromEnv);
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET environment variable must be set in production');
-  }
-  logger.warn('JWT_SECRET not set — using development fallback. Do not use in production.');
-  return new TextEncoder().encode(DEV_FALLBACK_SECRET);
+const resolveSecret = (db: SystemStateDatabase): Uint8Array => {
+  const stored = db.getSystemState(JWT_SECRET_KEY);
+  if (stored && stored.length > 0) return new TextEncoder().encode(stored);
+  const generated = randomBytes(48).toString('hex');
+  db.setSystemState(JWT_SECRET_KEY, generated);
+  logger.info('Generated and persisted a new JWT secret');
+  return new TextEncoder().encode(generated);
 };
 
 export interface AuthService {
@@ -18,8 +19,8 @@ export interface AuthService {
   verifyToken(token: string): Promise<{ userId: string } | null>;
 }
 
-export const createAuthService = (): AuthService => {
-  const secret = resolveSecret();
+export const createAuthService = (db: SystemStateDatabase): AuthService => {
+  const secret = resolveSecret(db);
   return {
     async generateToken(userId: string): Promise<string> {
       return new SignJWT({ userId })
