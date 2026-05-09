@@ -1,0 +1,64 @@
+.page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 80px);
+}
+
+.card {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: min(380px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.title em {
+  font-style: italic;
+  color: var(--color-tomato-700);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.field span {
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.field input,
+.field select {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--color-bone);
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--color-tomato-300);
+  outline-offset: 2px;
+}
+
+.error {
+  color: var(--color-tomato-700);
+  font-size: 13px;
+  margin: 0;
+}

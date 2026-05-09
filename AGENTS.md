@@ -1,387 +1,191 @@
 # AGENTS.md
 
+Notes for AI agents working in this repository. Keep this file in sync with
+the project layout — it's the canonical map of where things live.
+
 ## Overview
 
-This repository contains the Garden Agent project - an AI-powered gardening assistant that manages plants and schedules maintenance tasks through an API.
+**Sprout** is a self-hostable AI gardening assistant: an Express + SQLite
+backend, a Vite + React web app, and an Expo + React Native mobile app, all
+sharing typed schemas through a thin shared package.
 
-### Project Structure
+## Repository layout
 
 ```
-src/
-├── index.ts              # Express server with REST endpoints
-├── openapi.ts            # API specification & Zod validation schemas
-├── models/               # TypeScript type definitions & models
-├── services/             # Business logic layer
-├── db/                   # Database layer (SQLite wrapper)
-└── [service].test.ts     # Unit tests for each service
+sprout/
+├── apps/
+│   ├── api/             # @sprout/api — Express + oRPC + SQLite (Node)
+│   ├── web/             # @sprout/web — Vite + React + TanStack Router/Query (CSS Modules)
+│   └── mobile/          # @sprout/mobile — Expo Router + React Native (StyleSheet.create)
+├── packages/
+│   ├── shared/          # @sprout/shared — Zod schemas + design tokens (React-free, no barrel)
+│   └── api-client/      # @sprout/api-client — typed oRPC client + TanStack Query hooks
+├── mockups/             # static HTML mockups (visual reference, never imported)
+├── pnpm-workspace.yaml
+└── tsconfig.base.json
 ```
 
-### Technology Stack
+### Hard rules
 
-- **Runtime**: TypeScript
-- **Server**: Express.js
-- **Database**: Better-sqlite3 (WAL mode)
-- **Validation**: Zod
-- **Testing**: Jest
-- **API Spec**: OpenAPI 3.0.3
+- `packages/shared` is **React-free**. The API depends on it; do not import
+  React, react-native, or any DOM types. Each schema is its own subpath
+  export (`@sprout/shared/schemas/plant`) — **no barrel `index.ts`** so
+  Metro can tree-shake.
+- `packages/api-client` uses `verbatimModuleSyntax: true` and **type-only**
+  imports of `AppRouter` from `@sprout/api/orpc/router`. Server code (Express,
+  better-sqlite3) must never reach the web/mobile bundles.
+- Workspace packages ship TS source (`"main": "src/index.ts"`), not `dist/`,
+  so Vite/Metro hot-reload without a build step.
+- Web styles **CSS Modules only**. No Tailwind. No CSS-in-JS.
+- Mobile styles **`StyleSheet.create` only**. No NativeWind.
+- Web and mobile have **separate component implementations**. UI is not
+  shared — designs deliberately diverge.
+- Design tokens live in `packages/shared/src/tokens.ts` (typed `as const`).
+  `packages/shared/dist/tokens.css` is a generated artefact — wire
+  `pnpm --filter @sprout/shared build:css` as a `prebuild`/`predev` step.
 
-### Key Components
+## @sprout/api
 
-1. **Service Layer** (`src/services/*`): Business logic separating concerns
-2. **Database Layer** (`src/db/`): SQLite operations and connection management
-3. **Models** (`src/models/*`): TypeScript interfaces and Zod schemas
-4. **Server** (`src/index.ts`): REST API endpoints
+```
+apps/api/src/
+├── index.ts              # Express server + REST endpoints
+├── openapi.ts            # OpenAPI generator (consumes router.ts)
+├── orpc/router.ts        # oRPC route definitions — exports `type AppRouter`
+├── services/             # Business logic (plants, calendar, chat, auth, ...)
+├── db/                   # SQLite wrapper (better-sqlite3, WAL mode)
+├── utils/                # Logger, timezone, season helpers
+└── test/                 # Schema-validation tests
+```
 
-### Database Schema
+### Stack
 
-**plants table**
+- **Runtime**: TypeScript on Node 22
+- **Server**: Express 4
+- **Database**: better-sqlite3 (WAL mode)
+- **Validation**: Zod (schemas in `@sprout/shared/schemas/*`)
+- **API spec**: oRPC + OpenAPI 3
+- **Auth**: JWT (jose)
+- **Tests**: Jest + supertest
 
-- `id`: UUID primary key
-- `name`: Plant name
-- `species`: Plant species
-- `location`: Plant location
-- `plantedDate`, `lastWatered`, `lastFertilized`: Date tracking
-- `wateringFrequency`, `fertilizingFrequency`: Frequency settings
-- `sunlightRequirement`, `soilType`, `harvestDate`: Plant characteristics
-
-**calendar_events table**
-
-- `id`: UUID primary key
-- `plant_id`: Foreign key to plants table
-- `type`: water | fertilize | harvest | other
-- `date`: ISO datetime
-- `notes`: Event description
-- `completed`: Boolean completion status
-
-## Agent Guidelines
-
-### Service Agents 🤖
-
-**Purpose**: Understand and interact with the business logic
-
-**Tasks**:
-
-- Read and interpret service implementations in `src/services/`
-- Understand the database interface in `src/db/`
-- Compose API requests using OpenAPI schemas from `src/openapi.ts`
-
-**Key Files**:
-
-- `src/services/plants.ts` - Plant management business logic
-- `src/services/calendar.ts` - Calendar event management business logic
-- `src/db/sqlite.ts` - Database wrapper and operations
-
-**API Endpoints**:
-
-- `GET /api/plants` - List all plants
-- `POST /api/plants` - Create a plant
-- `GET/PUT/DELETE /api/plants/:id` - Plant CRUD operations
-- `GET /api/calendar/` - List all events
-- `GET/POST /api/calendar/` - Event CRUD operations
-- `GET /api/calendar/[today|week|month|upcoming|...]` - Time-based queries
-
-### Review Agents 🔍
-
-**Purpose**: Code quality and structure reviews
-
-**Tasks**:
-
-- Analyze TypeScript type safety
-- Review database connection patterns
-- Check API endpoint design
-- Verify error handling coverage
-
-**Focus Areas**:
-
-- `src/db/sqlite.ts:63-188` - Database wrapper implementation
-- `src/index.ts:1-220` - Express server setup and routes
-- `src/services/*.ts` - Service layer encapsulation
-
-**Linting Standards**:
+### Commands
 
 ```bash
-npm run lint        # ESLint for TypeScript
-npm run typecheck   # TypeScript compiler checks
-npm test            # Jest unit tests
+pnpm --filter @sprout/api dev         # tsx watch
+pnpm --filter @sprout/api build       # tsc → dist/
+pnpm --filter @sprout/api start       # node dist/index.js
+pnpm --filter @sprout/api typecheck
+pnpm --filter @sprout/api lint
+pnpm --filter @sprout/api test
 ```
 
-### Testing Agents 🧪
+### Key files
 
-**Purpose**: Create and maintain test coverage
+- `src/orpc/router.ts` — single source of truth for the API surface. Adding
+  a route here updates the OpenAPI spec **and** the `@sprout/api-client`
+  types automatically.
+- `src/index.ts` — Express runtime. Route handlers live here; the oRPC
+  handlers in `router.ts` are stubs purely for OpenAPI generation.
+- `src/db/sqlite.ts` — single file containing every SQL prepared statement.
 
-**Tasks**:
+### Adding a route
 
-- Write unit tests for service functions
-- Test API endpoints with integration tests
-- Verify database operations with test fixtures
+1. Add a Zod schema (or reuse one) in `packages/shared/src/schemas/*`.
+2. Declare the route in `apps/api/src/orpc/router.ts` so it shows up in
+   the OpenAPI spec and the typed client.
+3. Implement the handler in `apps/api/src/index.ts`, validating the body
+   with the Zod schema.
+4. Implement the corresponding service method in `apps/api/src/services/*`.
+5. Add tests next to the service (`*.test.ts`).
 
-**Test Structure**:
+## @sprout/shared
 
-```typescript
-// Test files follow: [service].test.ts pattern
-// Example from src/services/plants.test.ts
-describe('PlantService', () => {
-  // Mock database
-  // Test each method
-  // Verify edge cases
-});
+Pure-TS package. No React. No Node-specific deps in runtime code.
+
+- `src/schemas/{plant,calendar,calendar-db,user,settings,chat}.ts` — Zod
+  schemas + inferred TS types. Each is its own subpath export.
+- `src/tokens.ts` — typed design tokens (`color`, `space`, `radius`,
+  `shadow`, `fontFamily`, `type`). Source of truth for both web (CSS vars)
+  and mobile (typed object).
+- `scripts/build-css-vars.ts` — generator that emits
+  `dist/tokens.css` (`:root { --color-leaf: ...; --space-md: 18px; ... }`).
+  Wired as `prebuild`/`predev` in `apps/web`.
+
+## @sprout/api-client
+
+Type-safe oRPC client + TanStack Query hooks for both web and mobile.
+
+```ts
+// apps/web/src/main.tsx
+<ApiProvider
+  baseUrl={import.meta.env.VITE_API_URL ?? 'http://localhost:3000'}
+  getToken={() => localStorage.getItem('sprout_token')}
+  onUnauthorized={() => router.navigate({ to: '/login' })}
+>
+  ...
+</ApiProvider>
 ```
 
-**Running Tests**:
+```ts
+// apps/mobile/app/_layout.tsx
+<ApiProvider
+  baseUrl={Constants.expoConfig?.extra?.apiUrl}
+  getToken={() => SecureStore.getItemAsync('sprout_token')}
+  onUnauthorized={() => router.replace('/login')}
+>
+  ...
+</ApiProvider>
+```
+
+Hooks: `usePlants`, `usePlant`, `useCreatePlant`, `useUpdatePlant`,
+`useDeletePlant`, `useCalendarEvents`, `useTodayEvents`, `useWeekEvents`,
+`useMonthEvents`, `useCompleteEvent`, `useLogin`, `useProfile`,
+`useOnboardingStatus`, `useSettings`, `useUpdateSettings`.
+
+## @sprout/web
+
+- Vite + React 18 + TanStack Router (file-based) + TanStack Query.
+- CSS Modules colocated next to components: `Button.tsx` + `Button.module.css`.
+- `src/main.tsx` imports `@sprout/shared/tokens.css` once at boot.
+- Components reference `var(--color-leaf)`, `var(--space-3)` — never hard-code.
+
+## @sprout/mobile
+
+- Expo Router v4 + React Native + TanStack Query + expo-secure-store.
+- Vanilla `StyleSheet.create`. Import the typed tokens from `@sprout/shared/tokens`.
+- `metro.config.js` sets `watchFolders`, `disableHierarchicalLookup`,
+  `unstable_enableSymlinks` — required for pnpm + Expo to coexist.
+- `eas.json` sets `EXPO_USE_METRO_WORKSPACE_ROOT=1` for production builds.
+
+## Verification before commit
+
+CI runs these on every push (see `.github/workflows/ci.yml`). Don't break them.
 
 ```bash
-npm test              # Run all tests
-npm run test:watch    # Watch mode
+pnpm install --frozen-lockfile
+pnpm format:check
+pnpm --filter @sprout/api typecheck
+pnpm --filter @sprout/api lint
+pnpm --filter @sprout/api test
+# add web/mobile/packages typecheck + test as they come online
 ```
 
-### Documentation Agents 📚
-
-**Purpose**: Maintain and update project documentation
-
-**Tasks**:
-
-- Update AGENTS.md as architecture changes
-- Create API usage examples
-- Document new endpoints
-- Update Zod schemas with examples
-
-**Documentation Standards**:
-
-- Keep code and documentation in sync
-- Use TypeScript types as reference documentation
-- Include OpenAPI spec URL for API introspection
-- Document all environment variables
-
-## Development Workflow
-
-### Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run type checker
-npm run typecheck
-
-# Run linter
-npm run lint
-
-# Run tests
-npm test
-```
-
-### Database Setup
-
-- Default location: `./data/garden.db`
-- Environment variable: `DATABASE_URL`
-- Auto-creates tables on init
-- Uses WAL mode for concurrency
-
-### Configuration
-
-**Environment Variables**:
-
-```
-PORT=3000          # Server port
-HOST=0.0.0.0       # Server host
-DATABASE_URL=      # Custom database path
-```
-
-## Code Quality Standards
-
-### TypeScript Usage
-
-- Strict mode enabled
-- Use TypeScript types instead of any
-- Leverage Zod for runtime validation
-- Export type definitions from `src/models/`
-
-### Error Handling
-
-- Services return `null` for not-found cases
-- API endpoints return 404 for missing resources
-- API endpoints return 500 for unexpected errors
-- Input validation through Zod schemas
-
-### Database Operations
-
-- Use prepared statements to prevent SQL injection
-- Wrap database calls in try-catch blocks
-- Close database connections on shutdown
-- Transaction handling for write operations
-
-### API Design
-
-- RESTful endpoint naming (`/api/[resource]`)
-- Proper HTTP methods (GET, POST, PUT, DELETE)
-- Status codes consistent with RFC 9110
-- OpenAPI 3.0.3 specification for introspection
-
-## Integration Guidelines
-
-### Adding New Endpoints
-
-1. Update API routes in `src/index.ts`
-2. Add corresponding Zod schema to `src/openapi.ts`
-3. Expand service logic in `src/services/`
-4. Update OpenAPI spec paths if needed
-5. Write tests in `[service].test.ts`
-
-### Adding New Models
-
-1. Define Zod schema in `src/openapi.ts`
-2. Create TypeScript type from schema
-3. Update database schema if needed
-4. Implement service methods
-5. Write tests
-
-### Adding New Features
-
-1. Identify affected services
-2. Update database schema through migration
-3. Implement business logic in service layer
-4. Expose via REST API endpoints
-5. Add OpenAPI documentation
-6. Write tests for new functionality
-
-## API Usage Examples
-
-### Create a Plant
-
-```bash
-curl -X POST http://localhost:3000/api/plants \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Monstera",
-    "species": "Monstera deliciosa",
-    "location": "Living room",
-    "wateringFrequency": 7
-  }'
-```
-
-### Get Today's Schedule
-
-```bash
-curl http://localhost:3000/api/calendar/today
-```
-
-### Mark Event as Complete
-
-```bash
-curl -X PATCH http://localhost:3000/api/calendar/:id/complete
-```
-
-### Access API Schema
-
-```bash
-GET http://localhost:3000/api/openapi.json
-```
-
-## Common Patterns
-
-### Database Wrapper Pattern
-
-```typescript
-const service = createPlantService(db);
-// Returns object with methods
-// Delegates to DatabaseWrapper interface
-```
-
-### Service Layer Pattern
-
-```typescript
-export const createCalendarService = (db: CalendarDatabase): CalendarService => {
-  const service: CalendarService = {
-    // Method implementations
-  };
-  return service;
-};
-```
-
-### Zod Validation Pattern
-
-```typescript
-const schema = PlantSchema;
-const validInput = schema.parse(req.body);
-// Throws error if invalid
-```
-
-## Agent Collaboration
-
-### Service + Review Workflow
-
-1. Service agent implements new feature
-2. Review agent validates code quality
-3. Service agent iterates on feedback
-4. Review agent confirms acceptance
-
-### Testing + Documentation Workflow
-
-1. Test agent writes tests
-2. Documentation agent updates API examples
-3. Test agent verifies documentation accuracy
-
-## Dependencies Management
-
-- **@orpc/server**: Server framework integration
-- **better-sqlite3**: SQLite database with prepared statements
-- **express**: HTTP server and routing
-- **jose**: JWT-based authentication (for future use)
-- **zod**: Runtime type validation
-- **uuid**: Unique identifier generation
-- **@types/\***: TypeScript definitions
-
-## Security Considerations
-
-- Database operations use prepared statements
-- SQL injection protection in `src/db/sqlite.ts`
-- External API calls use input validation
-- Authentication layer ready for JWT implementation
-- CORS headers managed by Express
-
-## Performance Considerations
-
-- SQLite WAL mode for concurrent reads
-- Indexes on frequently queried columns (date, plant_id)
-- Prepared statements reuse compiled queries
-- Type-safe validation prevents malformed data
-- Minimizes database round trips in logic layer
-
-## Troubleshooting
-
-### Common Issues
-
-**Database locked error**: Check WAL mode is enabled
-**Type errors**: Run `npm run typecheck`
-**Test failures**: Check database cleanup in test setup
-**Server won't start**: Verify PORT and HOST environment variables
-
-### Debug Mode
-
-```bash
-# Enable verbose logging
-DEBUG=*
-
-# Check database connection
-# Verify SQLite file exists in ./data/
-```
-
-## Future Enhancements
-
-- [ ] JWT authentication middleware
-- [ ] Rate limiting for public endpoints
-- [ ] WebSocket support for real-time updates
-- [ ] Redis cache for frequently accessed data
-- [ ] PostgreSQL migration path
-- [ ] GraphQL API endpoint
-- [ ] Plant health monitoring integration
-- [ ] Weather-based watering recommendations
+## Gotchas
+
+- pnpm's `.pnpm/` virtual store can produce TS "non-portable type" errors on
+  `declaration: true` builds. Fix with explicit return-type annotations on
+  exported factories (already done for `createApp`).
+- Don't add `react-native-web`. UI is intentionally split between web and
+  mobile, with separate components per platform.
+- Don't add `@tanstack/react-query` (or any React dep) to `packages/shared`
+  — the API consumes it and must stay React-free.
+- Don't add a barrel `index.ts` to `packages/shared` — Metro will pull every
+  schema into the mobile bundle.
+
+## Security
+
+- DB calls use better-sqlite3 prepared statements — no string-interpolated SQL.
+- Bodies are validated with Zod at the Express boundary before reaching services.
+- Auth tokens are JWTs (`jose`). No session cookies. The web client stores them
+  in `localStorage`; the mobile client uses `expo-secure-store`.
+- The first-run `/api/onboarding` endpoint is the only public registration
+  surface and self-disables once a user exists.

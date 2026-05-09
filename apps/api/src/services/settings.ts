@@ -1,6 +1,6 @@
+import type { Settings, UpdateSettingsInput } from '@sprout/shared/schemas/settings';
+import { UpdateSettingsInputSchema } from '@sprout/shared/schemas/settings';
 import type { SettingsDatabase } from '../db/index';
-import type { Settings, UpdateSettingsInput } from '../models/settings';
-import { UpdateSettingsInputSchema } from '../models/settings';
 
 export const createSettingsService = (db: SettingsDatabase) => ({
   getSettings(): Settings | null {

@@ -2,9 +2,12 @@ import type {
   CalendarEvent,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
-} from '../models/calendar';
-import { CreateCalendarEventInputSchema, UpdateCalendarEventInputSchema } from '../models/calendar';
-import type { CalendarDatabase } from '../models/calendar-db';
+} from '@sprout/shared/schemas/calendar';
+import {
+  CreateCalendarEventInputSchema,
+  UpdateCalendarEventInputSchema,
+} from '@sprout/shared/schemas/calendar';
+import type { CalendarDatabase } from '@sprout/shared/schemas/calendar-db';
 import { dayRange, monthRange, resolveTimezone, weekRange } from '../utils/timezone';
 
 export interface CalendarService {

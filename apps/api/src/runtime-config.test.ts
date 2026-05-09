@@ -1,6 +1,6 @@
+import type { Settings } from '@sprout/shared/schemas/settings';
 import { getRuntimeConfig } from './runtime-config';
 import type { SettingsDatabase } from './db/index';
-import type { Settings } from './models/settings';
 
 const stubDb = (settings: Settings | null): SettingsDatabase => ({
   getSettings: () => settings,

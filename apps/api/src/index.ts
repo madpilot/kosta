@@ -1,5 +1,8 @@
 import express from 'express';
 import { z } from 'zod';
+import { LoginInputSchema, ChangePasswordInputSchema } from '@sprout/shared/schemas/user';
+import { UpdateSettingsInputSchema } from '@sprout/shared/schemas/settings';
+import { SendMessageInputSchema } from '@sprout/shared/schemas/chat';
 import type { Database } from './db/index';
 import { createPlantService } from './services/plants';
 import { createCalendarService } from './services/calendar';
@@ -20,9 +23,6 @@ import {
   CreateCalendarEventInputSchema,
   UpdateCalendarEventInputSchema,
 } from './openapi';
-import { LoginInputSchema, ChangePasswordInputSchema } from './models/user';
-import { UpdateSettingsInputSchema } from './models/settings';
-import { SendMessageInputSchema } from './models/chat';
 import { logger } from './utils/logger';
 
 declare global {

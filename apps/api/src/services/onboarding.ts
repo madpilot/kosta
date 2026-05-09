@@ -1,8 +1,8 @@
 import { z } from 'zod';
+import type { User } from '@sprout/shared/schemas/user';
+import { CreateUserInputSchema } from '@sprout/shared/schemas/user';
+import { SettingsSchema, type Settings } from '@sprout/shared/schemas/settings';
 import type { SettingsDatabase, UserDatabase } from '../db/index';
-import type { User } from '../models/user';
-import { CreateUserInputSchema } from '../models/user';
-import { SettingsSchema, type Settings } from '../models/settings';
 import type { UserService } from './user';
 import type { SettingsService } from './settings';
 

@@ -1,12 +1,12 @@
 import { randomBytes, randomUUID } from 'crypto';
 import Database from 'better-sqlite3';
 import path from 'path';
+import type { Plant } from '@sprout/shared/schemas/plant';
+import type { CalendarEvent } from '@sprout/shared/schemas/calendar';
+import type { User } from '@sprout/shared/schemas/user';
+import type { ChatSession, ChatMessage, ChatMemory } from '@sprout/shared/schemas/chat';
+import { SettingsSchema, type Settings } from '@sprout/shared/schemas/settings';
 import type { Database as AppDatabase, PlantCareDates } from './index';
-import type { Plant } from '../models/plant';
-import type { CalendarEvent } from '../models/calendar';
-import type { User } from '../models/user';
-import type { ChatSession, ChatMessage, ChatMemory } from '../models/chat';
-import { SettingsSchema, type Settings } from '../models/settings';
 
 let db: Database.Database | null = null;
 

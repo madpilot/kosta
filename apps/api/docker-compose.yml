@@ -11,9 +11,11 @@ services:
       timeout: 5s
       retries: 5
 
-  costa:
-    build: .
-    image: garden-agent:latest
+  sprout:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    image: sprout-api:latest
     depends_on:
       ollama:
         condition: service_healthy
@@ -33,8 +35,8 @@ services:
       - LOG_LEVEL=info
       - LOG_FORMAT=json
     volumes:
-      - costa-data:/data
+      - sprout-data:/data
 
 volumes:
   ollama-models:
-  costa-data:
+  sprout-data:

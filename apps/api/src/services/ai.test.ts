@@ -1,8 +1,8 @@
-import { buildTools, executeToolCall, buildSystemPrompt } from './ai';
+import type { Plant } from '@sprout/shared/schemas/plant';
+import type { CalendarEvent } from '@sprout/shared/schemas/calendar';
+import type { Settings } from '@sprout/shared/schemas/settings';
 import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
-import type { Plant } from '../models/plant';
-import type { CalendarEvent } from '../models/calendar';
-import type { Settings } from '../models/settings';
+import { buildTools, executeToolCall, buildSystemPrompt } from './ai';
 
 const isoNow = () => new Date().toISOString();
 
