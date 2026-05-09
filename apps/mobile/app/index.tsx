@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Link } from 'expo-router';
 import { useTodayEvents, useCompleteEvent, usePlants } from '@sprout/api-client';
 import tokens from '@sprout/shared/tokens';
 
@@ -19,7 +20,14 @@ export default function TodayScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.eyebrow}>Today</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.eyebrow}>Today</Text>
+        <Link href="/settings" asChild>
+          <Pressable accessibilityRole="link" hitSlop={8}>
+            <Text style={styles.settingsLink}>Settings</Text>
+          </Pressable>
+        </Link>
+      </View>
       <Text style={styles.title}>What's blooming today.</Text>
 
       {events.isLoading && <Text style={styles.body}>Loading…</Text>}
@@ -49,12 +57,23 @@ const styles = StyleSheet.create({
     padding: tokens.space.lg,
     gap: tokens.space.md,
   },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   eyebrow: {
     color: tokens.color.tomato[300],
     fontSize: 11.5,
     fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
+  },
+  settingsLink: {
+    color: tokens.color.cream,
+    opacity: 0.78,
+    fontSize: 14,
+    fontWeight: '600',
   },
   title: {
     color: tokens.color.cream,
