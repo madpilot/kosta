@@ -29,6 +29,11 @@ export const LoginScreen = () => {
         <h1 className={styles.title}>
           Welcome <em>back</em>.
         </h1>
+        {login.isError && (
+          <p className={styles.error} role="alert">
+            Login failed. Try again.
+          </p>
+        )}
         <label className={styles.field}>
           <span>Username</span>
           <input value={username} onChange={(e) => setUsername(e.target.value)} required />
@@ -42,7 +47,6 @@ export const LoginScreen = () => {
             required
           />
         </label>
-        {login.isError && <p className={styles.error}>Login failed. Try again.</p>}
         <Button type="submit" variant="tomato" disabled={login.isPending}>
           {login.isPending ? 'Signing in…' : 'Sign in'}
         </Button>

@@ -31,10 +31,10 @@ export const CalendarScreen = () => {
   return (
     <div className={styles.page}>
       <header>
-        <p className={styles.eyebrow}>Calendar</p>
-        <h1 className={styles.title}>
+        <h1 className={styles.eyebrow}>Calendar</h1>
+        <h2 className={styles.title}>
           The <em>shape</em> of your week.
-        </h1>
+        </h2>
       </header>
 
       {events.isLoading && <p>Loading…</p>}
@@ -42,7 +42,7 @@ export const CalendarScreen = () => {
       <div className={styles.groups}>
         {groups.map(([date, items]) => (
           <section key={date} className={styles.group}>
-            <h2 className={styles.date}>{date}</h2>
+            <h3 className={styles.date}>{date}</h3>
             <ul className={styles.list}>
               {items.map((event) => {
                 const ev = event as typeof event & { plantId: string; type: string };

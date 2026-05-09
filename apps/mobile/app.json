@@ -9,10 +9,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.madpilot.sprout"
+      "bundleIdentifier": "au.id.eftos.myles.sprout"
     },
     "android": {
-      "package": "com.madpilot.sprout",
+      "package": "au.id.eftos.myles.sprout",
       "adaptiveIcon": {
         "backgroundColor": "#163528"
       }
