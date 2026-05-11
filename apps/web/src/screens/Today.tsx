@@ -21,7 +21,7 @@ export const TodayScreen = () => {
       <header className={styles.header}>
         <p className={styles.eyebrow}>Today</p>
         <h1 className={styles.title}>
-          What's <em>blooming</em> today.
+          What&rsquo;s <em>blooming</em> today.
         </h1>
         <p className={styles.lede}>
           {events.data?.length ?? 0} task{(events.data?.length ?? 0) === 1 ? '' : 's'} on the
@@ -30,7 +30,7 @@ export const TodayScreen = () => {
       </header>
 
       {events.isLoading && <p>Loading…</p>}
-      {events.isError && <p>Couldn't load today's tasks.</p>}
+      {events.isError && <p>Couldn&rsquo;t load today&rsquo;s tasks.</p>}
 
       <ul className={styles.list}>
         {events.data?.map((event) => (
