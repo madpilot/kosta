@@ -17,6 +17,12 @@ import {
   CreateUserInputSchema,
 } from '@sprout/shared/schemas/user';
 import { SettingsSchema, UpdateSettingsInputSchema } from '@sprout/shared/schemas/settings';
+import {
+  ChatSessionSchema,
+  ChatMessageSchema,
+  ChatMemorySchema,
+  SendMessageInputSchema,
+} from '@sprout/shared/schemas/chat';
 
 // Handlers in this router are stubs — the router exists only to generate the
 // OpenAPI spec served at /api/openapi.json. The Express app in src/index.ts
@@ -406,6 +412,111 @@ export const router = {
       .handler(async () => {
         throw new Error('stub');
       }),
+  },
+
+  chat: {
+    listSessions: os
+      .route({
+        method: 'GET',
+        path: '/api/chat/sessions',
+        summary: 'List chat sessions',
+        description: 'Returns all chat sessions.',
+        tags: ['Chat'],
+      })
+      .output(z.array(ChatSessionSchema))
+      .handler(() => []),
+
+    createSession: os
+      .route({
+        method: 'POST',
+        path: '/api/chat/sessions',
+        summary: 'Create a chat session',
+        description: 'Start a new chat session.',
+        successStatus: 201,
+        tags: ['Chat'],
+      })
+      .output(ChatSessionSchema)
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
+    getSession: os
+      .route({
+        method: 'GET',
+        path: '/api/chat/sessions/{id}',
+        summary: 'Get a chat session',
+        description: 'Returns a chat session and its message history.',
+        tags: ['Chat'],
+      })
+      .input(z.object({ id: z.string().uuid() }))
+      .output(ChatSessionSchema.extend({ messages: z.array(ChatMessageSchema) }))
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
+    deleteSession: os
+      .route({
+        method: 'DELETE',
+        path: '/api/chat/sessions/{id}',
+        summary: 'Delete a chat session',
+        description: 'Remove a chat session and all of its messages.',
+        tags: ['Chat'],
+      })
+      .input(z.object({ id: z.string().uuid() }))
+      .output(z.object({ success: z.boolean() }))
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
+    sendMessage: os
+      .route({
+        method: 'POST',
+        path: '/api/chat/sessions/{id}/messages',
+        summary: 'Send a message',
+        description: 'Send a user message to the chat session and return the assistant reply.',
+        tags: ['Chat'],
+      })
+      .input(SendMessageInputSchema.extend({ id: z.string().uuid() }))
+      .output(
+        z.object({
+          userMessage: ChatMessageSchema,
+          assistantMessage: ChatMessageSchema,
+        }),
+      )
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
+    endSession: os
+      .route({
+        method: 'POST',
+        path: '/api/chat/sessions/{id}/end',
+        summary: 'End a chat session',
+        description:
+          'Summarise the chat session and extract long-lived memories for future conversations.',
+        tags: ['Chat'],
+      })
+      .input(z.object({ id: z.string().uuid() }))
+      .output(
+        z.object({
+          summary: z.string(),
+          memories: z.array(ChatMemorySchema),
+        }),
+      )
+      .handler(async () => {
+        throw new Error('stub');
+      }),
+
+    listMemories: os
+      .route({
+        method: 'GET',
+        path: '/api/chat/memories',
+        summary: 'List chat memories',
+        description: 'Returns the long-lived memories extracted from past chat sessions.',
+        tags: ['Chat'],
+      })
+      .output(z.array(ChatMemorySchema))
+      .handler(() => []),
   },
 };
 

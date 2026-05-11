@@ -23,3 +23,13 @@ export {
 export { useLogin, useChangePassword, useProfile, useOnboardingStatus } from './hooks/auth';
 
 export { useSettings, useUpdateSettings } from './hooks/settings';
+
+export {
+  useChatSessions,
+  useChatSession,
+  useCreateChatSession,
+  useDeleteChatSession,
+  useSendChatMessage,
+  useEndChatSession,
+  useChatMemories,
+} from './hooks/chat';
