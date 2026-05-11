@@ -13,13 +13,15 @@ export const ChatScreen = () => {
 
   const createSession = useCreateChatSession();
   const createMutate = createSession.mutate;
+  const createMutateAsync = createSession.mutateAsync;
+
   useEffect(() => {
-    if (!sessionId) {
+    if (!sessionId && !createSession.isPending && !createSession.isError) {
       createMutate(undefined, {
         onSuccess: (session) => setSessionId(session.id),
       });
     }
-  }, [sessionId, createMutate]);
+  }, [sessionId, createSession.isPending, createSession.isError, createMutate]);
 
   const session = useChatSession(sessionId ?? '', { enabled: Boolean(sessionId) });
   const sendMessage = useSendChatMessage();
@@ -32,11 +34,21 @@ export const ChatScreen = () => {
     }
   }, [messages.length, sendMessage.isPending]);
 
-  const send = () => {
+  const send = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || !sessionId || sendMessage.isPending) return;
-    sendMessage.mutate({ id: sessionId, content: trimmed });
+    if (!trimmed || sendMessage.isPending) return;
     setDraft('');
+    try {
+      let id = sessionId;
+      if (!id) {
+        const created = await createMutateAsync();
+        id = created.id;
+        setSessionId(id);
+      }
+      sendMessage.mutate({ id, content: trimmed });
+    } catch {
+      setDraft(trimmed);
+    }
   };
 
   return (
@@ -61,7 +73,7 @@ export const ChatScreen = () => {
           </div>
         ))}
         {sendMessage.isPending && <div className={styles.assistant}>Sprout is thinking…</div>}
-        {sendMessage.isError && (
+        {(sendMessage.isError || createSession.isError) && (
           <div className={styles.assistant}>
             Sorry — that message didn&rsquo;t go through. Try again?
           </div>
@@ -72,7 +84,7 @@ export const ChatScreen = () => {
         className={styles.composer}
         onSubmit={(e) => {
           e.preventDefault();
-          send();
+          void send();
         }}
       >
         <input
@@ -80,9 +92,8 @@ export const ChatScreen = () => {
           placeholder="What did you plant, water, or notice?"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          disabled={!sessionId}
         />
-        <Button type="submit" variant="tomato" disabled={!sessionId || sendMessage.isPending}>
+        <Button type="submit" variant="tomato" disabled={!draft.trim() || sendMessage.isPending}>
           Send
         </Button>
       </form>
