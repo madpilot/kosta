@@ -337,12 +337,23 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
     const { client, model } = ollamaClient();
 
     const tools = buildTools();
+    logger.debug('ai.chat: sending initial request', {
+      model,
+      toolNames: tools.map((t) => t.function.name),
+      messages,
+    });
     let response = await client.chat({ model, messages, tools });
+    logger.debug('ai.chat: initial response', {
+      content: response.message.content,
+      toolCalls: response.message.tool_calls,
+    });
 
     const workingMessages: Message[] = [...messages];
+    let turn = 0;
 
     // Tool calling loop — Ollama returns tool_calls until it's ready to respond
     while (response.message.tool_calls && response.message.tool_calls.length > 0) {
+      turn += 1;
       workingMessages.push(response.message);
 
       for (const call of response.message.tool_calls) {
@@ -352,17 +363,37 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
         } catch (err) {
           result = { error: (err as Error).message };
         }
+        logger.debug('ai.chat: tool call executed', {
+          turn,
+          name: call.function.name,
+          args: call.function.arguments,
+          result,
+        });
         workingMessages.push({ role: 'tool', content: JSON.stringify(result) });
       }
 
+      logger.debug('ai.chat: sending follow-up request', {
+        turn,
+        messageCount: workingMessages.length,
+        messages: workingMessages,
+      });
       // eslint-disable-next-line no-await-in-loop
       response = await client.chat({
         model,
         messages: workingMessages,
         tools,
       });
+      logger.debug('ai.chat: follow-up response', {
+        turn,
+        content: response.message.content,
+        toolCalls: response.message.tool_calls,
+      });
     }
 
+    logger.debug('ai.chat: final assistant content', {
+      turns: turn,
+      content: response.message.content,
+    });
     return response.message.content;
   };
 
