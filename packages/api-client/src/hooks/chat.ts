@@ -111,16 +111,58 @@ export const useDeleteChatSession = (
 };
 
 export const useSendChatMessage = (
-  options?: UseMutationOptions<SendMessageResponse, Error, SendMessageVars>,
+  options?: UseMutationOptions<
+    SendMessageResponse,
+    Error,
+    SendMessageVars,
+    { previous: SessionWithMessages | undefined }
+  >,
 ) => {
   const apiFetch = useChatFetch();
   const queryClient = useQueryClient();
-  return useMutation<SendMessageResponse, Error, SendMessageVars>({
+  return useMutation<
+    SendMessageResponse,
+    Error,
+    SendMessageVars,
+    { previous: SessionWithMessages | undefined }
+  >({
     mutationFn: ({ id, content }) =>
       apiFetch<SendMessageResponse>(`/api/chat/sessions/${id}/messages`, {
         method: 'POST',
         body: JSON.stringify({ content }),
       }),
+    onMutate: async ({ id, content }) => {
+      await queryClient.cancelQueries({ queryKey: sessionKey(id) });
+      const previous = queryClient.getQueryData<SessionWithMessages>(sessionKey(id));
+      const now = new Date().toISOString();
+      const optimisticMessage: ChatMessage = {
+        id: `pending-${now}-${Math.random().toString(36).slice(2)}`,
+        sessionId: id,
+        role: 'user',
+        content,
+        model: null,
+        createdAt: now,
+      };
+      queryClient.setQueryData<SessionWithMessages>(sessionKey(id), (old) =>
+        old
+          ? { ...old, messages: [...old.messages, optimisticMessage] }
+          : {
+              id,
+              summary: null,
+              createdAt: now,
+              updatedAt: now,
+              messages: [optimisticMessage],
+            },
+      );
+      return { previous };
+    },
+    onError: (_err, vars, ctx) => {
+      if (ctx?.previous !== undefined) {
+        queryClient.setQueryData(sessionKey(vars.id), ctx.previous);
+      } else {
+        queryClient.removeQueries({ queryKey: sessionKey(vars.id) });
+      }
+    },
     onSuccess: (...args) => {
       const [, vars] = args;
       queryClient.invalidateQueries({ queryKey: sessionKey(vars.id) });
