@@ -1,28 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useChatSession, useCreateChatSession, useSendChatMessage } from '@sprout/api-client';
 
 import { Button } from '../components/Button';
 import styles from './Chat.module.css';
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+const GREETING = "Hey — I'm Sprout. What did you do in the garden today?";
 
-// The chat REST endpoints aren't yet exposed via the oRPC router so this is
-// a local-only sketch. When `chat` is added to AppRouter the hook from
-// @sprout/api-client will replace this state.
 export const ChatScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: "Hey — I'm Sprout. What did you do in the garden today?",
-    },
-  ]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const threadRef = useRef<HTMLDivElement | null>(null);
+
+  const createSession = useCreateChatSession();
+  const createMutate = createSession.mutate;
+  useEffect(() => {
+    if (!sessionId) {
+      createMutate(undefined, {
+        onSuccess: (session) => setSessionId(session.id),
+      });
+    }
+  }, [sessionId, createMutate]);
+
+  const session = useChatSession(sessionId ?? '', { enabled: Boolean(sessionId) });
+  const sendMessage = useSendChatMessage();
+
+  const messages = session.data?.messages?.filter((m) => m.role !== 'system') ?? [];
+
+  useEffect(() => {
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    }
+  }, [messages.length, sendMessage.isPending]);
 
   const send = () => {
-    if (!draft.trim()) return;
-    setMessages((m) => [...m, { role: 'user', content: draft.trim() }]);
+    const trimmed = draft.trim();
+    if (!trimmed || !sessionId || sendMessage.isPending) return;
+    sendMessage.mutate({ id: sessionId, content: trimmed });
     setDraft('');
   };
 
@@ -35,12 +48,24 @@ export const ChatScreen = () => {
         </h1>
       </header>
 
-      <div className={styles.thread}>
-        {messages.map((message, i) => (
-          <div key={i} className={message.role === 'user' ? styles.user : styles.assistant}>
+      <div className={styles.thread} ref={threadRef}>
+        {messages.length === 0 && !sendMessage.isPending && (
+          <div className={styles.assistant}>{GREETING}</div>
+        )}
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={message.role === 'user' ? styles.user : styles.assistant}
+          >
             {message.content}
           </div>
         ))}
+        {sendMessage.isPending && <div className={styles.assistant}>Sprout is thinking…</div>}
+        {sendMessage.isError && (
+          <div className={styles.assistant}>
+            Sorry — that message didn&rsquo;t go through. Try again?
+          </div>
+        )}
       </div>
 
       <form
@@ -55,8 +80,9 @@ export const ChatScreen = () => {
           placeholder="What did you plant, water, or notice?"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          disabled={!sessionId}
         />
-        <Button type="submit" variant="tomato">
+        <Button type="submit" variant="tomato" disabled={!sessionId || sendMessage.isPending}>
           Send
         </Button>
       </form>
