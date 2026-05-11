@@ -1,5 +1,5 @@
 import type { Settings } from '@sprout/shared/schemas/settings';
-import { getRuntimeConfig } from './runtime-config';
+import { getRuntimeConfig, RUNTIME_CONFIG_DEFAULTS } from './runtime-config';
 import type { SettingsDatabase } from './db/index';
 
 const stubDb = (settings: Settings | null): SettingsDatabase => ({
@@ -8,28 +8,19 @@ const stubDb = (settings: Settings | null): SettingsDatabase => ({
 });
 
 describe('getRuntimeConfig', () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    process.env = { ...originalEnv };
-  });
-
-  afterAll(() => {
-    process.env = originalEnv;
-  });
-
-  it('returns env-derived defaults when no settings have been saved', () => {
-    // The static config module is read once at import time, so we verify
-    // against whatever config.ts resolved at startup rather than re-mutating
-    // env. The shape is what matters.
+  it('returns built-in defaults when no settings have been saved', () => {
     const cfg = getRuntimeConfig(stubDb(null));
-    expect(cfg.aiBackend).toBe('ollama');
-    expect(cfg.ollama.baseUrl).toMatch(/^http:\/\//);
-    expect(cfg.ollama.model).toBeTruthy();
-    expect(cfg.user.hemisphere).toBe('southern');
+    expect(cfg.aiBackend).toBe(RUNTIME_CONFIG_DEFAULTS.aiBackend);
+    expect(cfg.ollama.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.ollama.baseUrl);
+    expect(cfg.ollama.model).toBe(RUNTIME_CONFIG_DEFAULTS.ollama.model);
+    expect(cfg.user.hemisphere).toBe(RUNTIME_CONFIG_DEFAULTS.user.hemisphere);
+    expect(cfg.app.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.app.baseUrl);
+    expect(cfg.ai.preamble).toBe(RUNTIME_CONFIG_DEFAULTS.ai.preamble);
+    expect(cfg.logging.level).toBe(RUNTIME_CONFIG_DEFAULTS.logging.level);
+    expect(cfg.logging.format).toBe(RUNTIME_CONFIG_DEFAULTS.logging.format);
   });
 
-  it('overlays stored settings over the env defaults', () => {
+  it('overlays stored settings over the built-in defaults', () => {
     const cfg = getRuntimeConfig(
       stubDb({
         aiBackend: 'openai',
@@ -40,6 +31,11 @@ describe('getRuntimeConfig', () => {
         location: 'Wellington, NZ',
         hemisphere: 'southern',
         weatherApiKey: 'wkey',
+        appBaseUrl: 'https://sprout.example.com',
+        aiPreamble: 'Custom preamble',
+        logLevel: 'debug',
+        logFormat: 'json',
+        logSilent: true,
       }),
     );
     expect(cfg.aiBackend).toBe('openai');
@@ -47,11 +43,14 @@ describe('getRuntimeConfig', () => {
     expect(cfg.ollama).toEqual({ baseUrl: 'http://ollama.local:11434', model: 'llama3.3' });
     expect(cfg.user).toEqual({ location: 'Wellington, NZ', hemisphere: 'southern' });
     expect(cfg.weather.apiKey).toBe('wkey');
+    expect(cfg.app.baseUrl).toBe('https://sprout.example.com');
+    expect(cfg.ai.preamble).toBe('Custom preamble');
+    expect(cfg.logging).toEqual({ level: 'debug', format: 'json', silent: true });
   });
 
   it('only overrides fields that are present in stored settings', () => {
     // Stored settings only set aiBackend + hemisphere; everything else falls
-    // back to env defaults.
+    // back to the built-in defaults.
     const cfg = getRuntimeConfig(
       stubDb({
         aiBackend: 'ollama',
@@ -60,7 +59,8 @@ describe('getRuntimeConfig', () => {
     );
     expect(cfg.aiBackend).toBe('ollama');
     expect(cfg.user.hemisphere).toBe('northern');
-    // ollamaBaseUrl was not set — falls back to the env default.
-    expect(cfg.ollama.baseUrl).toBeTruthy();
+    expect(cfg.ollama.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.ollama.baseUrl);
+    expect(cfg.app.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.app.baseUrl);
+    expect(cfg.ai.preamble).toBe(RUNTIME_CONFIG_DEFAULTS.ai.preamble);
   });
 });

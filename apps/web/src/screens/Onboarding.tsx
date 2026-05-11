@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useApiClient, useOnboardingStatus } from '@sprout/api-client';
+import type { Settings } from '@sprout/shared/schemas/settings';
 
 import { Button } from '../components/Button';
 import styles from './Auth.module.css';
@@ -20,6 +21,7 @@ export const OnboardingScreen = () => {
     ollamaModel: 'llama3.2',
     openaiApiKey: '',
     openaiModel: 'gpt-4o',
+    weatherApiKey: '',
   });
 
   if (status.data?.onboarded) {
@@ -32,21 +34,24 @@ export const OnboardingScreen = () => {
     setSubmitting(true);
     setError(null);
     try {
-      const settingsPayload =
+      const base = {
+        location: settings.location || undefined,
+        hemisphere: settings.hemisphere,
+        weatherApiKey: settings.weatherApiKey || undefined,
+      };
+      const settingsPayload: Settings =
         settings.aiBackend === 'openai'
           ? {
-              aiBackend: 'openai' as const,
+              ...base,
+              aiBackend: 'openai',
               openaiApiKey: settings.openaiApiKey,
               openaiModel: settings.openaiModel,
-              location: settings.location || undefined,
-              hemisphere: settings.hemisphere,
             }
           : {
-              aiBackend: 'ollama' as const,
+              ...base,
+              aiBackend: 'ollama',
               ollamaBaseUrl: settings.ollamaBaseUrl,
               ollamaModel: settings.ollamaModel,
-              location: settings.location || undefined,
-              hemisphere: settings.hemisphere,
             };
       const result = (await client.onboarding.complete({
         user,
@@ -135,17 +140,56 @@ export const OnboardingScreen = () => {
             <option value="openai">OpenAI</option>
           </select>
         </label>
-        {settings.aiBackend === 'openai' && (
-          <label className={styles.field}>
-            <span>OpenAI API key</span>
-            <input
-              type="password"
-              value={settings.openaiApiKey}
-              onChange={(e) => setSettings({ ...settings, openaiApiKey: e.target.value })}
-              required
-            />
-          </label>
+        {settings.aiBackend === 'ollama' && (
+          <>
+            <label className={styles.field}>
+              <span>Ollama base URL</span>
+              <input
+                value={settings.ollamaBaseUrl}
+                onChange={(e) => setSettings({ ...settings, ollamaBaseUrl: e.target.value })}
+                required
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Ollama model</span>
+              <input
+                value={settings.ollamaModel}
+                onChange={(e) => setSettings({ ...settings, ollamaModel: e.target.value })}
+                required
+              />
+            </label>
+          </>
         )}
+        {settings.aiBackend === 'openai' && (
+          <>
+            <label className={styles.field}>
+              <span>OpenAI API key</span>
+              <input
+                type="password"
+                value={settings.openaiApiKey}
+                onChange={(e) => setSettings({ ...settings, openaiApiKey: e.target.value })}
+                required
+              />
+            </label>
+            <label className={styles.field}>
+              <span>OpenAI model</span>
+              <input
+                value={settings.openaiModel}
+                onChange={(e) => setSettings({ ...settings, openaiModel: e.target.value })}
+                required
+              />
+            </label>
+          </>
+        )}
+        <label className={styles.field}>
+          <span>OpenWeatherMap API key (optional)</span>
+          <input
+            type="password"
+            placeholder="Skip if you don't want forecast-aware advice"
+            value={settings.weatherApiKey}
+            onChange={(e) => setSettings({ ...settings, weatherApiKey: e.target.value })}
+          />
+        </label>
         {error && <p className={styles.error}>{error}</p>}
         <Button type="submit" variant="tomato" disabled={submitting}>
           {submitting ? 'Setting up…' : 'Continue →'}

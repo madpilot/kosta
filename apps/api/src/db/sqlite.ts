@@ -88,6 +88,12 @@ type SettingsRow = {
   updated_at: string;
 };
 
+type SystemStateRow = {
+  key: string;
+  value: string;
+  updated_at: string;
+};
+
 const getDbPath = (): string => {
   const envPath = process.env.DATABASE_URL;
   if (envPath && !envPath.startsWith('postgres://')) {
@@ -237,6 +243,16 @@ export const createSettingsTable = (database: Database.Database): void => {
   `);
 };
 
+export const createSystemStateTable = (database: Database.Database): void => {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS system_state (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+};
+
 export const createChatTables = (database: Database.Database): void => {
   database.exec(`
     CREATE TABLE IF NOT EXISTS chat_sessions (
@@ -272,6 +288,7 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
   createUsersTable(database);
   createChatTables(database);
   createSettingsTable(database);
+  createSystemStateTable(database);
 
   const wrapper: AppDatabase = {
     getAllPlants(): Plant[] {
@@ -666,6 +683,24 @@ export const createSqliteDatabase = (dbFile?: string): AppDatabase => {
         )
         .run({ data: JSON.stringify(validated), updatedAt: now });
       return validated;
+    },
+
+    // --- System state (auto-managed values like JWT secret) ---
+
+    getSystemState(key: string): string | null {
+      const row = database.prepare('SELECT * FROM system_state WHERE key = ?').get(key) as
+        | SystemStateRow
+        | undefined;
+      return row?.value ?? null;
+    },
+
+    setSystemState(key: string, value: string): void {
+      const now = new Date().toISOString();
+      database
+        .prepare(
+          'INSERT INTO system_state (key, value, updated_at) VALUES (@key, @value, @updatedAt) ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updatedAt',
+        )
+        .run({ key, value, updatedAt: now });
     },
   };
 

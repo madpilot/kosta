@@ -1,7 +1,6 @@
 import { Ollama } from 'ollama';
 import type { Message, Tool } from 'ollama';
 import { z } from 'zod';
-import { config } from '../config';
 import { getRuntimeConfig } from '../runtime-config';
 import { getCurrentSeason } from '../utils/season';
 import { getWeatherForecast } from './weather';
@@ -280,7 +279,7 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
 
 export const buildSystemPrompt = async (db: ChatDatabase & SettingsDatabase): Promise<string> => {
   const runtime = getRuntimeConfig(db);
-  const { preamble } = config.ai;
+  const { preamble } = runtime.ai;
   const { location, hemisphere } = runtime.user;
   const today = new Date().toLocaleDateString('en-AU', {
     weekday: 'long',

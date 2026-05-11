@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-nat
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useApiClient } from '@sprout/api-client';
+import type { Settings } from '@sprout/shared/schemas/settings';
 import tokens from '@sprout/shared/tokens';
 
 import { Button } from '../components/Button';
@@ -16,26 +17,34 @@ export default function OnboardingScreen() {
   const [location, setLocation] = useState('');
   const [hemisphereSouthern, setHemisphereSouthern] = useState(true);
   const [useOpenAI, setUseOpenAI] = useState(false);
+  const [ollamaBaseUrl, setOllamaBaseUrl] = useState('http://localhost:11434');
+  const [ollamaModel, setOllamaModel] = useState('llama3.2');
   const [openaiApiKey, setOpenaiApiKey] = useState('');
+  const [openaiModel, setOpenaiModel] = useState('gpt-4o');
+  const [weatherApiKey, setWeatherApiKey] = useState('');
 
   const submit = async () => {
     setSubmitting(true);
     setError(null);
     try {
-      const settings = useOpenAI
+      const hemisphere = hemisphereSouthern ? ('southern' as const) : ('northern' as const);
+      const base = {
+        location: location || undefined,
+        hemisphere,
+        weatherApiKey: weatherApiKey || undefined,
+      };
+      const settings: Settings = useOpenAI
         ? {
-            aiBackend: 'openai' as const,
+            ...base,
+            aiBackend: 'openai',
             openaiApiKey,
-            openaiModel: 'gpt-4o',
-            location: location || undefined,
-            hemisphere: hemisphereSouthern ? ('southern' as const) : ('northern' as const),
+            openaiModel,
           }
         : {
-            aiBackend: 'ollama' as const,
-            ollamaBaseUrl: 'http://localhost:11434',
-            ollamaModel: 'llama3.2',
-            location: location || undefined,
-            hemisphere: hemisphereSouthern ? ('southern' as const) : ('northern' as const),
+            ...base,
+            aiBackend: 'ollama',
+            ollamaBaseUrl,
+            ollamaModel,
           };
       const result = (await client.onboarding.complete({ user, settings })) as {
         token?: string;
@@ -86,14 +95,29 @@ export default function OnboardingScreen() {
           <Text style={styles.fieldLabel}>Use OpenAI (instead of Ollama)</Text>
           <Switch value={useOpenAI} onValueChange={setUseOpenAI} />
         </View>
-        {useOpenAI && (
-          <Field
-            label="OpenAI API key"
-            value={openaiApiKey}
-            onChangeText={setOpenaiApiKey}
-            secure
-          />
+        {!useOpenAI && (
+          <>
+            <Field label="Ollama base URL" value={ollamaBaseUrl} onChangeText={setOllamaBaseUrl} />
+            <Field label="Ollama model" value={ollamaModel} onChangeText={setOllamaModel} />
+          </>
         )}
+        {useOpenAI && (
+          <>
+            <Field
+              label="OpenAI API key"
+              value={openaiApiKey}
+              onChangeText={setOpenaiApiKey}
+              secure
+            />
+            <Field label="OpenAI model" value={openaiModel} onChangeText={setOpenaiModel} />
+          </>
+        )}
+        <Field
+          label="OpenWeatherMap API key (optional)"
+          value={weatherApiKey}
+          onChangeText={setWeatherApiKey}
+          secure
+        />
 
         {error && <Text style={styles.error}>{error}</Text>}
 

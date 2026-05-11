@@ -24,6 +24,9 @@ export const RootLayout = ({ children }: Props) => (
         <Link to="/chat" className={styles.link} activeProps={{ className: styles.linkActive }}>
           Chat
         </Link>
+        <Link to="/settings" className={styles.link} activeProps={{ className: styles.linkActive }}>
+          Settings
+        </Link>
       </nav>
     </aside>
     <main className={styles.main}>{children}</main>

@@ -52,6 +52,11 @@ export interface SettingsDatabase {
   saveSettings(settings: Settings): Settings;
 }
 
+export interface SystemStateDatabase {
+  getSystemState(key: string): string | null;
+  setSystemState(key: string, value: string): void;
+}
+
 export interface ChatDatabase {
   createChatSession(): ChatSession;
   getChatSession(id: string): ChatSession | null;
@@ -69,6 +74,10 @@ export interface ChatDatabase {
   listChatMemories(): ChatMemory[];
 }
 
-export type Database = DatabaseWrapper & UserDatabase & ChatDatabase & SettingsDatabase;
+export type Database = DatabaseWrapper &
+  UserDatabase &
+  ChatDatabase &
+  SettingsDatabase &
+  SystemStateDatabase;
 
 export type getDatabase = ReturnType<typeof createSqliteDatabase>;

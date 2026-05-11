@@ -41,6 +41,7 @@ export default function RootLayout() {
           <Stack.Screen name="chat" options={{ title: 'Chat' }} />
           <Stack.Screen name="login" options={{ title: 'Sign in' }} />
           <Stack.Screen name="onboarding" options={{ title: 'Welcome' }} />
+          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
           <Stack.Screen name="plants/[plantId]" options={{ title: 'Plant' }} />
         </Stack>
       </ApiProvider>

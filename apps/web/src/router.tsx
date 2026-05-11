@@ -7,6 +7,7 @@ import { TodayScreen } from './screens/Today';
 import { CalendarScreen } from './screens/Calendar';
 import { ChatScreen } from './screens/Chat';
 import { PlantDetailScreen } from './screens/PlantDetail';
+import { SettingsScreen } from './screens/Settings';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -52,6 +53,12 @@ const plantDetailRoute = createRoute({
   component: PlantDetailScreen,
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: SettingsScreen,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -59,6 +66,7 @@ const routeTree = rootRoute.addChildren([
   calendarRoute,
   chatRoute,
   plantDetailRoute,
+  settingsRoute,
 ]);
 
 export const router = createRouter({ routeTree });

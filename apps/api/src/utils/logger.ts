@@ -1,5 +1,7 @@
 import winston from 'winston';
-import { config } from '../config';
+import { RUNTIME_CONFIG_DEFAULTS, type RuntimeConfig } from '../runtime-config';
+
+type LoggingConfig = RuntimeConfig['logging'];
 
 const prettyFormat = winston.format.combine(
   winston.format.colorize(),
@@ -22,8 +24,8 @@ const jsonFormat = winston.format.combine(
   winston.format.json(),
 );
 
-export const createLogger = (overrides: Partial<typeof config.logging> = {}): winston.Logger => {
-  const { level, format, silent } = { ...config.logging, ...overrides };
+export const createLogger = (overrides: Partial<LoggingConfig> = {}): winston.Logger => {
+  const { level, format, silent } = { ...RUNTIME_CONFIG_DEFAULTS.logging, ...overrides };
 
   return winston.createLogger({
     level,
@@ -35,3 +37,12 @@ export const createLogger = (overrides: Partial<typeof config.logging> = {}): wi
 };
 
 export const logger = createLogger();
+
+// Reconfigure the shared logger from the resolved runtime config (read from
+// the DB at boot). Tests construct their own logger via createLogger and so
+// don't need to call this.
+export const configureLogger = (logging: LoggingConfig): void => {
+  logger.level = logging.level;
+  logger.silent = logging.silent;
+  logger.format = logging.format === 'json' ? jsonFormat : prettyFormat;
+};

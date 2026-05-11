@@ -21,19 +21,14 @@ services:
         condition: service_healthy
     ports:
       - '3000:3000'
+    # Sprout reads its application config (AI backend, location, hemisphere,
+    # weather key, logging, etc.) from the SQLite database, not from
+    # environment variables. Configure those via /api/onboarding on first run
+    # and PUT /api/settings afterwards.
     environment:
       - PORT=3000
       - HOST=0.0.0.0
-      - APP_BASE_URL=http://localhost:3000
       - DATABASE_URL=/data/garden.db
-      - AI_BACKEND=ollama
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=llama3.2
-      # - WEATHER_API_KEY=
-      # - USER_LOCATION=Perth, AU
-      # - USER_HEMISPHERE=southern
-      - LOG_LEVEL=info
-      - LOG_FORMAT=json
     volumes:
       - sprout-data:/data
 
