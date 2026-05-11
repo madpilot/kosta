@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useChatSession, useCreateChatSession, useSendChatMessage } from '@sprout/api-client';
 
 import { Button } from '../components/Button';
@@ -12,15 +14,6 @@ export const ChatScreen = () => {
   const threadRef = useRef<HTMLDivElement | null>(null);
 
   const createSession = useCreateChatSession();
-  const createMutate = createSession.mutate;
-  useEffect(() => {
-    if (!sessionId) {
-      createMutate(undefined, {
-        onSuccess: (session) => setSessionId(session.id),
-      });
-    }
-  }, [sessionId, createMutate]);
-
   const session = useChatSession(sessionId ?? '', { enabled: Boolean(sessionId) });
   const sendMessage = useSendChatMessage();
 
@@ -32,12 +25,24 @@ export const ChatScreen = () => {
     }
   }, [messages.length, sendMessage.isPending]);
 
-  const send = () => {
+  const send = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || !sessionId || sendMessage.isPending) return;
-    sendMessage.mutate({ id: sessionId, content: trimmed });
+    if (!trimmed || sendMessage.isPending || createSession.isPending) return;
     setDraft('');
+    try {
+      let id = sessionId;
+      if (!id) {
+        const created = await createSession.mutateAsync();
+        id = created.id;
+        setSessionId(id);
+      }
+      await sendMessage.mutateAsync({ id, content: trimmed });
+    } catch {
+      setDraft(trimmed);
+    }
   };
+
+  const busy = sendMessage.isPending || createSession.isPending;
 
   return (
     <div className={styles.page}>
@@ -49,19 +54,20 @@ export const ChatScreen = () => {
       </header>
 
       <div className={styles.thread} ref={threadRef}>
-        {messages.length === 0 && !sendMessage.isPending && (
-          <div className={styles.assistant}>{GREETING}</div>
+        {messages.length === 0 && !busy && <div className={styles.assistant}>{GREETING}</div>}
+        {messages.map((message) =>
+          message.role === 'user' ? (
+            <div key={message.id} className={styles.user}>
+              {message.content}
+            </div>
+          ) : (
+            <div key={message.id} className={`${styles.assistant} ${styles.markdown}`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            </div>
+          ),
         )}
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={message.role === 'user' ? styles.user : styles.assistant}
-          >
-            {message.content}
-          </div>
-        ))}
-        {sendMessage.isPending && <div className={styles.assistant}>Sprout is thinking…</div>}
-        {sendMessage.isError && (
+        {busy && <div className={styles.assistant}>Sprout is thinking…</div>}
+        {(sendMessage.isError || createSession.isError) && (
           <div className={styles.assistant}>
             Sorry — that message didn&rsquo;t go through. Try again?
           </div>
@@ -72,7 +78,7 @@ export const ChatScreen = () => {
         className={styles.composer}
         onSubmit={(e) => {
           e.preventDefault();
-          send();
+          void send();
         }}
       >
         <input
@@ -80,9 +86,8 @@ export const ChatScreen = () => {
           placeholder="What did you plant, water, or notice?"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          disabled={!sessionId}
         />
-        <Button type="submit" variant="tomato" disabled={!sessionId || sendMessage.isPending}>
+        <Button type="submit" variant="tomato" disabled={!draft.trim() || busy}>
           Send
         </Button>
       </form>

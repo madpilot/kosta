@@ -1,5 +1,5 @@
 export { createClient, type ApiClient, type CreateClientOptions } from './client';
-export { ApiProvider, useApiClient, type ApiProviderProps } from './provider';
+export { ApiProvider, useApiClient, useApiOptions, type ApiProviderProps } from './provider';
 
 export {
   usePlants,

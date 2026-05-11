@@ -22,7 +22,7 @@ jest.mock('./services/weather', () => ({
 // chat API test wires up only the routes it covers — the same workaround
 // the onboarding API test uses.
 const buildTestApp = async (database: ReturnType<typeof createSqliteDatabase>) => {
-  const authService = createAuthService();
+  const authService = createAuthService(database);
   const userService = createUserService(database);
   const chatService = createChatService(database);
 

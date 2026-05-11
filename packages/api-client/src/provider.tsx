@@ -3,6 +3,7 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { createClient, type ApiClient, type CreateClientOptions } from './client';
 
 const ApiClientContext = createContext<ApiClient | null>(null);
+const ApiOptionsContext = createContext<CreateClientOptions | null>(null);
 
 export interface ApiProviderProps extends CreateClientOptions {
   children: ReactNode;
@@ -14,7 +15,11 @@ export const ApiProvider = ({ children, ...options }: ApiProviderProps) => {
     [options.baseUrl, options.getToken, options.onUnauthorized],
   );
 
-  return <ApiClientContext.Provider value={client}>{children}</ApiClientContext.Provider>;
+  return (
+    <ApiClientContext.Provider value={client}>
+      <ApiOptionsContext.Provider value={options}>{children}</ApiOptionsContext.Provider>
+    </ApiClientContext.Provider>
+  );
 };
 
 export const useApiClient = (): ApiClient => {
@@ -23,4 +28,12 @@ export const useApiClient = (): ApiClient => {
     throw new Error('useApiClient must be used inside <ApiProvider>');
   }
   return client;
+};
+
+export const useApiOptions = (): CreateClientOptions => {
+  const options = useContext(ApiOptionsContext);
+  if (!options) {
+    throw new Error('useApiOptions must be used inside <ApiProvider>');
+  }
+  return options;
 };
