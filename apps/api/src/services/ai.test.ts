@@ -2,7 +2,7 @@ import type { Plant } from '@sprout/shared/schemas/plant';
 import type { CalendarEvent } from '@sprout/shared/schemas/calendar';
 import type { Settings } from '@sprout/shared/schemas/settings';
 import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
-import { buildTools, executeToolCall, buildSystemPrompt } from './ai';
+import { buildTools, executeToolCall, buildSystemPrompt, parseInlineToolCall } from './ai';
 
 const isoNow = () => new Date().toISOString();
 
@@ -355,6 +355,47 @@ describe('executeToolCall', () => {
   it('returns an error for an unknown tool', () => {
     const result = executeToolCall('not_a_tool', {}, stubDb()) as { error: string };
     expect(result.error).toMatch(/Unknown tool/);
+  });
+});
+
+describe('parseInlineToolCall', () => {
+  it('returns null for ordinary assistant prose', () => {
+    expect(parseInlineToolCall("Sure — I'll add kale to your garden.")).toBeNull();
+  });
+
+  it('returns null for non-JSON content that starts with a brace', () => {
+    expect(parseInlineToolCall('{not really json')).toBeNull();
+  });
+
+  it('returns null when the JSON does not name a known tool', () => {
+    expect(parseInlineToolCall('{"name":"do_something","parameters":{}}')).toBeNull();
+  });
+
+  it('recovers a valid inline tool call', () => {
+    const recovered = parseInlineToolCall(
+      '{"name":"find_or_create_plant","parameters":{"name":"kale","sunlightRequirement":"full-sun"}}',
+    );
+    expect(recovered).toEqual({
+      name: 'find_or_create_plant',
+      arguments: { name: 'kale', sunlightRequirement: 'full-sun' },
+    });
+  });
+
+  it('drops parameter values that echo the JSON-schema fragment', () => {
+    const recovered = parseInlineToolCall(
+      '{"name":"find_or_create_plant","parameters":{"name":"kale","location":"{\\"type\\":\\"string\\",\\"description\\":\\"Where in the user\'s garden the plant lives (optional).\\"}","notes":"{\\"type\\":\\"string\\",\\"description\\":\\"Optional free-text notes.\\"}"}}',
+    );
+    expect(recovered).toEqual({
+      name: 'find_or_create_plant',
+      arguments: { name: 'kale' },
+    });
+  });
+
+  it('also accepts the `arguments` key as a synonym for `parameters`', () => {
+    const recovered = parseInlineToolCall(
+      '{"name":"get_plants","arguments":{}}',
+    );
+    expect(recovered).toEqual({ name: 'get_plants', arguments: {} });
   });
 });
 

@@ -204,6 +204,51 @@ const CreateCalendarEventsBatchArgs = z.object({
 const formatZodError = (error: z.ZodError): string =>
   error.errors.map((e) => `${e.path.join('.') || '(root)'}: ${e.message}`).join('; ');
 
+const KNOWN_TOOL_NAMES = new Set([
+  'get_plants',
+  'find_or_create_plant',
+  'update_plant_care',
+  'create_calendar_event',
+  'create_calendar_events_batch',
+]);
+
+// Some local models occasionally hallucinate the JSON-schema fragment for a
+// parameter as that parameter's value, e.g.
+//   "location": '{"type":"string","description":"Where in the user\'s garden..."}'
+// Drop those rather than passing garbage to the tool.
+const looksLikeSchemaFragment = (value: unknown): boolean =>
+  typeof value === 'string' && /^\s*\{\s*"type"\s*:\s*"/.test(value);
+
+const sanitiseToolArgs = (args: Record<string, unknown>): ToolArgs => {
+  const cleaned: ToolArgs = {};
+  for (const [key, value] of Object.entries(args)) {
+    if (!looksLikeSchemaFragment(value)) cleaned[key] = value;
+  }
+  return cleaned;
+};
+
+type RecoveredToolCall = { name: string; arguments: ToolArgs };
+
+// Some models emit tool calls as plain JSON text in `message.content` instead
+// of using Ollama's structured `tool_calls` field. Recover that so it goes
+// through the normal tool-execution path rather than leaking to the user.
+export const parseInlineToolCall = (content: string): RecoveredToolCall | null => {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+  const obj = parsed as { name?: unknown; parameters?: unknown; arguments?: unknown };
+  if (typeof obj.name !== 'string' || !KNOWN_TOOL_NAMES.has(obj.name)) return null;
+  const rawArgs = obj.parameters ?? obj.arguments ?? {};
+  if (typeof rawArgs !== 'object' || rawArgs === null) return null;
+  return { name: obj.name, arguments: sanitiseToolArgs(rawArgs as Record<string, unknown>) };
+};
+
 export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrapper): unknown => {
   if (name === 'get_plants') {
     return db.getAllPlants();
@@ -351,22 +396,47 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
     const workingMessages: Message[] = [...messages];
     let turn = 0;
 
-    // Tool calling loop — Ollama returns tool_calls until it's ready to respond
-    while (response.message.tool_calls && response.message.tool_calls.length > 0) {
-      turn += 1;
-      workingMessages.push(response.message);
+    // Tool calling loop — Ollama returns tool_calls until it's ready to respond.
+    // Some models instead emit the call as JSON text in `content`; recover those
+    // so we don't leak the raw blob back to the user.
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const structured = response.message.tool_calls ?? [];
+      const inline =
+        structured.length === 0 ? parseInlineToolCall(response.message.content) : null;
+      if (structured.length === 0 && !inline) break;
 
-      for (const call of response.message.tool_calls) {
+      turn += 1;
+
+      const calls: RecoveredToolCall[] = inline
+        ? [inline]
+        : structured.map((c) => ({
+            name: c.function.name,
+            arguments: sanitiseToolArgs(c.function.arguments as Record<string, unknown>),
+          }));
+
+      if (inline) {
+        logger.debug('ai.chat: recovered inline tool call from content', { turn, inline });
+        workingMessages.push({
+          role: 'assistant',
+          content: '',
+          tool_calls: [{ function: { name: inline.name, arguments: inline.arguments } }],
+        });
+      } else {
+        workingMessages.push(response.message);
+      }
+
+      for (const call of calls) {
         let result: unknown;
         try {
-          result = executeToolCall(call.function.name, call.function.arguments as ToolArgs, db);
+          result = executeToolCall(call.name, call.arguments, db);
         } catch (err) {
           result = { error: (err as Error).message };
         }
         logger.debug('ai.chat: tool call executed', {
           turn,
-          name: call.function.name,
-          args: call.function.arguments,
+          name: call.name,
+          args: call.arguments,
           result,
         });
         workingMessages.push({ role: 'tool', content: JSON.stringify(result) });
