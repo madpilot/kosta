@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useChatSession, useCreateChatSession, useSendChatMessage } from '@sprout/api-client';
 
 import { Button } from '../components/Button';
@@ -53,14 +55,17 @@ export const ChatScreen = () => {
 
       <div className={styles.thread} ref={threadRef}>
         {messages.length === 0 && !busy && <div className={styles.assistant}>{GREETING}</div>}
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={message.role === 'user' ? styles.user : styles.assistant}
-          >
-            {message.content}
-          </div>
-        ))}
+        {messages.map((message) =>
+          message.role === 'user' ? (
+            <div key={message.id} className={styles.user}>
+              {message.content}
+            </div>
+          ) : (
+            <div key={message.id} className={`${styles.assistant} ${styles.markdown}`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+            </div>
+          ),
+        )}
         {busy && <div className={styles.assistant}>Sprout is thinking…</div>}
         {(sendMessage.isError || createSession.isError) && (
           <div className={styles.assistant}>

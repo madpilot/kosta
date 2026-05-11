@@ -81,3 +81,87 @@
   outline: 2px solid var(--color-tomato-300);
   outline-offset: 2px;
 }
+
+.markdown :global(p) {
+  margin: 0 0 8px;
+}
+
+.markdown :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown :global(ul),
+.markdown :global(ol) {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+
+.markdown :global(li) {
+  margin: 2px 0;
+}
+
+.markdown :global(li > p) {
+  margin: 0;
+}
+
+.markdown :global(strong) {
+  font-weight: 700;
+}
+
+.markdown :global(em) {
+  font-style: italic;
+}
+
+.markdown :global(code) {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.markdown :global(pre) {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 8px;
+}
+
+.markdown :global(pre code) {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown :global(a) {
+  color: var(--color-forest-500);
+  text-decoration: underline;
+}
+
+.markdown :global(blockquote) {
+  margin: 0 0 8px;
+  padding-left: 12px;
+  border-left: 3px solid var(--color-forest-500);
+  opacity: 0.85;
+}
+
+.markdown :global(h1),
+.markdown :global(h2),
+.markdown :global(h3),
+.markdown :global(h4) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.markdown :global(h1) {
+  font-size: 18px;
+}
+.markdown :global(h2) {
+  font-size: 16px;
+}
+.markdown :global(h3),
+.markdown :global(h4) {
+  font-size: 15px;
+}
