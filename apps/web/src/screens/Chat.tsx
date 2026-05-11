@@ -12,17 +12,6 @@ export const ChatScreen = () => {
   const threadRef = useRef<HTMLDivElement | null>(null);
 
   const createSession = useCreateChatSession();
-  const createMutate = createSession.mutate;
-  const createMutateAsync = createSession.mutateAsync;
-
-  useEffect(() => {
-    if (!sessionId && !createSession.isPending && !createSession.isError) {
-      createMutate(undefined, {
-        onSuccess: (session) => setSessionId(session.id),
-      });
-    }
-  }, [sessionId, createSession.isPending, createSession.isError, createMutate]);
-
   const session = useChatSession(sessionId ?? '', { enabled: Boolean(sessionId) });
   const sendMessage = useSendChatMessage();
 
@@ -36,20 +25,22 @@ export const ChatScreen = () => {
 
   const send = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || sendMessage.isPending) return;
+    if (!trimmed || sendMessage.isPending || createSession.isPending) return;
     setDraft('');
     try {
       let id = sessionId;
       if (!id) {
-        const created = await createMutateAsync();
+        const created = await createSession.mutateAsync();
         id = created.id;
         setSessionId(id);
       }
-      sendMessage.mutate({ id, content: trimmed });
+      await sendMessage.mutateAsync({ id, content: trimmed });
     } catch {
       setDraft(trimmed);
     }
   };
+
+  const busy = sendMessage.isPending || createSession.isPending;
 
   return (
     <div className={styles.page}>
@@ -61,9 +52,7 @@ export const ChatScreen = () => {
       </header>
 
       <div className={styles.thread} ref={threadRef}>
-        {messages.length === 0 && !sendMessage.isPending && (
-          <div className={styles.assistant}>{GREETING}</div>
-        )}
+        {messages.length === 0 && !busy && <div className={styles.assistant}>{GREETING}</div>}
         {messages.map((message) => (
           <div
             key={message.id}
@@ -72,7 +61,7 @@ export const ChatScreen = () => {
             {message.content}
           </div>
         ))}
-        {sendMessage.isPending && <div className={styles.assistant}>Sprout is thinking…</div>}
+        {busy && <div className={styles.assistant}>Sprout is thinking…</div>}
         {(sendMessage.isError || createSession.isError) && (
           <div className={styles.assistant}>
             Sorry — that message didn&rsquo;t go through. Try again?
@@ -93,7 +82,7 @@ export const ChatScreen = () => {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
         />
-        <Button type="submit" variant="tomato" disabled={!draft.trim() || sendMessage.isPending}>
+        <Button type="submit" variant="tomato" disabled={!draft.trim() || busy}>
           Send
         </Button>
       </form>
