@@ -1,11 +1,57 @@
-import { Ollama } from 'ollama';
-import type { Message, Tool } from 'ollama';
 import { z } from 'zod';
 import { getRuntimeConfig } from '../runtime-config';
 import { getCurrentSeason } from '../utils/season';
 import { getWeatherForecast } from './weather';
 import { logger } from '../utils/logger';
 import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/index';
+
+// ---------------------------------------------------------------------------
+// Local types (OpenAI Chat Completions API shapes)
+// ---------------------------------------------------------------------------
+
+type Message = {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  tool_call_id?: string;
+  // The assistant turn may carry tool_calls — present when finish_reason is
+  // 'tool_calls'. We include it here so TypeScript is happy when we push the
+  // raw assistant message back onto workingMessages.
+  tool_calls?: ToolCall[];
+};
+
+type ToolCall = {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    /** JSON-encoded string of the arguments object. */
+    arguments: string;
+  };
+};
+
+type ChatResponse = {
+  choices: Array<{
+    finish_reason: string;
+    message: {
+      role: 'assistant';
+      content: string;
+      tool_calls?: ToolCall[];
+    };
+  }>;
+};
+
+type Tool = {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+};
+
+// ---------------------------------------------------------------------------
+// Tool definitions
+// ---------------------------------------------------------------------------
 
 export const buildTools = (): Tool[] => [
   {
@@ -151,6 +197,10 @@ export const buildTools = (): Tool[] => [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Zod schemas for tool argument validation
+// ---------------------------------------------------------------------------
+
 type ToolArgs = Record<string, unknown>;
 
 const MEMORY_PROMPT_LIMIT = 50;
@@ -203,6 +253,10 @@ const CreateCalendarEventsBatchArgs = z.object({
 
 const formatZodError = (error: z.ZodError): string =>
   error.errors.map((e) => `${e.path.join('.') || '(root)'}: ${e.message}`).join('; ');
+
+// ---------------------------------------------------------------------------
+// Tool executor
+// ---------------------------------------------------------------------------
 
 export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrapper): unknown => {
   if (name === 'get_plants') {
@@ -277,6 +331,10 @@ export const executeToolCall = (name: string, args: ToolArgs, db: DatabaseWrappe
   return { error: `Unknown tool: ${name}` };
 };
 
+// ---------------------------------------------------------------------------
+// System prompt builder
+// ---------------------------------------------------------------------------
+
 export const buildSystemPrompt = async (db: ChatDatabase & SettingsDatabase): Promise<string> => {
   const runtime = getRuntimeConfig(db);
   const { preamble } = runtime.ai;
@@ -313,53 +371,100 @@ export const buildSystemPrompt = async (db: ChatDatabase & SettingsDatabase): Pr
   return parts.join('\n');
 };
 
+// ---------------------------------------------------------------------------
+// AI service
+// ---------------------------------------------------------------------------
+
 export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDatabase) => {
-  // Resolve the Ollama client lazily on each call so the user can change the
-  // base URL via PUT /api/settings without restarting the process.
-  const ollamaClient = (): { client: Ollama; model: string } => {
+  // Resolve client config lazily on each call so live settings changes
+  // (via PUT /api/settings) take effect without restarting the process.
+  const getClientConfig = (): { baseUrl: string; model: string; apiKey: string } => {
     const runtime = getRuntimeConfig(db);
-    if (runtime.aiBackend !== 'ollama') {
-      logger.warn('Non-ollama AI backend selected but only ollama is implemented; using ollama', {
-        configured: runtime.aiBackend,
-      });
+    if (runtime.aiBackend === 'openai') {
+      return {
+        baseUrl: 'https://api.openai.com/v1',
+        model: runtime.openai.model,
+        apiKey: runtime.openai.apiKey,
+      };
     }
+    // 'local' — OpenAI-compatible endpoint (e.g. Ollama, llama.cpp, LM Studio)
     return {
-      client: new Ollama({ host: runtime.ollama.baseUrl }),
-      model: runtime.ollama.model,
+      baseUrl: runtime.local.baseUrl,
+      model: runtime.local.model,
+      apiKey: '',
     };
+  };
+
+  const callChatCompletions = async (
+    baseUrl: string,
+    apiKey: string,
+    body: object,
+  ): Promise<ChatResponse> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(
+        `Chat completions request failed: ${response.status} ${response.statusText}${text ? ` — ${text}` : ''}`,
+      );
+    }
+
+    return response.json() as Promise<ChatResponse>;
   };
 
   const chat = async (
     history: { role: 'user' | 'assistant'; content: string }[],
     systemPrompt: string,
   ): Promise<string> => {
-    const messages: Message[] = [{ role: 'system', content: systemPrompt }, ...history];
-    const { client, model } = ollamaClient();
+    const { baseUrl, model, apiKey } = getClientConfig();
 
+    const workingMessages: Message[] = [{ role: 'system', content: systemPrompt }, ...history];
     const tools = buildTools();
+
     logger.debug('ai.chat: sending initial request', {
       model,
       toolNames: tools.map((t) => t.function.name),
-      messages,
-    });
-    let response = await client.chat({ model, messages, tools });
-    logger.debug('ai.chat: initial response', {
-      content: response.message.content,
-      toolCalls: response.message.tool_calls,
+      messages: workingMessages,
     });
 
-    const workingMessages: Message[] = [...messages];
+    let response = await callChatCompletions(baseUrl, apiKey, {
+      model,
+      messages: workingMessages,
+      tools,
+      tool_choice: 'auto',
+    });
+
+    logger.debug('ai.chat: initial response', {
+      content: response.choices[0].message.content,
+      toolCalls: response.choices[0].message.tool_calls,
+    });
+
     let turn = 0;
 
-    // Tool calling loop — Ollama returns tool_calls until it's ready to respond
-    while (response.message.tool_calls && response.message.tool_calls.length > 0) {
+    // Tool calling loop — keep going while the model wants to invoke tools.
+    while (response.choices[0].finish_reason === 'tool_calls') {
       turn += 1;
-      workingMessages.push(response.message);
 
-      for (const call of response.message.tool_calls) {
+      // Push the full assistant message (including tool_calls) back onto the
+      // conversation so the model has context for subsequent turns.
+      workingMessages.push(response.choices[0].message);
+
+      for (const call of response.choices[0].message.tool_calls ?? []) {
         let result: unknown;
         try {
-          result = executeToolCall(call.function.name, call.function.arguments as ToolArgs, db);
+          const parsedArgs = JSON.parse(call.function.arguments) as ToolArgs;
+          result = executeToolCall(call.function.name, parsedArgs, db);
         } catch (err) {
           result = { error: (err as Error).message };
         }
@@ -369,7 +474,11 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
           args: call.function.arguments,
           result,
         });
-        workingMessages.push({ role: 'tool', content: JSON.stringify(result) });
+        workingMessages.push({
+          role: 'tool',
+          tool_call_id: call.id,
+          content: JSON.stringify(result),
+        });
       }
 
       logger.debug('ai.chat: sending follow-up request', {
@@ -377,33 +486,37 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
         messageCount: workingMessages.length,
         messages: workingMessages,
       });
+
       // eslint-disable-next-line no-await-in-loop
-      response = await client.chat({
+      response = await callChatCompletions(baseUrl, apiKey, {
         model,
         messages: workingMessages,
         tools,
+        tool_choice: 'auto',
       });
+
       logger.debug('ai.chat: follow-up response', {
         turn,
-        content: response.message.content,
-        toolCalls: response.message.tool_calls,
+        content: response.choices[0].message.content,
+        toolCalls: response.choices[0].message.tool_calls,
       });
     }
 
     logger.debug('ai.chat: final assistant content', {
       turns: turn,
-      content: response.message.content,
+      content: response.choices[0].message.content,
     });
-    return response.message.content;
+
+    return response.choices[0].message.content;
   };
 
   const summariseSession = async (
     history: { role: 'user' | 'assistant'; content: string }[],
   ): Promise<{ summary: string; memories: string[] }> => {
+    const { baseUrl, model, apiKey } = getClientConfig();
     const conversationText = history.map((m) => `${m.role}: ${m.content}`).join('\n\n');
-    const { client, model } = ollamaClient();
 
-    const response = await client.chat({
+    const response = await callChatCompletions(baseUrl, apiKey, {
       model,
       messages: [
         {
@@ -416,12 +529,13 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
           content: `Summarise this gardening conversation and extract useful facts worth remembering for future sessions.\n\nConversation:\n${conversationText}\n\nRespond with JSON only:\n{"summary": "2-3 sentence summary", "memories": ["fact1", "fact2"]}`,
         },
       ],
-      format: 'json',
+      // OpenAI-compatible JSON mode — instructs the model to return valid JSON.
+      response_format: { type: 'json_object' },
     });
 
     try {
       type SummaryPayload = { summary?: string; memories?: unknown[] };
-      const parsed = JSON.parse(response.message.content) as SummaryPayload;
+      const parsed = JSON.parse(response.choices[0].message.content) as SummaryPayload;
       return {
         summary: typeof parsed.summary === 'string' ? parsed.summary : '',
         memories: Array.isArray(parsed.memories)
@@ -430,7 +544,7 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
       };
     } catch (error) {
       logger.warn('Could not parse session summary as JSON, falling back to plain text', { error });
-      return { summary: response.message.content, memories: [] };
+      return { summary: response.choices[0].message.content, memories: [] };
     }
   };
 

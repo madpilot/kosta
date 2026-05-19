@@ -5,8 +5,11 @@ and a calendar of upcoming garden tasks, and exposes both an HTTP API and an
 LLM-driven chat that can record activities ("today I planted basil seeds")
 and propose follow-up tasks (water, check germination, transplant, harvest).
 
-The chat backend speaks to a local [Ollama](https://ollama.com/) instance by
-default; OpenAI-compatible models are supported as an alternative.
+The chat backend speaks to any locally-run OpenAI-compatible server by default
+(e.g. [Ollama](https://ollama.com/) with its `/v1` endpoint,
+[LM Studio](https://lmstudio.ai/), or
+[llama.cpp](https://github.com/ggerganov/llama.cpp)); using the hosted OpenAI
+API is supported as an alternative.
 
 ## Repository layout
 
@@ -34,8 +37,10 @@ mobile bundles only pull in what they use.
 - **A SQLite-capable filesystem.** Data lives at `./data/garden.db` by default.
   `better-sqlite3` compiles a native binding on install.
 - **An LLM backend.** Either:
-  - A local [Ollama](https://ollama.com/) instance with a chat model pulled
-    (`ollama pull llama3.2`), or
+  - A locally-run OpenAI-compatible server (e.g.
+    [Ollama](https://ollama.com/) started with `ollama serve`,
+    [LM Studio](https://lmstudio.ai/), or
+    [llama.cpp](https://github.com/ggerganov/llama.cpp) with `--api`), or
   - An OpenAI API key.
 - _(Optional)_ An [OpenWeatherMap](https://openweathermap.org/api) API key
   if you want weather-aware advice.
@@ -82,21 +87,21 @@ These are written via `POST /api/onboarding` on first run and updated via
 `PUT /api/settings` afterwards. Field names match the JSON body of those
 endpoints (see `packages/shared/src/schemas/settings.ts`).
 
-| Field           | Default                  | Notes                                                                              |
-| --------------- | ------------------------ | ---------------------------------------------------------------------------------- |
-| `appBaseUrl`    | `http://localhost:3000`  | Public URL — used in password-reset emails. No trailing slash.                     |
-| `aiBackend`     | `ollama`                 | `ollama` or `openai`.                                                              |
-| `ollamaBaseUrl` | `http://localhost:11434` | Ollama server URL.                                                                 |
-| `ollamaModel`   | `llama3.2`               | Ollama model tag. Pull it first with `ollama pull <model>`.                        |
-| `openaiApiKey`  | _(empty)_                | Required when `aiBackend=openai`.                                                  |
-| `openaiModel`   | `gpt-4o`                 | OpenAI model name.                                                                 |
-| `aiPreamble`    | _(built-in)_             | Override the default Sprout system prompt.                                         |
-| `weatherApiKey` | _(empty)_                | OpenWeatherMap key. Forecasts are skipped if unset.                                |
-| `location`      | _(empty)_                | e.g. `Perth, AU`. Used for weather + season-aware advice.                          |
-| `hemisphere`    | `southern`               | `northern` or `southern`. Drives season detection.                                 |
-| `logLevel`      | `info`                   | Standard npm levels: `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly`. |
-| `logFormat`     | `pretty`                 | `pretty` for human-readable colourised output, `json` for line-delimited JSON.     |
-| `logSilent`     | `false`                  | Silence all log output. Auto-true under `NODE_ENV=test`.                           |
+| Field            | Default                     | Notes                                                                              |
+| ---------------- | --------------------------- | ---------------------------------------------------------------------------------- |
+| `appBaseUrl`     | `http://localhost:3000`     | Public URL — used in password-reset emails. No trailing slash.                     |
+| `aiBackend`      | `local`                     | `local` or `openai`.                                                               |
+| `localAiBaseUrl` | `http://localhost:11434/v1` | Base URL of your local OpenAI-compatible server (include the `/v1` path).          |
+| `localAiModel`   | `llama3.2`                  | Model name to send to the local server.                                            |
+| `openaiApiKey`   | _(empty)_                   | Required when `aiBackend=openai`.                                                  |
+| `openaiModel`    | `gpt-4o`                    | OpenAI model name.                                                                 |
+| `aiPreamble`     | _(built-in)_                | Override the default Sprout system prompt.                                         |
+| `weatherApiKey`  | _(empty)_                   | OpenWeatherMap key. Forecasts are skipped if unset.                                |
+| `location`       | _(empty)_                   | e.g. `Perth, AU`. Used for weather + season-aware advice.                          |
+| `hemisphere`     | `southern`                  | `northern` or `southern`. Drives season detection.                                 |
+| `logLevel`       | `info`                      | Standard npm levels: `error`, `warn`, `info`, `http`, `verbose`, `debug`, `silly`. |
+| `logFormat`      | `pretty`                    | `pretty` for human-readable colourised output, `json` for line-delimited JSON.     |
+| `logSilent`      | `false`                     | Silence all log output. Auto-true under `NODE_ENV=test`.                           |
 
 The JWT signing secret is auto-generated on first boot and persisted in the
 database — you do not need to provision one.
@@ -125,25 +130,22 @@ Configure the AI backend, model, location, etc. via `POST /api/onboarding`
 
 ## Running with docker compose
 
-`apps/api/docker-compose.yml` brings up Sprout together with a colocated
-Ollama container, so you don't need anything else installed on the host:
+`apps/api/docker-compose.yml` brings up Sprout. You need a separate
+locally-run OpenAI-compatible server (e.g. Ollama, LM Studio) accessible
+from the container:
 
 ```bash
 cd apps/api
 docker compose up -d
-
-# pull a model into the colocated Ollama (one-off)
-docker compose exec ollama ollama pull llama3.2
 ```
 
-The compose file declares two named volumes:
+The compose file declares one named volume:
 
-- `ollama-models` — keeps pulled models around across restarts.
 - `sprout-data` — keeps `/data/garden.db` across restarts.
 
-To use OpenAI instead of the bundled Ollama, drop the `ollama` service from
-the compose file and switch the AI backend at runtime via the settings API
-(`PUT /api/settings` with `aiBackend: 'openai'` and an `openaiApiKey`).
+To use the hosted OpenAI API instead of a local server, switch at runtime
+via the settings API (`PUT /api/settings` with `aiBackend: 'openai'` and an
+`openaiApiKey`).
 
 ## Tests
 

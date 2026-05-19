@@ -34,9 +34,9 @@ describe('Onboarding Service', () => {
       password: 'correcthorsebatterystaple',
     },
     settings: {
-      aiBackend: 'ollama' as const,
-      ollamaBaseUrl: 'http://localhost:11434',
-      ollamaModel: 'llama3.2',
+      aiBackend: 'local' as const,
+      localAiBaseUrl: 'http://localhost:8080/v1',
+      localAiModel: 'llama3.2',
       hemisphere: 'southern' as const,
       location: 'Perth, AU',
     },
@@ -49,7 +49,7 @@ describe('Onboarding Service', () => {
   it('creates the initial user and persists settings', () => {
     const result = service.complete(validInput);
     expect(result.user.username).toBe('gardener');
-    expect(result.settings.aiBackend).toBe('ollama');
+    expect(result.settings.aiBackend).toBe('local');
     expect(service.getStatus()).toEqual({ onboarded: true });
     expect(database.getSettings()?.location).toBe('Perth, AU');
   });

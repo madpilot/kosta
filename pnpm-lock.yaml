@@ -41,9 +41,6 @@ importers:
       jose:
         specifier: ^5.9.6
         version: 5.10.0
-      ollama:
-        specifier: ^0.5.12
-        version: 0.5.18
       uuid:
         specifier: ^11.0.4
         version: 11.1.1
@@ -4762,9 +4759,6 @@ packages:
   object.values@1.2.1:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
-
-  ollama@0.5.18:
-    resolution: {integrity: sha512-lTFqTf9bo7Cd3hpF6CviBe/DEhewjoZYd9N/uCe7O20qYTvGqrNOFOBDj3lbZgFWHUgDv5EeyusYxsZSLS8nvg==}
 
   on-finished@2.3.0:
     resolution: {integrity: sha512-ikqdkGAAyf/X/gPhXGvfgAytDZtDbr+bkNUJ0N9h5MI/dmdgCs3l6hoHrcUv41sRKew3jIwrp4qQDXiK99Utww==}
@@ -12047,10 +12041,6 @@ snapshots:
       call-bound: 1.0.4
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
-
-  ollama@0.5.18:
-    dependencies:
-      whatwg-fetch: 3.6.20
 
   on-finished@2.3.0:
     dependencies:

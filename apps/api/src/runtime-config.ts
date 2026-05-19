@@ -12,9 +12,9 @@ When the user reports a past gardening activity (e.g. "I planted basil today", "
 Use today's date (provided below) as the anchor for any relative time reference.`;
 
 export const RUNTIME_CONFIG_DEFAULTS = {
-  aiBackend: 'ollama' as const,
-  ollama: {
-    baseUrl: 'http://localhost:11434',
+  aiBackend: 'local' as const,
+  local: {
+    baseUrl: 'http://localhost:11434/v1',
     model: 'llama3.2',
   },
   openai: {
@@ -44,8 +44,8 @@ export const RUNTIME_CONFIG_DEFAULTS = {
 };
 
 export interface RuntimeConfig {
-  aiBackend: 'ollama' | 'openai';
-  ollama: { baseUrl: string; model: string };
+  aiBackend: 'local' | 'openai';
+  local: { baseUrl: string; model: string };
   openai: { apiKey: string; model: string };
   ai: { preamble: string };
   user: { location: string; hemisphere: 'northern' | 'southern' };
@@ -63,9 +63,9 @@ export const getRuntimeConfig = (db: SettingsDatabase): RuntimeConfig => {
   const d = RUNTIME_CONFIG_DEFAULTS;
   return {
     aiBackend: stored?.aiBackend ?? d.aiBackend,
-    ollama: {
-      baseUrl: stored?.ollamaBaseUrl ?? d.ollama.baseUrl,
-      model: stored?.ollamaModel ?? d.ollama.model,
+    local: {
+      baseUrl: stored?.localAiBaseUrl ?? d.local.baseUrl,
+      model: stored?.localAiModel ?? d.local.model,
     },
     openai: {
       apiKey: stored?.openaiApiKey ?? d.openai.apiKey,

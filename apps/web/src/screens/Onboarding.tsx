@@ -14,11 +14,11 @@ export const OnboardingScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState({ username: '', email: '', name: '', password: '' });
   const [settings, setSettings] = useState({
-    aiBackend: 'ollama' as 'ollama' | 'openai',
+    aiBackend: 'local' as 'local' | 'openai',
     location: '',
     hemisphere: 'southern' as 'northern' | 'southern',
-    ollamaBaseUrl: 'http://localhost:11434',
-    ollamaModel: 'llama3.2',
+    localAiBaseUrl: 'http://localhost:11434',
+    localAiModel: 'llama3.2',
     openaiApiKey: '',
     openaiModel: 'gpt-4o',
     weatherApiKey: '',
@@ -43,15 +43,15 @@ export const OnboardingScreen = () => {
         settings.aiBackend === 'openai'
           ? {
               ...base,
-              aiBackend: 'openai',
+              aiBackend: 'openai' as const,
               openaiApiKey: settings.openaiApiKey,
               openaiModel: settings.openaiModel,
             }
           : {
               ...base,
-              aiBackend: 'ollama',
-              ollamaBaseUrl: settings.ollamaBaseUrl,
-              ollamaModel: settings.ollamaModel,
+              aiBackend: 'local',
+              localAiBaseUrl: settings.localAiBaseUrl,
+              localAiModel: settings.localAiModel,
             };
       const result = (await client.onboarding.complete({
         user,
@@ -133,28 +133,28 @@ export const OnboardingScreen = () => {
           <select
             value={settings.aiBackend}
             onChange={(e) =>
-              setSettings({ ...settings, aiBackend: e.target.value as 'ollama' | 'openai' })
+              setSettings({ ...settings, aiBackend: e.target.value as 'local' | 'openai' })
             }
           >
-            <option value="ollama">Ollama (local)</option>
+            <option value="local">Local (OpenAI-compatible)</option>
             <option value="openai">OpenAI</option>
           </select>
         </label>
-        {settings.aiBackend === 'ollama' && (
+        {settings.aiBackend === 'local' && (
           <>
             <label className={styles.field}>
-              <span>Ollama base URL</span>
+              <span>Local AI base URL</span>
               <input
-                value={settings.ollamaBaseUrl}
-                onChange={(e) => setSettings({ ...settings, ollamaBaseUrl: e.target.value })}
+                value={settings.localAiBaseUrl}
+                onChange={(e) => setSettings({ ...settings, localAiBaseUrl: e.target.value })}
                 required
               />
             </label>
             <label className={styles.field}>
-              <span>Ollama model</span>
+              <span>Local AI model</span>
               <input
-                value={settings.ollamaModel}
-                onChange={(e) => setSettings({ ...settings, ollamaModel: e.target.value })}
+                value={settings.localAiModel}
+                onChange={(e) => setSettings({ ...settings, localAiModel: e.target.value })}
                 required
               />
             </label>
