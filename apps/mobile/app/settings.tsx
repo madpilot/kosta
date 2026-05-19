@@ -7,9 +7,9 @@ import tokens from '@sprout/shared/tokens';
 import { Button } from '../components/Button';
 
 type FormState = {
-  aiBackend: 'ollama' | 'openai';
-  ollamaBaseUrl: string;
-  ollamaModel: string;
+  aiBackend: 'local' | 'openai';
+  localAiBaseUrl: string;
+  localAiModel: string;
   openaiApiKey: string;
   openaiModel: string;
   location: string;
@@ -22,9 +22,9 @@ type FormState = {
 };
 
 const emptyForm: FormState = {
-  aiBackend: 'ollama',
-  ollamaBaseUrl: '',
-  ollamaModel: '',
+  aiBackend: 'local',
+  localAiBaseUrl: '',
+  localAiModel: '',
   openaiApiKey: '',
   openaiModel: '',
   location: '',
@@ -38,8 +38,8 @@ const emptyForm: FormState = {
 
 const fromSettings = (s: Settings): FormState => ({
   aiBackend: s.aiBackend,
-  ollamaBaseUrl: s.ollamaBaseUrl ?? '',
-  ollamaModel: s.ollamaModel ?? '',
+  localAiBaseUrl: s.localAiBaseUrl ?? '',
+  localAiModel: s.localAiModel ?? '',
   openaiApiKey: s.openaiApiKey ?? '',
   openaiModel: s.openaiModel ?? '',
   location: s.location ?? '',
@@ -56,9 +56,9 @@ const toPayload = (f: FormState): Settings => {
     aiBackend: f.aiBackend,
     hemisphere: f.hemisphereSouthern ? 'southern' : 'northern',
   };
-  if (f.aiBackend === 'ollama') {
-    if (f.ollamaBaseUrl) payload.ollamaBaseUrl = f.ollamaBaseUrl;
-    if (f.ollamaModel) payload.ollamaModel = f.ollamaModel;
+  if (f.aiBackend === 'local') {
+    if (f.localAiBaseUrl) payload.localAiBaseUrl = f.localAiBaseUrl;
+    if (f.localAiModel) payload.localAiModel = f.localAiModel;
   } else {
     if (f.openaiApiKey) payload.openaiApiKey = f.openaiApiKey;
     if (f.openaiModel) payload.openaiModel = f.openaiModel;
@@ -121,24 +121,24 @@ export default function SettingsScreen() {
 
           <Section title="AI backend">
             <View style={styles.toggleRow}>
-              <Text style={styles.fieldLabel}>Use OpenAI (instead of Ollama)</Text>
+              <Text style={styles.fieldLabel}>Use OpenAI (instead of Local AI)</Text>
               <Switch
                 value={form.aiBackend === 'openai'}
-                onValueChange={(v) => set('aiBackend', v ? 'openai' : 'ollama')}
+                onValueChange={(v) => set('aiBackend', v ? 'openai' : 'local')}
               />
             </View>
-            {form.aiBackend === 'ollama' && (
+            {form.aiBackend === 'local' && (
               <>
                 <Field
-                  label="Ollama base URL"
-                  value={form.ollamaBaseUrl}
-                  onChangeText={(t) => set('ollamaBaseUrl', t)}
-                  placeholder="http://localhost:11434"
+                  label="Local AI base URL"
+                  value={form.localAiBaseUrl}
+                  onChangeText={(t) => set('localAiBaseUrl', t)}
+                  placeholder="http://localhost:8080/v1"
                 />
                 <Field
-                  label="Ollama model"
-                  value={form.ollamaModel}
-                  onChangeText={(t) => set('ollamaModel', t)}
+                  label="Local AI model"
+                  value={form.localAiModel}
+                  onChangeText={(t) => set('localAiModel', t)}
                   placeholder="llama3.2"
                 />
               </>

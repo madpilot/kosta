@@ -111,9 +111,9 @@ describe('Onboarding API', () => {
       password: 'correcthorsebatterystaple',
     },
     settings: {
-      aiBackend: 'ollama',
-      ollamaBaseUrl: 'http://localhost:11434',
-      ollamaModel: 'llama3.2',
+      aiBackend: 'local',
+      localAiBaseUrl: 'http://localhost:11434/v1',
+      localAiModel: 'llama3.2',
       hemisphere: 'southern',
       location: 'Perth, AU',
     },
@@ -129,7 +129,7 @@ describe('Onboarding API', () => {
     const res = await request(app).post('/api/onboarding').send(validInput);
     expect(res.status).toBe(201);
     expect(res.body.user.username).toBe('gardener');
-    expect(res.body.settings.aiBackend).toBe('ollama');
+    expect(res.body.settings.aiBackend).toBe('local');
     expect(typeof res.body.token).toBe('string');
 
     const status = await request(app).get('/api/onboarding/status');

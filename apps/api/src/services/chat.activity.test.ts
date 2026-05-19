@@ -4,11 +4,8 @@ import path from 'path';
 import { createChatService } from './chat';
 import { createSqliteDatabase } from '../db/sqlite';
 
-const chatMock = jest.fn();
-
-jest.mock('ollama', () => ({
-  Ollama: jest.fn().mockImplementation(() => ({ chat: chatMock })),
-}));
+// Mock global fetch used by the OpenAI-compatible client in ai.ts
+global.fetch = jest.fn();
 
 jest.mock('./weather', () => ({
   getWeatherForecast: jest.fn().mockResolvedValue(null),
@@ -20,7 +17,7 @@ describe('chat agentic loop — activity log flow', () => {
   let chatService: ReturnType<typeof createChatService>;
 
   beforeEach(() => {
-    chatMock.mockReset();
+    (global.fetch as jest.Mock).mockReset();
     dbFile = path.join(__dirname, `chat_${Date.now()}_${Math.random().toString(36).slice(2)}.db`);
     database = createSqliteDatabase(dbFile);
     chatService = createChatService(database);
@@ -49,44 +46,76 @@ describe('chat agentic loop — activity log flow', () => {
     const session = chatService.createSession();
     const plantedDate = new Date('2026-05-02T00:00:00.000Z').toISOString();
 
-    chatMock
+    (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
-        message: {
-          role: 'assistant',
-          content: '',
-          tool_calls: [
+        ok: true,
+        json: async () => ({
+          choices: [
             {
-              function: {
-                name: 'find_or_create_plant',
-                arguments: { name: 'Basil', species: 'Ocimum basilicum', plantedDate },
+              finish_reason: 'tool_calls',
+              message: {
+                role: 'assistant',
+                content: '',
+                tool_calls: [
+                  {
+                    id: 'call_1',
+                    type: 'function',
+                    function: {
+                      name: 'find_or_create_plant',
+                      arguments: JSON.stringify({
+                        name: 'Basil',
+                        species: 'Ocimum basilicum',
+                        plantedDate,
+                      }),
+                    },
+                  },
+                ],
               },
             },
           ],
-        },
+        }),
       })
       .mockImplementationOnce(async () => {
         const plant = database.getPlantByName('Basil');
         return {
-          message: {
-            role: 'assistant',
-            content: '',
-            tool_calls: [
+          ok: true,
+          json: async () => ({
+            choices: [
               {
-                function: {
-                  name: 'update_plant_care',
-                  arguments: { plantId: plant!.id, plantedDate },
+                finish_reason: 'tool_calls',
+                message: {
+                  role: 'assistant',
+                  content: '',
+                  tool_calls: [
+                    {
+                      id: 'call_2',
+                      type: 'function',
+                      function: {
+                        name: 'update_plant_care',
+                        arguments: JSON.stringify({ plantId: plant!.id, plantedDate }),
+                      },
+                    },
+                  ],
                 },
               },
             ],
-          },
+          }),
         };
       })
       .mockResolvedValueOnce({
-        message: {
-          role: 'assistant',
-          content:
-            "Logged that you planted basil today. Here's a proposed schedule:\n1. Water on 2026-05-03\n2. Check germination on 2026-05-12\n3. Transplant around 2026-05-30\n4. First harvest around 2026-06-20\n\nShall I add these to your calendar?",
-        },
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                role: 'assistant',
+                content:
+                  "Logged that you planted basil today. Here's a proposed schedule:\n1. Water on 2026-05-03\n2. Check germination on 2026-05-12\n3. Transplant around 2026-05-30\n4. First harvest around 2026-06-20\n\nShall I add these to your calendar?",
+              },
+            },
+          ],
+        }),
       });
 
     await chatService.sendMessage(session.id, 'Today I planted some basil seeds.');
@@ -109,47 +138,65 @@ describe('chat agentic loop — activity log flow', () => {
       plantedDate: new Date().toISOString(),
     });
 
-    chatMock
+    (global.fetch as jest.Mock)
       .mockResolvedValueOnce({
-        message: {
-          role: 'assistant',
-          content: '',
-          tool_calls: [
+        ok: true,
+        json: async () => ({
+          choices: [
             {
-              function: {
-                name: 'create_calendar_events_batch',
-                arguments: {
-                  events: [
-                    {
-                      plantId: plant.id,
-                      type: 'water',
-                      date: '2026-05-03T08:00:00.000Z',
-                      notes: 'Water seedlings',
+              finish_reason: 'tool_calls',
+              message: {
+                role: 'assistant',
+                content: '',
+                tool_calls: [
+                  {
+                    id: 'call_3',
+                    type: 'function',
+                    function: {
+                      name: 'create_calendar_events_batch',
+                      arguments: JSON.stringify({
+                        events: [
+                          {
+                            plantId: plant.id,
+                            type: 'water',
+                            date: '2026-05-03T08:00:00.000Z',
+                            notes: 'Water seedlings',
+                          },
+                          {
+                            plantId: plant.id,
+                            type: 'other',
+                            date: '2026-05-12T08:00:00.000Z',
+                            notes: 'Check germination',
+                          },
+                          {
+                            plantId: plant.id,
+                            type: 'other',
+                            date: '2026-05-30T08:00:00.000Z',
+                            notes: 'Transplant',
+                          },
+                        ],
+                      }),
                     },
-                    {
-                      plantId: plant.id,
-                      type: 'other',
-                      date: '2026-05-12T08:00:00.000Z',
-                      notes: 'Check germination',
-                    },
-                    {
-                      plantId: plant.id,
-                      type: 'other',
-                      date: '2026-05-30T08:00:00.000Z',
-                      notes: 'Transplant',
-                    },
-                  ],
-                },
+                  },
+                ],
               },
             },
           ],
-        },
+        }),
       })
       .mockResolvedValueOnce({
-        message: {
-          role: 'assistant',
-          content: 'Done — 3 events added to your calendar.',
-        },
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: {
+                role: 'assistant',
+                content: 'Done — 3 events added to your calendar.',
+              },
+            },
+          ],
+        }),
       });
 
     await chatService.sendMessage(session.id, 'Yes please');

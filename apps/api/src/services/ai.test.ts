@@ -376,9 +376,9 @@ describe('buildSystemPrompt', () => {
   it('includes location and hemisphere from saved settings', async () => {
     const prompt = await buildSystemPrompt(
       stubChatDb({
-        aiBackend: 'ollama',
-        ollamaBaseUrl: 'http://localhost:11434',
-        ollamaModel: 'llama3.2',
+        aiBackend: 'local',
+        localAiBaseUrl: 'http://localhost:11434/v1',
+        localAiModel: 'llama3.2',
         location: 'Hobart, AU',
         hemisphere: 'southern',
       }),

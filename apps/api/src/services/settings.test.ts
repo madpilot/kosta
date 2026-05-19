@@ -28,22 +28,22 @@ describe('Settings Service', () => {
 
   it('persists and returns settings', () => {
     const saved = service.saveSettings({
-      aiBackend: 'ollama',
-      ollamaBaseUrl: 'http://localhost:11434',
-      ollamaModel: 'llama3.2',
+      aiBackend: 'local',
+      localAiBaseUrl: 'http://localhost:11434/v1',
+      localAiModel: 'llama3.2',
       hemisphere: 'southern',
       location: 'Perth, AU',
     });
 
-    expect(saved.aiBackend).toBe('ollama');
+    expect(saved.aiBackend).toBe('local');
     expect(service.getSettings()).toEqual(saved);
   });
 
   it('overwrites previous settings on save', () => {
     service.saveSettings({
-      aiBackend: 'ollama',
-      ollamaBaseUrl: 'http://localhost:11434',
-      ollamaModel: 'llama3.2',
+      aiBackend: 'local',
+      localAiBaseUrl: 'http://localhost:11434/v1',
+      localAiModel: 'llama3.2',
       hemisphere: 'southern',
     });
 

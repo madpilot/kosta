@@ -17,8 +17,8 @@ export default function OnboardingScreen() {
   const [location, setLocation] = useState('');
   const [hemisphereSouthern, setHemisphereSouthern] = useState(true);
   const [useOpenAI, setUseOpenAI] = useState(false);
-  const [ollamaBaseUrl, setOllamaBaseUrl] = useState('http://localhost:11434');
-  const [ollamaModel, setOllamaModel] = useState('llama3.2');
+  const [localAiBaseUrl, setLocalAiBaseUrl] = useState('http://localhost:11434');
+  const [localAiModel, setLocalAiModel] = useState('llama3.2');
   const [openaiApiKey, setOpenaiApiKey] = useState('');
   const [openaiModel, setOpenaiModel] = useState('gpt-4o');
   const [weatherApiKey, setWeatherApiKey] = useState('');
@@ -42,9 +42,9 @@ export default function OnboardingScreen() {
           }
         : {
             ...base,
-            aiBackend: 'ollama',
-            ollamaBaseUrl,
-            ollamaModel,
+            aiBackend: 'local',
+            localAiBaseUrl,
+            localAiModel,
           };
       const result = (await client.onboarding.complete({ user, settings })) as {
         token?: string;
@@ -92,13 +92,17 @@ export default function OnboardingScreen() {
           <Switch value={hemisphereSouthern} onValueChange={setHemisphereSouthern} />
         </View>
         <View style={styles.toggleRow}>
-          <Text style={styles.fieldLabel}>Use OpenAI (instead of Ollama)</Text>
+          <Text style={styles.fieldLabel}>Use OpenAI (instead of Local AI)</Text>
           <Switch value={useOpenAI} onValueChange={setUseOpenAI} />
         </View>
         {!useOpenAI && (
           <>
-            <Field label="Ollama base URL" value={ollamaBaseUrl} onChangeText={setOllamaBaseUrl} />
-            <Field label="Ollama model" value={ollamaModel} onChangeText={setOllamaModel} />
+            <Field
+              label="Local AI base URL"
+              value={localAiBaseUrl}
+              onChangeText={setLocalAiBaseUrl}
+            />
+            <Field label="Local AI model" value={localAiModel} onChangeText={setLocalAiModel} />
           </>
         )}
         {useOpenAI && (

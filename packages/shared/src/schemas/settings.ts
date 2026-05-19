@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const AiBackendSchema = z.enum(['ollama', 'openai']);
+export const AiBackendSchema = z.enum(['local', 'openai']);
 export type AiBackend = z.infer<typeof AiBackendSchema>;
 
 export const HemisphereSchema = z.enum(['northern', 'southern']);
@@ -23,8 +23,8 @@ export type LogFormat = z.infer<typeof LogFormatSchema>;
 export const SettingsSchema = z
   .object({
     aiBackend: AiBackendSchema,
-    ollamaBaseUrl: z.string().min(1).optional(),
-    ollamaModel: z.string().min(1).optional(),
+    localAiBaseUrl: z.string().min(1).optional(),
+    localAiModel: z.string().min(1).optional(),
     openaiApiKey: z.string().min(1).optional(),
     openaiModel: z.string().min(1).optional(),
     location: z.string().optional(),

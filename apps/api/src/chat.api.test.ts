@@ -7,11 +7,8 @@ import { createAuthService } from './services/auth';
 import { createUserService } from './services/user';
 import { createChatService } from './services/chat';
 
-const chatMock = jest.fn();
-
-jest.mock('ollama', () => ({
-  Ollama: jest.fn().mockImplementation(() => ({ chat: chatMock })),
-}));
+// Mock the global fetch used by the OpenAI-compatible client in ai.ts
+global.fetch = jest.fn();
 
 jest.mock('./services/weather', () => ({
   getWeatherForecast: jest.fn().mockResolvedValue(null),
@@ -103,7 +100,7 @@ describe('Chat API', () => {
   let database: ReturnType<typeof createSqliteDatabase>;
 
   beforeEach(() => {
-    chatMock.mockReset();
+    (global.fetch as jest.Mock).mockReset();
     dbFile = `${__dirname}/temp_chat_api_${Date.now()}_${Math.random()}.db`;
     database = createSqliteDatabase(dbFile);
   });
@@ -154,8 +151,20 @@ describe('Chat API', () => {
   });
 
   it('sends a message and returns the assistant reply', async () => {
-    chatMock.mockResolvedValueOnce({
-      message: { role: 'assistant', content: 'Nice — basil likes warmth.' },
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            finish_reason: 'stop',
+            message: {
+              role: 'assistant',
+              content: 'Nice — basil likes warmth.',
+              tool_calls: undefined,
+            },
+          },
+        ],
+      }),
     });
 
     const { app, token } = await buildTestApp(database);

@@ -11,8 +11,8 @@ describe('getRuntimeConfig', () => {
   it('returns built-in defaults when no settings have been saved', () => {
     const cfg = getRuntimeConfig(stubDb(null));
     expect(cfg.aiBackend).toBe(RUNTIME_CONFIG_DEFAULTS.aiBackend);
-    expect(cfg.ollama.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.ollama.baseUrl);
-    expect(cfg.ollama.model).toBe(RUNTIME_CONFIG_DEFAULTS.ollama.model);
+    expect(cfg.local.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.local.baseUrl);
+    expect(cfg.local.model).toBe(RUNTIME_CONFIG_DEFAULTS.local.model);
     expect(cfg.user.hemisphere).toBe(RUNTIME_CONFIG_DEFAULTS.user.hemisphere);
     expect(cfg.app.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.app.baseUrl);
     expect(cfg.ai.preamble).toBe(RUNTIME_CONFIG_DEFAULTS.ai.preamble);
@@ -26,8 +26,8 @@ describe('getRuntimeConfig', () => {
         aiBackend: 'openai',
         openaiApiKey: 'sk-xyz',
         openaiModel: 'gpt-4o-mini',
-        ollamaBaseUrl: 'http://ollama.local:11434',
-        ollamaModel: 'llama3.3',
+        localAiBaseUrl: 'http://ollama.local:11434',
+        localAiModel: 'llama3.3',
         location: 'Wellington, NZ',
         hemisphere: 'southern',
         weatherApiKey: 'wkey',
@@ -40,7 +40,7 @@ describe('getRuntimeConfig', () => {
     );
     expect(cfg.aiBackend).toBe('openai');
     expect(cfg.openai).toEqual({ apiKey: 'sk-xyz', model: 'gpt-4o-mini' });
-    expect(cfg.ollama).toEqual({ baseUrl: 'http://ollama.local:11434', model: 'llama3.3' });
+    expect(cfg.local).toEqual({ baseUrl: 'http://ollama.local:11434', model: 'llama3.3' });
     expect(cfg.user).toEqual({ location: 'Wellington, NZ', hemisphere: 'southern' });
     expect(cfg.weather.apiKey).toBe('wkey');
     expect(cfg.app.baseUrl).toBe('https://sprout.example.com');
@@ -53,13 +53,13 @@ describe('getRuntimeConfig', () => {
     // back to the built-in defaults.
     const cfg = getRuntimeConfig(
       stubDb({
-        aiBackend: 'ollama',
+        aiBackend: 'local',
         hemisphere: 'northern',
       }),
     );
-    expect(cfg.aiBackend).toBe('ollama');
+    expect(cfg.aiBackend).toBe('local');
     expect(cfg.user.hemisphere).toBe('northern');
-    expect(cfg.ollama.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.ollama.baseUrl);
+    expect(cfg.local.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.local.baseUrl);
     expect(cfg.app.baseUrl).toBe(RUNTIME_CONFIG_DEFAULTS.app.baseUrl);
     expect(cfg.ai.preamble).toBe(RUNTIME_CONFIG_DEFAULTS.ai.preamble);
   });

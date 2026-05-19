@@ -6,9 +6,9 @@ import { Button } from '../components/Button';
 import styles from './Settings.module.css';
 
 type FormState = {
-  aiBackend: 'ollama' | 'openai';
-  ollamaBaseUrl: string;
-  ollamaModel: string;
+  aiBackend: 'local' | 'openai';
+  localAiBaseUrl: string;
+  localAiModel: string;
   openaiApiKey: string;
   openaiModel: string;
   location: string;
@@ -21,9 +21,9 @@ type FormState = {
 };
 
 const emptyForm: FormState = {
-  aiBackend: 'ollama',
-  ollamaBaseUrl: '',
-  ollamaModel: '',
+  aiBackend: 'local',
+  localAiBaseUrl: '',
+  localAiModel: '',
   openaiApiKey: '',
   openaiModel: '',
   location: '',
@@ -37,8 +37,8 @@ const emptyForm: FormState = {
 
 const fromSettings = (s: Settings): FormState => ({
   aiBackend: s.aiBackend,
-  ollamaBaseUrl: s.ollamaBaseUrl ?? '',
-  ollamaModel: s.ollamaModel ?? '',
+  localAiBaseUrl: s.localAiBaseUrl ?? '',
+  localAiModel: s.localAiModel ?? '',
   openaiApiKey: s.openaiApiKey ?? '',
   openaiModel: s.openaiModel ?? '',
   location: s.location ?? '',
@@ -55,9 +55,9 @@ const toPayload = (f: FormState): Settings => {
     aiBackend: f.aiBackend,
     hemisphere: f.hemisphere,
   };
-  if (f.aiBackend === 'ollama') {
-    if (f.ollamaBaseUrl) payload.ollamaBaseUrl = f.ollamaBaseUrl;
-    if (f.ollamaModel) payload.ollamaModel = f.ollamaModel;
+  if (f.aiBackend === 'local') {
+    if (f.localAiBaseUrl) payload.localAiBaseUrl = f.localAiBaseUrl;
+    if (f.localAiModel) payload.localAiModel = f.localAiModel;
   } else {
     if (f.openaiApiKey) payload.openaiApiKey = f.openaiApiKey;
     if (f.openaiModel) payload.openaiModel = f.openaiModel;
@@ -143,28 +143,28 @@ export const SettingsScreen = () => {
               <span>Backend</span>
               <select
                 value={form.aiBackend}
-                onChange={(e) => set('aiBackend', e.target.value as 'ollama' | 'openai')}
+                onChange={(e) => set('aiBackend', e.target.value as 'local' | 'openai')}
               >
-                <option value="ollama">Ollama (local)</option>
+                <option value="local">Local (OpenAI-compatible)</option>
                 <option value="openai">OpenAI</option>
               </select>
             </label>
-            {form.aiBackend === 'ollama' && (
+            {form.aiBackend === 'local' && (
               <div className={styles.row}>
                 <label className={styles.field}>
-                  <span>Ollama base URL</span>
+                  <span>Local AI base URL</span>
                   <input
                     placeholder="http://localhost:11434"
-                    value={form.ollamaBaseUrl}
-                    onChange={(e) => set('ollamaBaseUrl', e.target.value)}
+                    value={form.localAiBaseUrl}
+                    onChange={(e) => set('localAiBaseUrl', e.target.value)}
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>Ollama model</span>
+                  <span>Local AI model</span>
                   <input
                     placeholder="llama3.2"
-                    value={form.ollamaModel}
-                    onChange={(e) => set('ollamaModel', e.target.value)}
+                    value={form.localAiModel}
+                    onChange={(e) => set('localAiModel', e.target.value)}
                   />
                 </label>
               </div>
