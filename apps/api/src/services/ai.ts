@@ -9,16 +9,6 @@ import type { DatabaseWrapper, ChatDatabase, SettingsDatabase } from '../db/inde
 // Local types (OpenAI Chat Completions API shapes)
 // ---------------------------------------------------------------------------
 
-type Message = {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string;
-  tool_call_id?: string;
-  // The assistant turn may carry tool_calls — present when finish_reason is
-  // 'tool_calls'. We include it here so TypeScript is happy when we push the
-  // raw assistant message back onto workingMessages.
-  tool_calls?: ToolCall[];
-};
-
 type ToolCall = {
   id: string;
   type: 'function';
@@ -27,6 +17,16 @@ type ToolCall = {
     /** JSON-encoded string of the arguments object. */
     arguments: string;
   };
+};
+
+type Message = {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  tool_call_id?: string;
+  // The assistant turn may carry tool_calls — present when finish_reason is
+  // 'tool_calls'. We include it here so TypeScript is happy when we push the
+  // raw assistant message back onto workingMessages.
+  tool_calls?: ToolCall[];
 };
 
 type ChatResponse = {
@@ -404,7 +404,7 @@ export const createAiService = (db: DatabaseWrapper & ChatDatabase & SettingsDat
       'Content-Type': 'application/json',
     };
     if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
+      headers.Authorization = `Bearer ${apiKey}`;
     }
 
     const response = await fetch(`${baseUrl}/chat/completions`, {

@@ -7,8 +7,6 @@ import { createAuthService } from './services/auth';
 import { createUserService } from './services/user';
 import { createChatService } from './services/chat';
 
-const chatMock = jest.fn();
-
 // Mock the global fetch used by the OpenAI-compatible client in ai.ts
 global.fetch = jest.fn();
 

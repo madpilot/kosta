@@ -4,8 +4,6 @@ import path from 'path';
 import { createChatService } from './chat';
 import { createSqliteDatabase } from '../db/sqlite';
 
-const chatMock = jest.fn();
-
 // Mock global fetch used by the OpenAI-compatible client in ai.ts
 global.fetch = jest.fn();
 
